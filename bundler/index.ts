@@ -1,20 +1,36 @@
-import { build, BuildOptions, context } from "npm:esbuild";
-import { parseArgs } from "jsr:@std/cli/parse-args";
-import { PluginConfig } from "../types.ts";
+import type { PluginConfig } from "../types.ts";
+import { build, context, type BuildOptions } from "esbuild";
 import waitForEnter, { write } from "./util.ts";
-import dir from "https://deno.land/x/dir@1.5.2/mod.ts";
-import { join } from "jsr:@std/path";
-import { existsSync } from "jsr:@std/fs/exists";
+import { join } from "node:path";
+import { existsSync } from "node:fs";
+import { parseArgs } from "util";
 
-const args = parseArgs(Deno.args, {
-    boolean: ["watch", "trigger", "no-copy"],
-    string: ["plugin"]
-});
+const args = parseArgs({
+    args: process.argv.slice(2),
+    options: {
+        plugin: {
+            type: "string"
+        },
+        watch: {
+            type: "boolean",
+            short: "w"
+        },
+        trigger: {
+            type: "boolean",
+            short: "t"
+        },
+        nocopy: {
+            type: "boolean",
+            short: "n"
+        }
+    }
+}).values;
 
 if(!args.plugin) throw new Error("Missing plugin name!");
 
 const configPath = `src/${args.plugin}/config.json`;
-const config: PluginConfig = JSON.parse(Deno.readTextFileSync(configPath));
+const configFile = Bun.file(configPath);
+const config: PluginConfig = await configFile.json();
 
 const meta = `/**
  * @name ${args.plugin}
@@ -52,19 +68,22 @@ let esbuildConfig: BuildOptions = {
 // I'm unusure if this works cross-platform
 let pluginsDir: string | null = null;
 
-if(!args["no-copy"]) {
-    let appData = dir("data");
-    if(appData) {
-        const checkDir = join(appData, "BetterDiscord", "plugins");
-        if(existsSync(checkDir)) pluginsDir = checkDir;
-    }
+if(!args.nocopy) {
+    const appData = process.env.APPDATA ||
+        (process.platform == 'darwin' ?
+        process.env.HOME + '/Library/Preferences' :
+        process.env.HOME + "/.local/share");
+
+    const checkDir = join(appData, "BetterDiscord", "plugins");
+    if(existsSync(checkDir)) pluginsDir = checkDir;
 }
 
-if(!pluginsDir && !args["no-copy"]) console.warn("Failed to determine where to put the built plugin! Use --no-copy to disable this.");
+if(!pluginsDir && !args.nocopy) console.warn("Failed to determine where to put the built plugin! Use --no-copy to disable this.");
 
-function copyPlugin() {
+async function copyPlugin() {
     if(!pluginsDir) return;
-    Deno.copyFileSync(`./build/${args.plugin}.plugin.js`, `${pluginsDir}/${args.plugin}.plugin.js`);
+    const input = Bun.file(`./build/${args.plugin}.plugin.js`);
+    await Bun.write(`${pluginsDir}/${args.plugin}.plugin.js`, input);
 }
 
 if(args.trigger) {
@@ -82,9 +101,9 @@ if(args.trigger) {
         write('\x1b[2K\r');
         console.timeEnd("Built");
         write("Press enter to build...");
-        building = false;
+        await copyPlugin();
 
-        copyPlugin();
+        building = false;
     });
 } else if(args.watch) {
     esbuildConfig.plugins?.push({
@@ -113,5 +132,5 @@ if(args.trigger) {
     await build(esbuildConfig);
     console.timeEnd("Built");
     
-    copyPlugin();
+    await copyPlugin();
 }

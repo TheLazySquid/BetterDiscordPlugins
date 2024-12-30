@@ -17,7 +17,7 @@ export default function waitForEnter(callback: () => void) {
     process.stdin.on('keypress', async (_, key) => {
         if(key.ctrl && key.name === 'c') {
             if(process.stdin.isTTY) process.stdin.setRawMode(false);
-            Deno.exit();
+            process.exit(0);
         } else if(key.name === 'return') {
             // build the plugin
             callback();
