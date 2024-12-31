@@ -1,0 +1,217 @@
+.zp-wrap {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.zp-zip {
+    padding: 0px !important;
+}
+
+.zp-content {
+    padding: 16px;
+    padding-bottom: 10px;
+    display: flex;
+    align-items: center;
+}
+
+.zp-dropdown-expander {
+    width: 100%;
+    display: flex;
+    height: 16px;
+    align-items: center;
+    justify-content: center;
+    border-top: 2px solid var(--border-subtle);
+    cursor: pointer;
+}
+
+.zp-dropdown-expander svg {
+    width: 16px;
+    height: 16px;
+    fill: var(--text-link);   
+}
+
+.zp-zip-preview {
+    max-height: 0px;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    color: var(--text-normal);
+    padding-left: 16px;
+}
+
+.zp-zip-preview.expanded {
+    max-height: 500px;
+    overflow-y: auto;
+    padding-bottom: 10px;
+}
+
+.zp-entry {
+    color: var(--text-link);
+    text-decoration: underline;
+    padding-bottom: 2px;
+    cursor: pointer;
+}
+
+.zp-filesize {
+    color: var(--text-normal);
+    text-decoration: none;
+    font-size: small;
+    padding-left: 5px;
+}
+
+.zp-path {
+    color: var(--text-normal);
+    padding-bottom: 2px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.zp-folderReturn {
+    cursor: pointer;
+}
+
+.zp-folderReturn svg {
+    fill: var(--text-normal);
+    width: 20px;
+    height: 20px;
+}
+
+.zp-preview-bg {
+    background-color: rgba(0, 0, 0, 0.5);
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 3500;
+}
+
+.zp-preview {
+    position: absolute;
+    background: var(--background-secondary);
+    color: var(--text-normal);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    max-width: 80%;
+    min-width: 30%;
+    max-height: 90%;
+    min-height: 20%;
+    border-radius: 15px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    user-select: text;
+}
+
+.zp-preview-header {
+    height: 45px;
+    background: var(--background-primary);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    font-size: 28px;
+    padding-left: 20px;
+    padding-right: 20px;
+    font-weight: 700;
+    border-bottom: 1px solid #bbbbbb;
+}
+
+.zp-preview-title {
+    flex-grow: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-wrap: nowrap;
+    text-overflow: ellipsis;
+    height: 100%;
+    display: flex;
+    align-items: center;
+}
+
+.zp-preview-close {
+    height: 35px;
+    width: 35px;
+    fill: var(--text-normal);
+    cursor: pointer;
+}
+
+.zp-preview-content-wrap {
+    margin: 20px;
+    margin-bottom: 0;
+    padding: 20px;
+    border: 1px solid #bbbbbb;
+    border-radius: 10px;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    position: relative;
+    align-self: stretch;
+    flex-grow: 1;
+}
+
+.zp-preview-copy {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 20px;
+    height: 20px;
+    fill: var(--text-normal);
+    cursor: pointer;
+}
+
+.zp-preview-content {
+    min-height: 0;
+    overflow: auto;
+    width: 100%;
+    scrollbar-color: var(--background-primary) var(--background-secondary);
+    /* prevents a scrollbar from randomly appearing for some reason */
+    padding-top: 3px;
+    padding-bottom: 3px;
+}
+
+.zp-preview audio {
+    width: 100%;
+}
+
+.zp-preview img {
+    
+}
+
+.zp-preview img, .zp-preview video {
+    width: 100%;
+    height: auto;
+}
+
+.zp-preview-override {
+    margin: 10px;
+    padding: 3px;
+    padding-left: 10px;
+    padding-right: 10px;
+    border-radius: 5px;
+    background-color: red;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+}
+
+.zp-preview-footer {
+    height: 55px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 20px;
+    align-self: stretch;
+}
+
+.zp-preview-footer .icon {
+    height: 35px;
+    width: 35px;
+    border: none;
+    background-color: transparent;
+    fill: var(--text-normal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}

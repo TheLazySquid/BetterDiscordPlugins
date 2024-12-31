@@ -1,0 +1,155 @@
+.imgFolderBtn {
+    aspect-ratio: 1 / 1;
+    padding: 7px;
+    cursor: pointer;
+}
+
+.imgFolderBtn path {
+    fill: var(--interactive-normal);
+}
+
+.imgFolderBtn:hover path {
+    fill: var(--interactive-hover);
+}
+
+.imageTab {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.imageTab .icon {
+    cursor: pointer;
+    width: 35px;
+    height: 35px;
+}
+
+.imageTab .icon path {
+    fill: hsl(190, 80%, 42%);
+}
+
+.imageTab {
+    color: var(--text-normal);
+}
+
+.pathContainer {
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.pathContainer > :first-child {
+    margin-left: 10px;
+}
+
+.pathContainer > :last-child {
+    margin-right: 15px;
+}
+
+.pathContainer .path {
+    flex-grow: 1;
+    padding-left: 5px;
+    padding-right: 5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    direction: rtl;
+    text-align: left;
+}
+
+.imageTab .content {
+    flex-grow: 1;
+    overflow-y: auto;
+    /* hardcoding this because I'm lazy */
+    height: 366px;
+}
+
+.imageTab .images {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    padding: 7px;
+    gap: 7px;
+}
+
+.imageTab img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    cursor: pointer;
+}
+
+.imageTab .folderReturn {
+    float: right;
+}
+
+.imageTab .folder {
+    display: flex;
+    border-radius: 12px;
+    background-color: var(--primary-500);
+    padding: 6px;
+    margin: 7px;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+    align-items: center;
+    gap: 5px;
+}
+
+.imageTab .folder:hover {
+    background-color: var(--primary-430);
+}
+
+.folder .folderName {
+    flex-grow: 1;
+}
+
+.if-nameWrap {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.if-nameInput {
+    width: 90%;
+    border-radius: 12px;
+    padding: 8px;
+}
+
+.imageTab .image {
+    position: relative;
+}
+
+.imageTab .image .icon {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.imageTab .image:hover .icon {
+    opacity: 1;
+}
+
+.if-caption-creator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.if-caption-creator canvas {
+    width: 100%;
+}
+
+.if-caption-settings {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--text-normal);
+}
+
+.if-caption-settings .if-caption {
+    flex-grow: 1;
+}

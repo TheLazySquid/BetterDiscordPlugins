@@ -9,7 +9,7 @@
         "target": "ESNext",
         "module": "ESNext",
         "moduleDetection": "force",
-        "jsx": "react-jsx",
+        "jsx": "preserve",
         "allowJs": true,
         // Bundler mode
         "moduleResolution": "bundler",
@@ -26,6 +26,7 @@
         "noPropertyAccessFromIndexSignature": false,
         "paths": {
             "$assets/*": ["./assets/*"]
-        }
+        },
+        "jsxFactory": "BdApi.React.createElement"
     }
 }

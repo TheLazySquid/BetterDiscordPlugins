@@ -3,7 +3,7 @@ import { build, context, type BuildOptions } from "esbuild";
 import waitForEnter, { write } from "./util.ts";
 import { join } from "node:path";
 import { existsSync } from "node:fs";
-import { parseArgs } from "util";
+import { parseArgs } from "node:util";
 
 const args = parseArgs({
     args: process.argv.slice(2),
@@ -55,6 +55,11 @@ let esbuildConfig: BuildOptions = {
     conditions: ["browser"],
     bundle: true,
     outfile: `build/${args.plugin}.plugin.js`,
+    loader: {
+        ".svg": "text",
+        ".css": "text",
+        ".otf": "binary"
+    },
     banner: {
         js: header
     },
@@ -62,7 +67,12 @@ let esbuildConfig: BuildOptions = {
         js: footer
     },
     format: "esm",
-    plugins: []
+    plugins: [],
+    external: [
+        "fs", "path", "buffer"
+    ],
+    jsx: "transform",
+    jsxFactory: "BdApi.React.createElement"
 }
 
 // I'm unusure if this works cross-platform
