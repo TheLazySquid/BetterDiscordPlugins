@@ -5,7 +5,7 @@
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
- * @source https://github.com/TheLazySquid/BetterDiscordPlugins/tree/main/build/WiderUserArea.plugin.js
+ * @source https://github.com/TheLazySquid/BetterDiscordPlugins/tree/main/plugins/WiderUserArea/WiderUserArea.plugin.js
  */
 module.exports = class {
   constructor() {

@@ -39,7 +39,7 @@ const meta = `/**
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
- * @source https://github.com/TheLazySquid/BetterDiscordPlugins/tree/main/build/${args.plugin}.plugin.js
+ * @source https://github.com/TheLazySquid/BetterDiscordPlugins/tree/main/plugins/${args.plugin}/${args.plugin}.plugin.js
  */`
 
 const header = meta + '\n' +

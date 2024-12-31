@@ -4,7 +4,8 @@
  * @author TheLazySquid
  * @version 0.2.0
  * @authorId 619261917352951815
- * @source https://github.com/TheLazySquid/DiscordUnicodeEmojis
+ * @website https://github.com/TheLazySquid/BetterDiscordPlugins
+ * @source https://github.com/TheLazySquid/BetterDiscordPlugins/tree/main/plugins/UnicodeEmojis/UnicodeEmojis.plugin.js
  */
 
 let editor;

@@ -5,7 +5,7 @@
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
- * @source https://github.com/TheLazySquid/BetterDiscordPlugins/tree/main/build/ZipPreview.plugin.js
+ * @source https://github.com/TheLazySquid/BetterDiscordPlugins/tree/main/plugins/ZipPreview/ZipPreview.plugin.js
  */
 module.exports = class {
   constructor() {
