@@ -28,7 +28,7 @@ const args = parseArgs({
 
 if(!args.plugin) throw new Error("Missing plugin name!");
 
-const configPath = `src/${args.plugin}/config.json`;
+const configPath = `./plugins/${args.plugin}/config.json`;
 const configFile = Bun.file(configPath);
 const config: PluginConfig = await configFile.json();
 
@@ -51,10 +51,10 @@ const footer = `  }
 }`;
 
 let esbuildConfig: BuildOptions = {
-    entryPoints: [`src/${args.plugin}/index.ts`],
+    entryPoints: [`./plugins/${args.plugin}/src/index.ts`],
     conditions: ["browser"],
     bundle: true,
-    outfile: `build/${args.plugin}.plugin.js`,
+    outfile: `plugins/${args.plugin}/${args.plugin}.plugin.js`,
     loader: {
         ".svg": "text",
         ".css": "text",
@@ -92,7 +92,7 @@ if(!pluginsDir && !args.nocopy) console.warn("Failed to determine where to put t
 
 async function copyPlugin() {
     if(!pluginsDir) return;
-    const input = Bun.file(`./build/${args.plugin}.plugin.js`);
+    const input = Bun.file(`./plugins/${args.plugin}/${args.plugin}.plugin.js`);
     await Bun.write(`${pluginsDir}/${args.plugin}.plugin.js`, input);
 }
 

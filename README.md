@@ -1,15 +1,23 @@
-# betterdiscordplugins
+# BetterDiscord Plugins
 
-To install dependencies:
+This repository contains my [BetterDiscord](https://betterdiscord.app) plugins.
 
-```bash
-bun install
-```
+## GifCaptioner [Page](https://betterdiscord.app/plugin/GifCaptioner) [Source](/plugins/GifCaptioner/)
 
-To run:
+A plugin that allows you to add captions to gifs from your gif picker.
 
-```bash
-bun run index.ts
-```
+## ImageFolder [Page](https://betterdiscord.app/plugin/ImageFolder) [Source](/plugins/ImageFolder/)
 
-This project was created using `bun init` in bun v1.1.22. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+A plugin that adds a way to quickly upload images from a folder, which can contain subfolders.
+
+## WiderUserArea [Page](https://betterdiscord.app/plugin/WiderUserArea) [Source](/plugins/WiderUserArea/)
+
+A plugin that expands the user area into the sidebar.
+
+## ZipPreview [Page](https://betterdiscord.app/plugin/ZipPreview) [Source](/plugins/ZipPreview/)
+
+Lets you see inside zips and preview/download files without ever downloading/extracting the zip.
+
+## UnicodeEmojis [Page](https://betterdiscord.app/plugin/UnicodeEmojis) [Source](/plugins/UnicodeEmojis/)
+
+Replaces discord emojis that you send with their unicode equivalent.

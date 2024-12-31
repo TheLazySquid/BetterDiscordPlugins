@@ -1,6 +1,5 @@
-import { onStart, onStop } from "../../util/bdFuncs.ts";
-import { chainPatch } from "../../util/patching.ts";
-// @ts-ignore vscode sometimes bugs out and can't find the "*.css" module
+import { onStart, onStop } from "../../../util/bdFuncs.ts";
+import { chainPatch } from "../../../util/patching.ts";
 import css from './styles.css'
 import ZipPreview from "./ZipPreview.tsx"
 

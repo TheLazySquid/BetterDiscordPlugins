@@ -3,10 +3,10 @@ import GIF from './gif.js/gif.js'
 import futura from '$assets/Futura Condensed Extra Bold.otf';
 import CaptionBtnSVG from '$assets/page-layout-header.svg'
 import css from './styles.css'
-import { getLines } from './util';
+import { getLines } from './util.ts';
 import captionCreator from './captionCreator.jsx'
-import { onStart, onStop } from '../../util/bdFuncs.ts';
-import { watchElement } from '../../util/dom.ts';
+import { onStart, onStop } from '../../../util/bdFuncs.ts';
+import { watchElement } from '../../../util/dom.ts';
 import { decompressFrames, type ParsedFrame, type ParsedGif, parseGIF } from 'gifuct-js';
 
 let rendering: boolean = false

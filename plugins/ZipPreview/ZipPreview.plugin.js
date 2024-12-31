@@ -108,7 +108,7 @@ function chainPatch(module2, callback, ...path) {
   return dispose;
 }
 
-// src/ZipPreview/styles.css
+// plugins/ZipPreview/src/styles.css
 var styles_default = ".zp-wrap {\r\n    display: flex;\r\n    flex-direction: column;\r\n    width: 100%;\r\n}\r\n\r\n.zp-zip {\r\n    padding: 0px !important;\r\n}\r\n\r\n.zp-content {\r\n    padding: 16px;\r\n    padding-bottom: 10px;\r\n    display: flex;\r\n    align-items: center;\r\n}\r\n\r\n.zp-dropdown-expander {\r\n    width: 100%;\r\n    display: flex;\r\n    height: 16px;\r\n    align-items: center;\r\n    justify-content: center;\r\n    border-top: 2px solid var(--border-subtle);\r\n    cursor: pointer;\r\n}\r\n\r\n.zp-dropdown-expander svg {\r\n    width: 16px;\r\n    height: 16px;\r\n    fill: var(--text-link);   \r\n}\r\n\r\n.zp-zip-preview {\r\n    max-height: 0px;\r\n    overflow: hidden;\r\n    transition: max-height 0.3s ease;\r\n    color: var(--text-normal);\r\n    padding-left: 16px;\r\n}\r\n\r\n.zp-zip-preview.expanded {\r\n    max-height: 500px;\r\n    overflow-y: auto;\r\n    padding-bottom: 10px;\r\n}\r\n\r\n.zp-entry {\r\n    color: var(--text-link);\r\n    text-decoration: underline;\r\n    padding-bottom: 2px;\r\n    cursor: pointer;\r\n}\r\n\r\n.zp-filesize {\r\n    color: var(--text-normal);\r\n    text-decoration: none;\r\n    font-size: small;\r\n    padding-left: 5px;\r\n}\r\n\r\n.zp-path {\r\n    color: var(--text-normal);\r\n    padding-bottom: 2px;\r\n    display: flex;\r\n    align-items: center;\r\n    gap: 8px;\r\n}\r\n\r\n.zp-folderReturn {\r\n    cursor: pointer;\r\n}\r\n\r\n.zp-folderReturn svg {\r\n    fill: var(--text-normal);\r\n    width: 20px;\r\n    height: 20px;\r\n}\r\n\r\n.zp-preview-bg {\r\n    background-color: rgba(0, 0, 0, 0.5);\r\n    position: fixed;\r\n    top: 0;\r\n    left: 0;\r\n    width: 100vw;\r\n    height: 100vh;\r\n    z-index: 3500;\r\n}\r\n\r\n.zp-preview {\r\n    position: absolute;\r\n    background: var(--background-secondary);\r\n    color: var(--text-normal);\r\n    top: 50%;\r\n    left: 50%;\r\n    transform: translate(-50%, -50%);\r\n    max-width: 80%;\r\n    min-width: 30%;\r\n    max-height: 90%;\r\n    min-height: 20%;\r\n    border-radius: 15px;\r\n    overflow: hidden;\r\n    display: flex;\r\n    flex-direction: column;\r\n    user-select: text;\r\n}\r\n\r\n.zp-preview-header {\r\n    height: 45px;\r\n    background: var(--background-primary);\r\n    flex-shrink: 0;\r\n    display: flex;\r\n    align-items: center;\r\n    font-size: 28px;\r\n    padding-left: 20px;\r\n    padding-right: 20px;\r\n    font-weight: 700;\r\n    border-bottom: 1px solid #bbbbbb;\r\n}\r\n\r\n.zp-preview-title {\r\n    flex-grow: 1;\r\n    min-width: 0;\r\n    overflow: hidden;\r\n    text-wrap: nowrap;\r\n    text-overflow: ellipsis;\r\n    height: 100%;\r\n    display: flex;\r\n    align-items: center;\r\n}\r\n\r\n.zp-preview-close {\r\n    height: 35px;\r\n    width: 35px;\r\n    fill: var(--text-normal);\r\n    cursor: pointer;\r\n}\r\n\r\n.zp-preview-content-wrap {\r\n    margin: 20px;\r\n    margin-bottom: 0;\r\n    padding: 20px;\r\n    border: 1px solid #bbbbbb;\r\n    border-radius: 10px;\r\n    min-height: 0;\r\n    overflow: hidden;\r\n    display: flex;\r\n    position: relative;\r\n    align-self: stretch;\r\n    flex-grow: 1;\r\n}\r\n\r\n.zp-preview-copy {\r\n    position: absolute;\r\n    top: 10px;\r\n    right: 10px;\r\n    width: 20px;\r\n    height: 20px;\r\n    fill: var(--text-normal);\r\n    cursor: pointer;\r\n}\r\n\r\n.zp-preview-content {\r\n    min-height: 0;\r\n    overflow: auto;\r\n    width: 100%;\r\n    scrollbar-color: var(--background-primary) var(--background-secondary);\r\n    /* prevents a scrollbar from randomly appearing for some reason */\r\n    padding-top: 3px;\r\n    padding-bottom: 3px;\r\n}\r\n\r\n.zp-preview audio {\r\n    width: 100%;\r\n}\r\n\r\n.zp-preview img {\r\n    \r\n}\r\n\r\n.zp-preview img, .zp-preview video {\r\n    width: 100%;\r\n    height: auto;\r\n}\r\n\r\n.zp-preview-override {\r\n    margin: 10px;\r\n    padding: 3px;\r\n    padding-left: 10px;\r\n    padding-right: 10px;\r\n    border-radius: 5px;\r\n    background-color: red;\r\n    color: white;\r\n    font-weight: bold;\r\n    text-align: center;\r\n}\r\n\r\n.zp-preview-footer {\r\n    height: 55px;\r\n    flex-shrink: 0;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: flex-end;\r\n    padding-right: 20px;\r\n    align-self: stretch;\r\n}\r\n\r\n.zp-preview-footer .icon {\r\n    height: 35px;\r\n    width: 35px;\r\n    border: none;\r\n    background-color: transparent;\r\n    fill: var(--text-normal);\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n}";
 
 // node_modules/unzipit/dist/unzipit.module.js
@@ -1109,7 +1109,7 @@ var close_default = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
 // assets/content-copy.svg
 var content_copy_default = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" /></svg>';
 
-// src/ZipPreview/FilePreview.tsx
+// plugins/ZipPreview/src/FilePreview.tsx
 var highlightModule = BdApi.Webpack.getModule((exports) => exports?.default?.highlight && exports?.default?.hasLanguage).default;
 var React = BdApi.React;
 function FilePreview({ name, type: startType, blob, buff, onClose }) {
@@ -1179,7 +1179,7 @@ function FilePreview({ name, type: startType, blob, buff, onClose }) {
   ))));
 }
 
-// src/ZipPreview/ZipPreview.tsx
+// plugins/ZipPreview/src/ZipPreview.tsx
 var React2 = BdApi.React;
 function ZipPreview({ url }) {
   const [expanded, setExpanded] = React2.useState(false);
@@ -1287,7 +1287,7 @@ function ZipPreview({ url }) {
 }
 var ZipPreview_default = React2.memo(ZipPreview);
 
-// src/ZipPreview/index.ts
+// plugins/ZipPreview/src/index.ts
 var fileModule = BdApi.Webpack.getModule((exports) => Object.values(exports).some((val) => {
   if (typeof val !== "function") return false;
   return val.toString().includes('obscureVideoSpacing]:"VIDEO');

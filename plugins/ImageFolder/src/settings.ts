@@ -1,5 +1,5 @@
 import type { sortType } from "./types";
-import { setSettingsPanel } from "../../util/bdFuncs";
+import { setSettingsPanel } from "../../../util/bdFuncs";
 
 export const settings: { rerender: boolean, sortBy: sortType, showButton: boolean } = {
     rerender: BdApi.Data.load("ImageFolder", "rerender") ?? true,

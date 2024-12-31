@@ -987,10 +987,10 @@ var require_lib2 = __commonJS({
   }
 });
 
-// src/GifCaptioner/gif.js/gif.js
+// plugins/GifCaptioner/src/gif.js/gif.js
 var import_events = __toESM(require_events(), 1);
 
-// src/GifCaptioner/gif.js/TypedNeuQuant.js
+// plugins/GifCaptioner/src/gif.js/TypedNeuQuant.js
 var ncycles = 100;
 var netsize = 256;
 var maxnetpos = netsize - 1;
@@ -1267,7 +1267,7 @@ function NeuQuant(pixels, samplefac) {
 }
 var TypedNeuQuant_default = NeuQuant;
 
-// src/GifCaptioner/gif.js/LZWEncoder.js
+// plugins/GifCaptioner/src/gif.js/LZWEncoder.js
 var EOF = -1;
 var BITS = 12;
 var HSIZE = 5003;
@@ -1416,7 +1416,7 @@ function LZWEncoder(width, height, pixels, colorDepth) {
 }
 var LZWEncoder_default = LZWEncoder;
 
-// src/GifCaptioner/gif.js/GIFEncoder.js
+// plugins/GifCaptioner/src/gif.js/GIFEncoder.js
 function ByteArray() {
   this.page = -1;
   this.pages = [];
@@ -1764,7 +1764,7 @@ GIFEncoder.prototype.stream = function() {
 };
 var GIFEncoder_default = GIFEncoder;
 
-// src/GifCaptioner/gif.js/gif.js
+// plugins/GifCaptioner/src/gif.js/gif.js
 var GIF;
 var hasProp = {}.hasOwnProperty;
 var indexOf = [].indexOf;
@@ -2031,10 +2031,10 @@ var Futura_Condensed_Extra_Bold_default = __toBinary("T1RUTwAKAIAAAwAgQ0ZGIJ3dqF
 // assets/page-layout-header.svg
 var page_layout_header_default = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="30" height="30"><rect x="5" y="5" width="14" height="10" fill="white"></rect><path d="M18,11H16.5V10.5H14.5V13.5H16.5V13H18V14A1,1 0 0,1 17,15H14A1,1 0 0,1 13,14V10A1,1 0 0,1 14,9H17A1,1 0 0,1 18,10M11,11H9.5V10.5H7.5V13.5H9.5V13H11V14A1,1 0 0,1 10,15H7A1,1 0 0,1 6,14V10A1,1 0 0,1 7,9H10A1,1 0 0,1 11,10M19,4H5C3.89,4 3,4.89 3,6V18A2,2 0 0,0 5,20H19A2,2 0 0,0 21,18V6C21,4.89 20.1,4 19,4Z" /></svg>';
 
-// src/GifCaptioner/styles.css
+// plugins/GifCaptioner/src/styles.css
 var styles_default = "#progressDialog {\r\n    width: 100vw;\r\n    height: 100vh;\r\n    background-color: rgba(0, 0, 0, 0.5);\r\n    text-align: center;\r\n    color: white;\r\n    font-size: 80px;\r\n    outline: none;\r\n    border: none;\r\n}\r\n\r\n#cancelRender {\r\n    background-color: red;\r\n    border-radius: 9999px;\r\n    font-size: 30px;\r\n    padding: 10px;\r\n    padding-left: 35px;\r\n    padding-right: 35px;\r\n}\r\n\r\n.gif-captioner-btn {\r\n    position: absolute;\r\n    z-index: 4;\r\n    top: 0px;\r\n    left: 0px;\r\n    background-color: transparent;\r\n    border: none;\r\n    outline: none;\r\n    color: white;\r\n    padding: 0px;\r\n}\r\n\r\n.caption-creator {\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    width: 100%;\r\n    color: white;\r\n}\r\n\r\n.settings {\r\n    display: flex;\r\n    justify-content: space-between;\r\n    align-items: center;\r\n    width: 100%;\r\n    margin-bottom: 20px;\r\n}\r\n\r\n.caption-input {\r\n    flex-grow: 1;\r\n    margin-right: 10px;\r\n}\r\n\r\n.font-size-slider {\r\n    width: 100px;\r\n}\r\n\r\n.caption-canvas {\r\n    border: 1px solid #000;\r\n    width: 100%;\r\n    border: none;\r\n    outline: none;\r\n}\r\n\r\n.caption-preview {\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    width: 100%;\r\n    border: 2px solid black;\r\n}\r\n\r\n.caption-gif {\r\n    width: 100%;\r\n}";
 
-// src/GifCaptioner/util.ts
+// plugins/GifCaptioner/src/util.ts
 function getLines(ctx, text, maxWidth) {
   var words = text.split(" ");
   var lines = [];
@@ -2053,7 +2053,7 @@ function getLines(ctx, text, maxWidth) {
   return lines;
 }
 
-// src/GifCaptioner/captionCreator.jsx
+// plugins/GifCaptioner/src/captionCreator.jsx
 function CaptionCreator({ src, width, onUpdate, isVideo }) {
   const React = BdApi.React;
   const { useState, useEffect, useRef } = React;
@@ -2174,7 +2174,7 @@ function watchElement(selector, callback) {
   };
 }
 
-// src/GifCaptioner/index.ts
+// plugins/GifCaptioner/src/index.ts
 var import_gifuct_js = __toESM(require_lib2(), 1);
 var rendering = false;
 var gifSelector = "video[class^='gif'], img[class^='gif']";

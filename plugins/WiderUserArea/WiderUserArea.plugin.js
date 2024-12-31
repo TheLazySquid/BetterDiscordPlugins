@@ -11,10 +11,10 @@ module.exports = class {
   constructor() {
     let plugin = this;
 
-// src/WiderUserArea/styles.css
+// plugins/WiderUserArea/src/styles.css
 var styles_default = ':root {\r\n    --user-area-bottom: 0;\r\n    --user-area-left: 0;\r\n}\r\n\r\nnav[class*="guilds_"] {\r\n    height: var(--sidebar-height);\r\n}\r\n\r\n[class*="sidebar_"] {\r\n    height: calc(var(--sidebar-height) - var(--notices-height));\r\n}\r\n\r\n/* user area */\r\nsection[class*="panels_"] {\r\n    position: fixed;\r\n    overflow: hidden;\r\n    bottom: var(--user-area-bottom);\r\n    left: var(--user-area-left);\r\n    width: var(--user-area-width);\r\n}\r\n\r\n[class*="avatarWrapper_"] {\r\n    flex-grow: 1;\r\n}\r\n\r\n/* prevent the user info popout from clipping */\r\n[class*="accountProfilePopoutWrapper"] {\r\n    left: 0;\r\n}';
 
-// src/WiderUserArea/constants.ts
+// plugins/WiderUserArea/src/constants.ts
 var userAreaSelector = 'section[class*="panels_"]';
 var serverListSelector = 'nav[class*="guilds_"]';
 var containerSelector = `div:has(> ${serverListSelector})`;
@@ -25,7 +25,7 @@ var UAButtonsSelector = 'div[class*="avatarWrapper_"] + div';
 var firstServerListSelector = `${serverListSelector}:first-child`;
 var secondServerListSelector = `${serverListSelector}:nth-child(2)`;
 
-// src/WiderUserArea/utils.ts
+// plugins/WiderUserArea/src/utils.ts
 function scaleDOMRect(rect, scale, scaleCenterX, scaleCenterY) {
   const distX = rect.x - scaleCenterX;
   const distY = rect.y - scaleCenterY;
@@ -112,7 +112,7 @@ function watchElement(selector, callback) {
   };
 }
 
-// src/WiderUserArea/index.ts
+// plugins/WiderUserArea/src/index.ts
 var baseChannelHeight = 0;
 var baseChannelWidth = 0;
 var varsSet = /* @__PURE__ */ new Set();
