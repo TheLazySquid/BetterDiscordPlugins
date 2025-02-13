@@ -8,7 +8,7 @@ import { onStart, onStop } from "$shared/bdFuncs.ts";
 import { watchElement } from "$shared/dom.ts";
 import { decompressFrames, type ParsedFrame, type ParsedGif, parseGIF } from "gifuct-js";
 // @ts-ignore
-import GifWorker from "inline:./gif.worker.js";
+import GifWorker from "./gif.worker.txt";
 
 let rendering: boolean = false;
 

@@ -4,7 +4,6 @@ import waitForEnter, { write } from "./util.ts";
 import { join } from "node:path";
 import { existsSync } from "node:fs";
 import { parseArgs } from "node:util";
-import inlineImport from "esbuild-plugin-inline-import";
 
 const args = parseArgs({
     args: process.argv.slice(2),
@@ -68,7 +67,7 @@ let esbuildConfig: BuildOptions = {
         js: footer
     },
     format: "esm",
-    plugins: [ inlineImport() ],
+    plugins: [],
     external: [
         "fs", "path", "buffer"
     ],
