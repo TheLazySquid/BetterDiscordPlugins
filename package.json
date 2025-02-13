@@ -12,6 +12,7 @@
   "devDependencies": {
     "@types/betterdiscord": "github:Zerthox/betterdiscord-types",
     "@types/bun": "latest",
+    "@types/gif.js": "^0.2.5",
     "@types/react": "^19.0.2",
     "arraybuffer-isbinary": "^1.0.2",
     "esbuild": "^0.24.2",
@@ -22,5 +23,9 @@
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "esbuild-plugin-inline-import": "^1.1.0",
+    "gif.js": "^0.2.0"
   }
 }

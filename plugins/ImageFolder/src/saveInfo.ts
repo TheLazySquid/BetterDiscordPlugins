@@ -1,4 +1,4 @@
-import { onStart } from "../../../util/bdFuncs";
+import { onStart } from "$shared/bdFuncs";
 
 let lastUsed: Record<string, number> = {};
 

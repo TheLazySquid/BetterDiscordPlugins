@@ -4,8 +4,8 @@ import { userAreaSelector, containerSelector, layerSelector,
     channelsSelector, scaleRegex, UAButtonsSelector, secondServerListSelector, 
     firstServerListSelector} from './constants';
 import { scaleDOMRect } from './utils';
-import { onStart, onStop, onSwitch } from "../../../util/bdFuncs";
-import { watchElement } from '../../../util/dom';
+import { onStart, onStop, onSwitch } from "$shared/bdFuncs";
+import { watchElement } from '$shared/dom';
 
 let baseChannelHeight: number = 0;
 let baseChannelWidth: number = 0;

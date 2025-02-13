@@ -2,7 +2,7 @@ import imagePlusOutline from '$assets/image-plus-outline.svg'
 import styles from './styles.css'
 import imageTab from './ui/imageTab'
 import { buttonsModule, mimeTypes, expressionModule, pickerStore, toggleExpressionPicker } from './constants';
-import { onStart, onStop } from '../../../util/bdFuncs';
+import { onStart, onStop } from '$shared/bdFuncs';
 import { settings, setup } from './settings';
 
 setup();

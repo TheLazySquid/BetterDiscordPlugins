@@ -25,7 +25,8 @@
         "noUnusedParameters": false,
         "noPropertyAccessFromIndexSignature": false,
         "paths": {
-            "$assets/*": ["./assets/*"]
+            "$assets/*": ["./assets/*"],
+            "$shared/*": ["./shared/*"]
         },
         "jsxFactory": "BdApi.React.createElement"
     }

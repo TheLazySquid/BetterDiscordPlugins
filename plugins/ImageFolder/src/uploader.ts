@@ -1,4 +1,4 @@
-import { onStart } from "../../../util/bdFuncs";
+import { onStart } from "$shared/bdFuncs";
 import { imgAdder, chatKeyHandlers, closeExpressionPicker } from "./constants";
 
 const fs = require('fs')

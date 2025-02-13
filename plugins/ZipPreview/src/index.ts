@@ -1,5 +1,5 @@
-import { onStart, onStop } from "../../../util/bdFuncs.ts";
-import { chainPatch } from "../../../util/patching.ts";
+import { onStart, onStop } from "$shared/bdFuncs.ts";
+import { chainPatch } from "$shared/patching.ts";
 import css from './styles.css'
 import ZipPreview from "./ZipPreview.tsx"
 
