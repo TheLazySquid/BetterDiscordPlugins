@@ -1,6 +1,6 @@
-# Discord Wider User Area
+# WiderUserArea
 
-This is a [BetterDiscord](https://betterdiscord.app/) plugin that makes the user area at the bottom left of the screen expand left into the server list.
+This plugin makes the user area at the bottom left of the screen expand left into the server list.
 
 ![Preview](./images/preview.png)
 
