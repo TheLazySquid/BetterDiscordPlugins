@@ -1,7 +1,7 @@
 /**
  * @name GifCaptioner
  * @description A BetterDiscord plugin that allows you to add a caption to discord gifs
- * @version 0.4.0
+ * @version 0.4.1
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -1242,6 +1242,10 @@ var createCallbackHandler = (callbackName) => {
 var onStart = createCallbackHandler("start");
 var onStop = createCallbackHandler("stop");
 var onSwitch = createCallbackHandler("onSwitch");
+function setSettingsPanel(el) {
+  if (typeof el === "function") plugin.getSettingsPanel = el;
+  plugin.getSettingsPanel = () => el;
+}
 
 // shared/dom.ts
 function watchElement(selector, callback) {
@@ -1289,6 +1293,33 @@ var gif_worker_default = `// gif.worker.js 0.2.0-wasm - https://github.com/jnord
 var GIFEncoder,renderFrame;GIFEncoder=require("./GIFEncoder.js");renderFrame=function(frame){var encoder,page,stream,transfer;encoder=new GIFEncoder(frame.width,frame.height);if(frame.index===0){encoder.writeHeader()}else{encoder.firstFrame=false}encoder.setTransparent(frame.transparent);encoder.setDispose(frame.dispose);encoder.setRepeat(frame.repeat);encoder.setDelay(frame.delay);encoder.setQuality(frame.quality);encoder.setDither(frame.dither);encoder.setGlobalPalette(frame.globalPalette);encoder.addFrame(frame.data);if(frame.last){encoder.finish()}if(frame.globalPalette===true){frame.globalPalette=encoder.getGlobalPalette()}stream=encoder.stream();frame.data=stream.pages;frame.cursor=stream.cursor;frame.pageSize=stream.constructor.pageSize;if(frame.canTransfer){transfer=function(){var i,len,ref,results;ref=frame.data;results=[];for(i=0,len=ref.length;i<len;i++){page=ref[i];results.push(page.buffer)}return results}();return self.postMessage(frame,transfer)}else{return self.postMessage(frame)}};self.onmessage=function(event){return renderFrame(event.data)}},{"./GIFEncoder.js":4}]},{},[7]);\r
 //# sourceMappingURL=gif.worker.js.map`;
 
+// shared/modules.ts
+var imgAdder = BdApi.Webpack.getByKeys("addFile");
+var chatKeyHandlers = BdApi.Webpack.getAllByStrings("selectNextCommandOption");
+var fileModule = BdApi.Webpack.getModule((m) => m.Z?.toString().includes("filenameLinkWrapper"));
+
+// plugins/GifCaptioner/src/settings.ts
+var settings = {
+  upload: BdApi.Data.load("GifCaptioner", "upload") ?? true
+};
+function createSettings() {
+  return BdApi.UI.buildSettingsPanel({
+    settings: [
+      {
+        type: "switch",
+        id: "upload",
+        value: settings.upload,
+        name: "Automatically upload gifs after rendering?",
+        note: ""
+      }
+    ],
+    onChange: (_, id, value) => {
+      settings[id] = value;
+      BdApi.Data.save("GifCaptioner", id, value);
+    }
+  });
+}
+
 // plugins/GifCaptioner/src/index.ts
 var rendering = false;
 var gifSelector = "video[class^='gif'], img[class^='gif']";
@@ -1303,7 +1334,7 @@ watchElement(gifSelector, (gif) => {
   captionBtn.addEventListener("click", async (e) => {
     e.stopPropagation();
     e.preventDefault();
-    let settings = { caption: "", fontSize: 35 };
+    let settings2 = { caption: "", fontSize: 35 };
     let src = gif.src;
     let width;
     let parsedGif;
@@ -1318,16 +1349,16 @@ watchElement(gifSelector, (gif) => {
       src,
       width,
       onUpdate: (caption, fontSize) => {
-        settings.caption = caption;
-        settings.fontSize = parseInt(fontSize);
+        settings2.caption = caption;
+        settings2.fontSize = parseInt(fontSize);
       },
       isVideo
     });
     const onConfirm = () => {
       renderGif(
         src,
-        settings.caption,
-        settings.fontSize,
+        settings2.caption,
+        settings2.fontSize,
         isVideo,
         parsedGif
       );
@@ -1348,12 +1379,7 @@ function getChannelId() {
   return channelID;
 }
 var font = new FontFace("futuraBoldCondensed", Futura_Condensed_Extra_Bold_default);
-var imgAdder = Object.values(
-  BdApi.Webpack.getModule(
-    (module) => Object.values(module)?.[0]?.addFile
-  )
-)[0];
-var chatKeyHandlers = BdApi.Webpack.getModule(
+var chatKeyHandlers2 = BdApi.Webpack.getModule(
   (exports) => Object.values(exports)?.[0]?.toString?.().includes("selectNextCommandOption")
 );
 var submitMessage;
@@ -1361,8 +1387,8 @@ onStart(() => {
   document.fonts.add(font);
   BdApi.Patcher.before(
     "GifCaptioner",
-    chatKeyHandlers,
-    Object.keys(chatKeyHandlers)[0],
+    chatKeyHandlers2,
+    Object.keys(chatKeyHandlers2)[0],
     (_, args) => {
       submitMessage = args[0].submit;
     }
@@ -1383,7 +1409,9 @@ function uploadFile(channelId, file) {
       platform: 1
     }
   });
-  submitMessage();
+  if (settings.upload) {
+    submitMessage();
+  }
 }
 var workerUrl = null;
 onStart(() => {
@@ -1575,5 +1603,6 @@ onStop(() => {
     btn.remove();
   }
 });
+setSettingsPanel(createSettings);
   }
 }

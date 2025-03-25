@@ -4,11 +4,13 @@ import CaptionBtnSVG from "$assets/page-layout-header.svg";
 import css from "./styles.css";
 import { getLines } from "./util.ts";
 import captionCreator from "./captionCreator.jsx";
-import { onStart, onStop } from "$shared/bdFuncs.ts";
+import { onStart, onStop, setSettingsPanel } from "$shared/bdFuncs.ts";
 import { watchElement } from "$shared/dom.ts";
 import { decompressFrames, type ParsedFrame, type ParsedGif, parseGIF } from "gifuct-js";
 // @ts-ignore
 import GifWorker from "./gif.worker.txt";
+import { imgAdder } from "$shared/modules.ts";
+import { createSettings, settings } from "./settings.ts";
 
 let rendering: boolean = false;
 
@@ -89,11 +91,6 @@ function getChannelId() {
 
 let font = new FontFace("futuraBoldCondensed", futura);
 
-const imgAdder: any = Object.values(
-    BdApi.Webpack.getModule(
-        (module) => Object.values<any>(module)?.[0]?.addFile
-    ) as any
-)[0];
 const chatKeyHandlers: any = BdApi.Webpack.getModule((exports) =>
     Object.values<any>(exports)?.[0]
         ?.toString?.()
@@ -132,7 +129,9 @@ function uploadFile(channelId: string, file: File) {
     });
 
     // send the message
-    submitMessage();
+    if(settings.autoSend) {
+        submitMessage();
+    }
 }
 
 let workerUrl: string | null = null;
@@ -391,3 +390,5 @@ onStop(() => {
         btn.remove();
     }
 });
+
+setSettingsPanel(createSettings);
