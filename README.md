@@ -10,10 +10,6 @@ A plugin that allows you to add captions to gifs from your gif picker.
 
 A plugin that adds a way to quickly upload images from a folder, which can contain subfolders.
 
-## WiderUserArea [Page](https://betterdiscord.app/plugin/WiderUserArea) [Source](/plugins/WiderUserArea/)
-
-A plugin that expands the user area into the sidebar.
-
 ## ZipPreview [Page](https://betterdiscord.app/plugin/ZipPreview) [Source](/plugins/ZipPreview/)
 
 Lets you see inside zips and preview/download files without ever downloading/extracting the zip.

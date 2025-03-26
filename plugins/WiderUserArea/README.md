@@ -1,5 +1,8 @@
 # WiderUserArea
 
+> [!WARNING]
+> This plugin is now obsolete since discord's new UI has this built in.
+
 This plugin makes the user area at the bottom left of the screen expand left into the server list.
 
 ![Preview](./images/preview.png)

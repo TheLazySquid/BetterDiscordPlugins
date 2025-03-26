@@ -1300,16 +1300,16 @@ var fileModule = BdApi.Webpack.getModule((m) => m.Z?.toString().includes("filena
 
 // plugins/GifCaptioner/src/settings.ts
 var settings = {
-  upload: BdApi.Data.load("GifCaptioner", "upload") ?? true
+  autoSend: BdApi.Data.load("GifCaptioner", "autoSend") ?? true
 };
 function createSettings() {
   return BdApi.UI.buildSettingsPanel({
     settings: [
       {
         type: "switch",
-        id: "upload",
-        value: settings.upload,
-        name: "Automatically upload gifs after rendering?",
+        id: "autoSend",
+        value: settings.autoSend,
+        name: "Automatically send gifs after rendering?",
         note: ""
       }
     ],
@@ -1409,7 +1409,7 @@ function uploadFile(channelId, file) {
       platform: 1
     }
   });
-  if (settings.upload) {
+  if (settings.autoSend) {
     submitMessage();
   }
 }
