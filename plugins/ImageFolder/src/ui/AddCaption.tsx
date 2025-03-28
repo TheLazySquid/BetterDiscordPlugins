@@ -1,6 +1,6 @@
 import futura from '$assets/Futura Condensed Extra Bold.otf'
 import { sendFile } from '../uploader'
-import { onStart, onStop } from '../$shared/bdFuncs';
+import { onStart, onStop } from '$shared/bdFuncs';
 
 const React = BdApi.React;
 let font: FontFace = new FontFace('futuraBoldCondensed', futura);

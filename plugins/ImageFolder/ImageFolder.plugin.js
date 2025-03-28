@@ -1,7 +1,7 @@
 /**
  * @name ImageFolder
  * @description A BetterDiscord plugin that allows you to save and send images from a folder for easy access
- * @version 0.4.4
+ * @version 0.4.5
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -36,7 +36,7 @@ var __toBinary = /* @__PURE__ */ (() => {
 var image_plus_outline_default = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><path d="M13 19C13 19.7 13.13 20.37 13.35 21H5C3.9 21 3 20.11 3 19V5C3 3.9 3.9 3 5 3H19C20.11 3 21 3.9 21 5V13.35C20.37 13.13 19.7 13 19 13V5H5V19H13M13.96 12.29L11.21 15.83L9.25 13.47L6.5 17H13.35C13.75 15.88 14.47 14.91 15.4 14.21L13.96 12.29M20 18V15H18V18H15V20H18V23H20V20H23V18H20Z" /></svg>';
 
 // plugins/ImageFolder/src/styles.css
-var styles_default = ".imgFolderBtn {\r\n    aspect-ratio: 1 / 1;\r\n    padding: 7px;\r\n    cursor: pointer;\r\n}\r\n\r\n.imgFolderBtn path {\r\n    fill: var(--interactive-normal);\r\n}\r\n\r\n.imgFolderBtn:hover path {\r\n    fill: var(--interactive-hover);\r\n}\r\n\r\n.imageTab {\r\n    width: 100%;\r\n    height: 100%;\r\n    display: flex;\r\n    flex-direction: column;\r\n}\r\n\r\n.imageTab .icon {\r\n    cursor: pointer;\r\n    width: 35px;\r\n    height: 35px;\r\n}\r\n\r\n.imageTab .icon path {\r\n    fill: hsl(190, 80%, 42%);\r\n}\r\n\r\n.imageTab {\r\n    color: var(--text-normal);\r\n}\r\n\r\n.pathContainer {\r\n    display: flex;\r\n    align-items: center;\r\n    width: 100%;\r\n}\r\n\r\n.pathContainer > :first-child {\r\n    margin-left: 10px;\r\n}\r\n\r\n.pathContainer > :last-child {\r\n    margin-right: 15px;\r\n}\r\n\r\n.pathContainer .path {\r\n    flex-grow: 1;\r\n    padding-left: 5px;\r\n    padding-right: 5px;\r\n    overflow: hidden;\r\n    text-overflow: ellipsis;\r\n    direction: rtl;\r\n    text-align: left;\r\n}\r\n\r\n.imageTab .content {\r\n    flex-grow: 1;\r\n    overflow-y: auto;\r\n    /* hardcoding this because I'm lazy */\r\n    height: 366px;\r\n}\r\n\r\n.imageTab .images {\r\n    display: grid;\r\n    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));\r\n    padding: 7px;\r\n    gap: 7px;\r\n}\r\n\r\n.imageTab img {\r\n    width: 100%;\r\n    height: 100%;\r\n    object-fit: cover;\r\n    cursor: pointer;\r\n}\r\n\r\n.imageTab .folderReturn {\r\n    float: right;\r\n}\r\n\r\n.imageTab .folder {\r\n    display: flex;\r\n    border-radius: 12px;\r\n    background-color: var(--primary-500);\r\n    padding: 6px;\r\n    margin: 7px;\r\n    cursor: pointer;\r\n    transition: background-color 0.2s ease-in-out;\r\n    align-items: center;\r\n    gap: 5px;\r\n}\r\n\r\n.imageTab .folder:hover {\r\n    background-color: var(--primary-430);\r\n}\r\n\r\n.folder .folderName {\r\n    flex-grow: 1;\r\n}\r\n\r\n.if-nameWrap {\r\n    width: 100%;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n}\r\n\r\n.if-nameInput {\r\n    width: 90%;\r\n    border-radius: 12px;\r\n    padding: 8px;\r\n}\r\n\r\n.imageTab .image {\r\n    position: relative;\r\n}\r\n\r\n.imageTab .image .icon {\r\n    position: absolute;\r\n    top: 5px;\r\n    right: 5px;\r\n    cursor: pointer;\r\n    opacity: 0;\r\n    transition: opacity 0.2s ease-in-out;\r\n}\r\n\r\n.imageTab .image:hover .icon {\r\n    opacity: 1;\r\n}\r\n\r\n.if-caption-creator {\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    gap: 5px;\r\n}\r\n\r\n.if-caption-creator canvas {\r\n    width: 100%;\r\n}\r\n\r\n.if-caption-settings {\r\n    display: flex;\r\n    align-items: center;\r\n    gap: 5px;\r\n    color: var(--text-normal);\r\n}\r\n\r\n.if-caption-settings .if-caption {\r\n    flex-grow: 1;\r\n}";
+var styles_default = ".imgFolderBtn {\r\n    aspect-ratio: 1 / 1;\r\n    padding: 0;\r\n    cursor: pointer;\r\n    height: 23px;\r\n}\r\n\r\n.imgFolderBtn path {\r\n    fill: var(--interactive-normal);\r\n}\r\n\r\n.imgFolderBtn:hover path {\r\n    fill: var(--interactive-hover);\r\n}\r\n\r\n.imageTab {\r\n    width: 100%;\r\n    height: 100%;\r\n    display: flex;\r\n    flex-direction: column;\r\n}\r\n\r\n.imageTab .icon {\r\n    cursor: pointer;\r\n    width: 35px;\r\n    height: 35px;\r\n}\r\n\r\n.imageTab .icon path {\r\n    fill: hsl(190, 80%, 42%);\r\n}\r\n\r\n.imageTab {\r\n    color: var(--text-normal);\r\n}\r\n\r\n.pathContainer {\r\n    display: flex;\r\n    align-items: center;\r\n    width: 100%;\r\n}\r\n\r\n.pathContainer > :first-child {\r\n    margin-left: 10px;\r\n}\r\n\r\n.pathContainer > :last-child {\r\n    margin-right: 15px;\r\n}\r\n\r\n.pathContainer .path {\r\n    flex-grow: 1;\r\n    padding-left: 5px;\r\n    padding-right: 5px;\r\n    overflow: hidden;\r\n    text-overflow: ellipsis;\r\n    direction: rtl;\r\n    text-align: left;\r\n}\r\n\r\n.imageTab .content {\r\n    flex-grow: 1;\r\n    overflow-y: auto;\r\n    /* hardcoding this because I'm lazy */\r\n    height: 366px;\r\n}\r\n\r\n.imageTab .images {\r\n    display: grid;\r\n    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));\r\n    padding: 7px;\r\n    gap: 7px;\r\n}\r\n\r\n.imageTab img {\r\n    width: 100%;\r\n    height: 100%;\r\n    object-fit: cover;\r\n    cursor: pointer;\r\n}\r\n\r\n.imageTab .folderReturn {\r\n    float: right;\r\n}\r\n\r\n.imageTab .folder {\r\n    display: flex;\r\n    border-radius: 12px;\r\n    background-color: var(--primary-500);\r\n    padding: 6px;\r\n    margin: 7px;\r\n    cursor: pointer;\r\n    transition: background-color 0.2s ease-in-out;\r\n    align-items: center;\r\n    gap: 5px;\r\n}\r\n\r\n.imageTab .folder:hover {\r\n    background-color: var(--primary-430);\r\n}\r\n\r\n.folder .folderName {\r\n    flex-grow: 1;\r\n}\r\n\r\n.if-nameWrap {\r\n    width: 100%;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n}\r\n\r\n.if-nameInput {\r\n    width: 90%;\r\n    border-radius: 12px;\r\n    padding: 8px;\r\n}\r\n\r\n.imageTab .image {\r\n    position: relative;\r\n}\r\n\r\n.imageTab .image .icon {\r\n    position: absolute;\r\n    top: 5px;\r\n    right: 5px;\r\n    cursor: pointer;\r\n    opacity: 0;\r\n    transition: opacity 0.2s ease-in-out;\r\n}\r\n\r\n.imageTab .image:hover .icon {\r\n    opacity: 1;\r\n}\r\n\r\n.if-caption-creator {\r\n    display: flex;\r\n    flex-direction: column;\r\n    align-items: center;\r\n    gap: 5px;\r\n}\r\n\r\n.if-caption-creator canvas {\r\n    width: 100%;\r\n}\r\n\r\n.if-caption-settings {\r\n    display: flex;\r\n    align-items: center;\r\n    gap: 5px;\r\n    color: var(--text-normal);\r\n}\r\n\r\n.if-caption-settings .if-caption {\r\n    flex-grow: 1;\r\n}";
 
 // assets/folder-plus-outline.svg
 var folder_plus_outline_default = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 19C13 19.34 13.04 19.67 13.09 20H4C2.9 20 2 19.11 2 18V6C2 4.89 2.89 4 4 4H10L12 6H20C21.1 6 22 6.89 22 8V13.81C21.39 13.46 20.72 13.22 20 13.09V8H4V18H13.09C13.04 18.33 13 18.66 13 19M20 18V15H18V18H15V20H18V23H20V20H23V18H20Z" /></svg>';
@@ -63,8 +63,6 @@ var pickerModule = BdApi.Webpack.getModule((module) => Object.values(module).som
 var toggleExpressionPicker = Object.values(pickerModule).find((v) => v.toString().includes("activeView==="));
 var closeExpressionPicker = Object.values(pickerModule).find((v) => v.toString().includes("activeView:null"));
 var pickerStore = Object.values(pickerModule).find((v) => v.getState);
-var imgAdder = Object.values(BdApi.Webpack.getModule((module) => Object.values(module)?.[0]?.addFile))[0];
-var chatKeyHandlers = BdApi.Webpack.getModule((exports) => Object.values(exports)?.[0]?.toString?.().includes("selectNextCommandOption"));
 var mimeTypes = {
   "jpg": "image/jpeg",
   "jpeg": "image/jpeg",
@@ -74,7 +72,7 @@ var mimeTypes = {
   "gif": "image/gif"
 };
 
-// util/bdFuncs.ts
+// shared/bdFuncs.ts
 var createCallbackHandler = (callbackName) => {
   const fullName = callbackName + "Callbacks";
   plugin[fullName] = [];
@@ -247,13 +245,18 @@ async function uploadImage(folderPath) {
   }
 }
 
+// shared/modules.ts
+var imgAdder = BdApi.Webpack.getByKeys("addFile");
+var chatKeyHandlers = BdApi.Webpack.getByStrings("selectNextCommandOption", { defaultExport: false });
+var fileModule = BdApi.Webpack.getModule((m) => m.Z?.toString().includes("filenameLinkWrapper"));
+
 // plugins/ImageFolder/src/uploader.ts
 var fs2 = __require("fs");
 var { join: join2 } = __require("path");
 var Buffer2 = __require("buffer");
 var submitMessage;
 onStart(() => {
-  BdApi.Patcher.before("ImageFolder", chatKeyHandlers, Object.keys(chatKeyHandlers)[0], (_, args) => {
+  BdApi.Patcher.before("ImageFolder", chatKeyHandlers, "Z", (_, args) => {
     submitMessage = args[0].submit;
   });
 });

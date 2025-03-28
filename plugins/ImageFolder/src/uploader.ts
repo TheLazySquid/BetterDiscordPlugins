@@ -1,5 +1,6 @@
 import { onStart } from "$shared/bdFuncs";
-import { imgAdder, chatKeyHandlers, closeExpressionPicker } from "./constants";
+import { chatKeyHandlers, imgAdder } from "$shared/modules";
+import { closeExpressionPicker } from "./constants";
 
 const fs = require('fs')
 const { join } = require('path')
@@ -8,9 +9,9 @@ const Buffer = require('buffer')
 let submitMessage: Function;
 
 onStart(() => {
-    BdApi.Patcher.before("ImageFolder", chatKeyHandlers, Object.keys(chatKeyHandlers)[0], (_, args: any) => {
+    BdApi.Patcher.before("ImageFolder", chatKeyHandlers, "Z", (_, args: any) => {
         submitMessage = args[0].submit;
-    })
+    });
 })
 
 export function sendRawImage(name: string, path: string) {

@@ -1,7 +1,8 @@
 .imgFolderBtn {
     aspect-ratio: 1 / 1;
-    padding: 7px;
+    padding: 0;
     cursor: pointer;
+    height: 23px;
 }
 
 .imgFolderBtn path {
