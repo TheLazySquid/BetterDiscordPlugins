@@ -61,24 +61,25 @@ onStart(() => {
     BdApi.DOM.addStyle("imgFolderStyles", styles)
 
     BdApi.Patcher.after("ImageFolder", buttonsModule, "type", (_, __, returnVal) => {
-        if(!returnVal || !settings.showButton) return returnVal
+        if(!returnVal || !settings.showButton) return returnVal;
         let gifIndex = returnVal.props.children.findIndex((child: any) => child.key == 'gif');
         if(gifIndex === -1) return;
         
-        let type = returnVal.props.children[gifIndex].props.type
+        let type = returnVal.props.children[gifIndex].props.type;
 
         let div = BdApi.React.createElement('div', {
             className: 'imgFolderBtn',
-            onClick: () => {
-                // for some reason the expression picker will always close itself before this runs, but that's above my paygrade
-                toggleExpressionPicker('if-image', type)
+            onMouseDown: () => {
+                // genuinely no idea why this setTimeout is needed
+                setTimeout(() => toggleExpressionPicker('if-image', type));
             },
-            dangerouslySetInnerHTML: { __html: imagePlusOutline }
-        })
+            dangerouslySetInnerHTML: { __html: imagePlusOutline },
+            key: "if-image"
+        });
 
-        returnVal.props.children.splice(gifIndex, 0, div)
+        returnVal.props.children.splice(gifIndex, 0, div);
         
-        return returnVal
+        return returnVal;
     })
 
     let unpatch: () => void;
