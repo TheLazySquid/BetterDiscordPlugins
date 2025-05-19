@@ -1,6 +1,6 @@
 import futura from '$assets/Futura Condensed Extra Bold.otf'
-import { sendFile } from '../uploader'
 import { onStart, onStop } from '$shared/bdFuncs';
+import { uploadFile } from '$shared/upload';
 
 const React = BdApi.React;
 let font: FontFace = new FontFace('futuraBoldCondensed', futura);
@@ -56,7 +56,7 @@ export default function AddCaption({ name, src, onSubmit }:
         const blob: Blob = await new Promise(resolve => canvas.current!.toBlob((blob) => resolve(blob!)))
         const file = new File([blob], newName, { type: 'image/png' })
 
-        sendFile(file)
+        uploadFile(file);
     })
 
     function render() {

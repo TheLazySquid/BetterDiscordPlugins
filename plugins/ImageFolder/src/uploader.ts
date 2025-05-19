@@ -1,20 +1,13 @@
-import { onStart } from "$shared/bdFuncs";
-import { chatKeyHandlers, imgAdder } from "$shared/modules";
+import { uploadFile } from "$shared/upload";
 import { closeExpressionPicker } from "./constants";
 
 const fs = require('fs')
 const { join } = require('path')
 const Buffer = require('buffer')
 
-let submitMessage: Function;
-
-onStart(() => {
-    BdApi.Patcher.before("ImageFolder", chatKeyHandlers, "Z", (_, args: any) => {
-        submitMessage = args[0].submit;
-    });
-})
-
 export function sendRawImage(name: string, path: string) {
+    closeExpressionPicker();
+
     const contents = fs.readFileSync(join(__dirname, 'imageFolder', path, name), {
         encoding: 'binary'
     }) as string;
@@ -23,11 +16,12 @@ export function sendRawImage(name: string, path: string) {
     const buff = Buffer.from(contents, 'binary')
     const file = new File([buff], name, { type: 'image/png' })
 
-    sendFile(file)
+    uploadFile(file);
 }
 
 export async function sendProcessedImage(name: string, src: string) {
     if(!name || !src) return
+    closeExpressionPicker();
 
     const img = new Image()
     img.src = src
@@ -46,26 +40,5 @@ export async function sendProcessedImage(name: string, src: string) {
     const blob: Blob = await new Promise(resolve => canvas.toBlob((blob) => resolve(blob!)))
     const file = new File([blob], fileName, { type: 'image/png' })
 
-    sendFile(file)
-}
-
-export async function sendFile(file: File) {
-    const channelId = location.href.split('/').pop()
-    if (!channelId) return
-    closeExpressionPicker();
-    
-    // add the image to the message
-    imgAdder.addFile({
-        channelId,
-        draftType: 0,
-        showLargeMessageDialog: false,
-        file: {
-            file,
-            isThumbnail: false,
-            platform: 1
-        }
-    })
-
-    // send the message
-    submitMessage()
+    uploadFile(file);
 }

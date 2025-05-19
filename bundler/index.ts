@@ -4,6 +4,7 @@ import waitForEnter, { write } from "./util.ts";
 import { join } from "node:path";
 import { existsSync } from "node:fs";
 import { parseArgs } from "node:util";
+import { metaPlugin } from "./meta.ts";
 
 const args = parseArgs({
     args: process.argv.slice(2),
@@ -67,7 +68,7 @@ let esbuildConfig: BuildOptions = {
         js: footer
     },
     format: "esm",
-    plugins: [],
+    plugins: [metaPlugin(args.plugin)],
     external: [
         "fs", "path", "buffer"
     ],

@@ -1,7 +1,7 @@
 /**
  * @name GifCaptioner
  * @description A BetterDiscord plugin that allows you to add a caption to discord gifs
- * @version 0.4.1
+ * @version 0.4.2
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -59,10 +59,10 @@ var __toBinary = /* @__PURE__ */ (() => {
 
 // node_modules/gif.js/dist/gif.js
 var require_gif = __commonJS({
-  "node_modules/gif.js/dist/gif.js"(exports, module) {
+  "node_modules/gif.js/dist/gif.js"(exports, module2) {
     (function(f) {
-      if (typeof exports === "object" && typeof module !== "undefined") {
-        module.exports = f();
+      if (typeof exports === "object" && typeof module2 !== "undefined") {
+        module2.exports = f();
       } else if (typeof define === "function" && define.amd) {
         define([], f);
       } else {
@@ -79,7 +79,7 @@ var require_gif = __commonJS({
         g.GIF = f();
       }
     })(function() {
-      var define2, module2, exports2;
+      var define2, module3, exports2;
       return function e(t, n, r) {
         function s(o2, u) {
           if (!n[o2]) {
@@ -101,12 +101,12 @@ var require_gif = __commonJS({
         var i = typeof __require == "function" && __require;
         for (var o = 0; o < r.length; o++) s(r[o]);
         return s;
-      }({ 1: [function(require2, module3, exports3) {
+      }({ 1: [function(require2, module4, exports3) {
         function EventEmitter() {
           this._events = this._events || {};
           this._maxListeners = this._maxListeners || void 0;
         }
-        module3.exports = EventEmitter;
+        module4.exports = EventEmitter;
         EventEmitter.EventEmitter = EventEmitter;
         EventEmitter.prototype._events = void 0;
         EventEmitter.prototype._maxListeners = void 0;
@@ -279,7 +279,7 @@ var require_gif = __commonJS({
         function isUndefined(arg) {
           return arg === void 0;
         }
-      }, {}], 2: [function(require2, module3, exports3) {
+      }, {}], 2: [function(require2, module4, exports3) {
         var UA, browser, mode, platform, ua;
         ua = navigator.userAgent.toLowerCase();
         platform = navigator.platform.toLowerCase();
@@ -289,8 +289,8 @@ var require_gif = __commonJS({
         browser[browser.name] = true;
         browser[browser.name + parseInt(browser.version, 10)] = true;
         browser.platform[browser.platform.name] = true;
-        module3.exports = browser;
-      }, {}], 3: [function(require2, module3, exports3) {
+        module4.exports = browser;
+      }, {}], 3: [function(require2, module4, exports3) {
         var EventEmitter, GIF2, browser, extend = function(child, parent) {
           for (var key in parent) {
             if (hasProp.call(parent, key)) child[key] = parent[key];
@@ -554,7 +554,7 @@ var require_gif = __commonJS({
           };
           return GIF3;
         }(EventEmitter);
-        module3.exports = GIF2;
+        module4.exports = GIF2;
       }, { "./browser.coffee": 2, events: 1 }] }, {}, [3])(3);
     });
   }
@@ -1242,10 +1242,6 @@ var createCallbackHandler = (callbackName) => {
 var onStart = createCallbackHandler("start");
 var onStop = createCallbackHandler("stop");
 var onSwitch = createCallbackHandler("onSwitch");
-function setSettingsPanel(el) {
-  if (typeof el === "function") plugin.getSettingsPanel = el;
-  plugin.getSettingsPanel = () => el;
-}
 
 // shared/dom.ts
 function watchElement(selector, callback) {
@@ -1295,29 +1291,64 @@ var GIFEncoder,renderFrame;GIFEncoder=require("./GIFEncoder.js");renderFrame=fun
 
 // shared/modules.ts
 var imgAdder = BdApi.Webpack.getByKeys("addFile");
-var chatKeyHandlers = BdApi.Webpack.getAllByStrings("selectNextCommandOption");
+var chatKeyHandlers = BdApi.Webpack.getByStrings("selectNextCommandOption", { defaultExport: false });
 var fileModule = BdApi.Webpack.getModule((m) => m.Z?.toString().includes("filenameLinkWrapper"));
+var CloudUploader = BdApi.Webpack.getByStrings("uploadFileToCloud", { searchExports: true });
+var uploader = BdApi.Webpack.getByKeys("instantBatchUpload");
+var channelStore = BdApi.Webpack.getStore("SelectedChannelStore");
 
-// plugins/GifCaptioner/src/settings.ts
-var settings = {
-  autoSend: BdApi.Data.load("GifCaptioner", "autoSend") ?? true
-};
-function createSettings() {
-  return BdApi.UI.buildSettingsPanel({
-    settings: [
-      {
-        type: "switch",
-        id: "autoSend",
-        value: settings.autoSend,
-        name: "Automatically send gifs after rendering?",
-        note: ""
-      }
-    ],
-    onChange: (_, id, value) => {
-      settings[id] = value;
-      BdApi.Data.save("GifCaptioner", id, value);
-    }
+// meta-ns:meta
+var pluginName = "GifCaptioner";
+
+// shared/upload.ts
+var pendingReply = null;
+var [module, createKey] = BdApi.Webpack.getWithKey(BdApi.Webpack.Filters.byStrings("CREATE_PENDING_REPLY"));
+var deleteKey;
+var setShouldMentionKey;
+for (const [k, v] of Object.entries(BdApi.Webpack)) {
+  const str = v.toString();
+  if (str.includes("DELETE_PENDING_REPLY")) deleteKey = k;
+  else if (str.includes("SET_PENDING_REPLY_SHOULD_MENTION")) setShouldMentionKey = k;
+}
+onStart(() => {
+  BdApi.Patcher.after(pluginName, module, createKey, (_, args) => {
+    if (args[0]) pendingReply = args[0];
   });
+  BdApi.Patcher.after(pluginName, module, deleteKey, () => {
+    pendingReply = null;
+  });
+  BdApi.Patcher.after(pluginName, module, setShouldMentionKey, (_, args) => {
+    if (!args[0] || pendingReply?.channel.id === args[0]) return;
+    pendingReply.shouldMention = args[1];
+  });
+});
+async function uploadFile(file) {
+  const channelId = channelStore.getCurrentlySelectedChannelId();
+  const upload = new CloudUploader({ file, platform: 1 }, channelId);
+  let options = {
+    channelId,
+    uploads: [upload],
+    draftType: 0,
+    parsedMessage: {
+      content: "",
+      invalidEmojis: [],
+      tts: false,
+      channel_id: channelId
+    }
+  };
+  if (pendingReply) {
+    options.options = {
+      allowedMentions: {
+        replied_user: pendingReply.shouldMention
+      },
+      messageReference: {
+        channel_id: pendingReply.message.channel_id,
+        guild_id: pendingReply.channel.guild_id,
+        message_id: pendingReply.message.id
+      }
+    };
+  }
+  await uploader.uploadFiles(options);
 }
 
 // plugins/GifCaptioner/src/index.ts
@@ -1334,7 +1365,7 @@ watchElement(gifSelector, (gif) => {
   captionBtn.addEventListener("click", async (e) => {
     e.stopPropagation();
     e.preventDefault();
-    let settings2 = { caption: "", fontSize: 35 };
+    let settings = { caption: "", fontSize: 35 };
     let src = gif.src;
     let width;
     let parsedGif;
@@ -1349,16 +1380,16 @@ watchElement(gifSelector, (gif) => {
       src,
       width,
       onUpdate: (caption, fontSize) => {
-        settings2.caption = caption;
-        settings2.fontSize = parseInt(fontSize);
+        settings.caption = caption;
+        settings.fontSize = parseInt(fontSize);
       },
       isVideo
     });
     const onConfirm = () => {
       renderGif(
         src,
-        settings2.caption,
-        settings2.fontSize,
+        settings.caption,
+        settings.fontSize,
         isVideo,
         parsedGif
       );
@@ -1377,41 +1408,6 @@ function getChannelId() {
   const channelID = location.href.split("/").pop();
   if (isNaN(Number(channelID))) return null;
   return channelID;
-}
-var font = new FontFace("futuraBoldCondensed", Futura_Condensed_Extra_Bold_default);
-var chatKeyHandlers2 = BdApi.Webpack.getModule(
-  (exports) => Object.values(exports)?.[0]?.toString?.().includes("selectNextCommandOption")
-);
-var submitMessage;
-onStart(() => {
-  document.fonts.add(font);
-  BdApi.Patcher.before(
-    "GifCaptioner",
-    chatKeyHandlers2,
-    Object.keys(chatKeyHandlers2)[0],
-    (_, args) => {
-      submitMessage = args[0].submit;
-    }
-  );
-});
-onStop(() => {
-  document.fonts.delete(font);
-  BdApi.Patcher.unpatchAll("GifCaptioner");
-});
-function uploadFile(channelId, file) {
-  imgAdder.addFile({
-    channelId,
-    draftType: 0,
-    showLargeMessageDialog: false,
-    file: {
-      file,
-      isThumbnail: false,
-      platform: 1
-    }
-  });
-  if (settings.autoSend) {
-    submitMessage();
-  }
 }
 var workerUrl = null;
 onStart(() => {
@@ -1517,7 +1513,7 @@ async function renderGif(originalSrc, caption, fontSize, isVideo, parsedGif) {
     document.body.removeChild(progressDialog);
     console.log("Final size:", blob.size);
     let file = new File([blob], "rendered.gif", { type: "image/gif" });
-    uploadFile(channel, file);
+    uploadFile(file);
   });
   let fps = frames / duration;
   let scaledCanvas = document.createElement("canvas");
@@ -1593,16 +1589,18 @@ async function renderGif(originalSrc, caption, fontSize, isVideo, parsedGif) {
   progressDialog.querySelector("label").innerHTML = "Encoding...";
   gif.render();
 }
+var font = new FontFace("futuraBoldCondensed", Futura_Condensed_Extra_Bold_default);
 onStart(() => {
   BdApi.DOM.addStyle("gif-captioner-style", styles_default);
+  document.fonts.add(font);
 });
 onStop(() => {
   BdApi.DOM.removeStyle("gif-captioner-style");
+  document.fonts.delete(font);
   let btns = document.querySelectorAll(".gif-captioner-btn");
   for (let btn of btns) {
     btn.remove();
   }
 });
-setSettingsPanel(createSettings);
   }
 }

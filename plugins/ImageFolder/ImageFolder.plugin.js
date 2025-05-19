@@ -1,7 +1,7 @@
 /**
  * @name ImageFolder
  * @description A BetterDiscord plugin that allows you to save and send images from a folder for easy access
- * @version 0.4.6
+ * @version 0.4.7
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -56,7 +56,7 @@ var pencil_default = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24
 // plugins/ImageFolder/src/constants.ts
 var expressionModule = BdApi.Webpack.getModule((m) => m.type?.toString?.().includes("onSelectGIF"));
 var buttonsModule = BdApi.Webpack.getModule((m) => m.type?.toString?.().includes(".isSubmitButtonEnabled", ".getActiveCommand"));
-var pickerModule = BdApi.Webpack.getModule((module) => Object.values(module).some((v) => {
+var pickerModule = BdApi.Webpack.getModule((module2) => Object.values(module2).some((v) => {
   if (typeof v !== "function") return false;
   return v.toString().includes("lastActiveView");
 }));
@@ -249,27 +249,80 @@ async function uploadImage(folderPath) {
 var imgAdder = BdApi.Webpack.getByKeys("addFile");
 var chatKeyHandlers = BdApi.Webpack.getByStrings("selectNextCommandOption", { defaultExport: false });
 var fileModule = BdApi.Webpack.getModule((m) => m.Z?.toString().includes("filenameLinkWrapper"));
+var CloudUploader = BdApi.Webpack.getByStrings("uploadFileToCloud", { searchExports: true });
+var uploader = BdApi.Webpack.getByKeys("instantBatchUpload");
+var channelStore = BdApi.Webpack.getStore("SelectedChannelStore");
+
+// meta-ns:meta
+var pluginName = "ImageFolder";
+
+// shared/upload.ts
+var pendingReply = null;
+var [module, createKey] = BdApi.Webpack.getWithKey(BdApi.Webpack.Filters.byStrings("CREATE_PENDING_REPLY"));
+var deleteKey;
+var setShouldMentionKey;
+for (const [k, v] of Object.entries(BdApi.Webpack)) {
+  const str = v.toString();
+  if (str.includes("DELETE_PENDING_REPLY")) deleteKey = k;
+  else if (str.includes("SET_PENDING_REPLY_SHOULD_MENTION")) setShouldMentionKey = k;
+}
+onStart(() => {
+  BdApi.Patcher.after(pluginName, module, createKey, (_, args) => {
+    if (args[0]) pendingReply = args[0];
+  });
+  BdApi.Patcher.after(pluginName, module, deleteKey, () => {
+    pendingReply = null;
+  });
+  BdApi.Patcher.after(pluginName, module, setShouldMentionKey, (_, args) => {
+    if (!args[0] || pendingReply?.channel.id === args[0]) return;
+    pendingReply.shouldMention = args[1];
+  });
+});
+async function uploadFile(file) {
+  const channelId = channelStore.getCurrentlySelectedChannelId();
+  const upload = new CloudUploader({ file, platform: 1 }, channelId);
+  let options = {
+    channelId,
+    uploads: [upload],
+    draftType: 0,
+    parsedMessage: {
+      content: "",
+      invalidEmojis: [],
+      tts: false,
+      channel_id: channelId
+    }
+  };
+  if (pendingReply) {
+    options.options = {
+      allowedMentions: {
+        replied_user: pendingReply.shouldMention
+      },
+      messageReference: {
+        channel_id: pendingReply.message.channel_id,
+        guild_id: pendingReply.channel.guild_id,
+        message_id: pendingReply.message.id
+      }
+    };
+  }
+  await uploader.uploadFiles(options);
+}
 
 // plugins/ImageFolder/src/uploader.ts
 var fs2 = __require("fs");
 var { join: join2 } = __require("path");
 var Buffer2 = __require("buffer");
-var submitMessage;
-onStart(() => {
-  BdApi.Patcher.before("ImageFolder", chatKeyHandlers, "Z", (_, args) => {
-    submitMessage = args[0].submit;
-  });
-});
 function sendRawImage(name, path) {
+  closeExpressionPicker();
   const contents = fs2.readFileSync(join2(__dirname, "imageFolder", path, name), {
     encoding: "binary"
   });
   const buff = Buffer2.from(contents, "binary");
   const file = new File([buff], name, { type: "image/png" });
-  sendFile(file);
+  uploadFile(file);
 }
 async function sendProcessedImage(name, src) {
   if (!name || !src) return;
+  closeExpressionPicker();
   const img = new Image();
   img.src = src;
   await img.decode();
@@ -283,23 +336,7 @@ async function sendProcessedImage(name, src) {
   let fileName = parts.join(".") + ".png";
   const blob = await new Promise((resolve) => canvas.toBlob((blob2) => resolve(blob2)));
   const file = new File([blob], fileName, { type: "image/png" });
-  sendFile(file);
-}
-async function sendFile(file) {
-  const channelId = location.href.split("/").pop();
-  if (!channelId) return;
-  closeExpressionPicker();
-  imgAdder.addFile({
-    channelId,
-    draftType: 0,
-    showLargeMessageDialog: false,
-    file: {
-      file,
-      isThumbnail: false,
-      platform: 1
-    }
-  });
-  submitMessage();
+  uploadFile(file);
 }
 
 // assets/Futura Condensed Extra Bold.otf
@@ -347,7 +384,7 @@ function AddCaption({ name, src, onSubmit }) {
     let newName = `${parts.join(".")}-captioned.png`;
     const blob = await new Promise((resolve) => canvas.current.toBlob((blob2) => resolve(blob2)));
     const file = new File([blob], newName, { type: "image/png" });
-    sendFile(file);
+    uploadFile(file);
   });
   function render() {
     if (!canvas.current) return;

@@ -12,3 +12,7 @@ declare module "*.otf" {
     const content: Uint8Array;
     export default content;
 }
+
+declare module "meta" {
+    export const pluginName: string;
+}

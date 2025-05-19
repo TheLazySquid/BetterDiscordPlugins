@@ -4,13 +4,12 @@ import CaptionBtnSVG from "$assets/page-layout-header.svg";
 import css from "./styles.css";
 import { getLines } from "./util.ts";
 import captionCreator from "./captionCreator.jsx";
-import { onStart, onStop, setSettingsPanel } from "$shared/bdFuncs.ts";
+import { onStart, onStop } from "$shared/bdFuncs.ts";
 import { watchElement } from "$shared/dom.ts";
 import { decompressFrames, type ParsedFrame, type ParsedGif, parseGIF } from "gifuct-js";
 // @ts-ignore
 import GifWorker from "./gif.worker.txt";
-import { imgAdder } from "$shared/modules.ts";
-import { createSettings, settings } from "./settings.ts";
+import { uploadFile } from "$shared/upload.ts";
 
 let rendering: boolean = false;
 
@@ -87,51 +86,6 @@ function getChannelId() {
     // make sure channelID is a number
     if (isNaN(Number(channelID))) return null;
     return channelID;
-}
-
-let font = new FontFace("futuraBoldCondensed", futura);
-
-const chatKeyHandlers: any = BdApi.Webpack.getModule((exports) =>
-    Object.values<any>(exports)?.[0]
-        ?.toString?.()
-        .includes("selectNextCommandOption")
-);
-let submitMessage: Function;
-
-onStart(() => {
-    document.fonts.add(font);
-    BdApi.Patcher.before(
-        "GifCaptioner",
-        chatKeyHandlers,
-        Object.keys(chatKeyHandlers)[0],
-        (_, args: any) => {
-            submitMessage = args[0].submit;
-        }
-    );
-});
-
-onStop(() => {
-    document.fonts.delete(font);
-    BdApi.Patcher.unpatchAll("GifCaptioner");
-});
-
-function uploadFile(channelId: string, file: File) {
-    // add the GIF to the message
-    imgAdder.addFile({
-        channelId,
-        draftType: 0,
-        showLargeMessageDialog: false,
-        file: {
-            file,
-            isThumbnail: false,
-            platform: 1
-        }
-    });
-
-    // send the message
-    if(settings.autoSend) {
-        submitMessage();
-    }
 }
 
 let workerUrl: string | null = null;
@@ -276,7 +230,7 @@ async function renderGif(
         console.log("Final size:", blob.size);
 
         let file = new File([blob], "rendered.gif", { type: "image/gif" });
-        uploadFile(channel, file);
+        uploadFile(file);
     });
 
     let fps = frames / duration;
@@ -377,12 +331,16 @@ async function renderGif(
     gif.render();
 }
 
+let font = new FontFace("futuraBoldCondensed", futura);
+
 onStart(() => {
     BdApi.DOM.addStyle("gif-captioner-style", css);
+    document.fonts.add(font);
 });
 
 onStop(() => {
     BdApi.DOM.removeStyle("gif-captioner-style");
+    document.fonts.delete(font);
 
     // cleanup any buttons that were added
     let btns = document.querySelectorAll(".gif-captioner-btn");
@@ -390,5 +348,3 @@ onStop(() => {
         btn.remove();
     }
 });
-
-setSettingsPanel(createSettings);
