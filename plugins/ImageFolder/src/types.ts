@@ -1,13 +1,17 @@
-export interface IImg {
+export interface Folder {
+    // object rather than a string so it's easier to potentially add renaming and maybe icons in the future
     name: string;
-    lastModified: number;
-    lastSent: number;
 }
 
-export interface IImgFolder {
-    folders: string[];
-    images: IImg[];
-    path: string;
+export interface Media {
+    name: string;
+    type: "image" | "audio" | "video";
+    mime: string;
+    size: number;
+    lastUsed: number;
 }
 
-export type sortType = "lastSent" | "lastModified" | "name";
+export interface DirContents {
+    folders: Folder[];
+    media: Media[];
+}

@@ -1,4 +1,4 @@
-import { onStart, onStop } from "./bdFuncs.ts";
+import { onStart, onStop } from "../bd";
 
 /**
  * Watches for an element with a given selector to be added to the DOM

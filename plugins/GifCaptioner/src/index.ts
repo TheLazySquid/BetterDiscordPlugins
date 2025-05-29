@@ -2,8 +2,8 @@ import futura from "$assets/Futura Condensed Extra Bold.otf";
 import CaptionBtnSVG from "$assets/page-layout-header.svg";
 import css from "./styles.css";
 import captionCreator from "./captionCreator.jsx";
-import { onStart, onStop } from "$shared/bdFuncs.ts";
-import { watchElement } from "$shared/dom.ts";
+import { onStart, onStop } from "$shared/bd.js";
+import { watchElement } from "$shared/api/dom.js";
 import { type ParsedGif, parseGIF } from "gifuct-js";
 import { renderGif } from "./render.js";
 

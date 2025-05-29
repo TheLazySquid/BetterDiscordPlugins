@@ -2,29 +2,26 @@
   "name": "betterdiscordplugins",
   "author": "TheLazySquid",
   "module": "index.ts",
-  "type": "module",
+  "devDependencies": {
+    "@types/betterdiscord": "github:Zerthox/betterdiscord-types",
+    "@types/bun": "latest",
+    "@types/gif.js": "^0.2.5",
+    "@types/react": "^19.1.6",
+    "arraybuffer-isbinary": "^1.0.2",
+    "esbuild": "^0.24.2",
+    "events": "^3.3.0",
+    "gif.js": "^0.2.0",
+    "gifuct-js": "^2.1.2",
+    "unzipit": "^1.4.3"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
   "scripts": {
     "GifCaptioner": "bun run bundler/index.ts --plugin GifCaptioner",
     "ImageFolder": "bun run bundler/index.ts --plugin ImageFolder",
     "WiderUserArea": "bun run bundler/index.ts --plugin WiderUserArea",
     "ZipPreview": "bun run bundler/index.ts --plugin ZipPreview"
   },
-  "devDependencies": {
-    "@types/betterdiscord": "github:Zerthox/betterdiscord-types",
-    "@types/bun": "latest",
-    "@types/gif.js": "^0.2.5",
-    "@types/react": "^19.0.2",
-    "arraybuffer-isbinary": "^1.0.2",
-    "esbuild": "^0.24.2",
-    "events": "^3.3.0",
-    "gifuct-js": "^2.1.2",
-    "react": "^19.0.0",
-    "unzipit": "^1.4.3"
-  },
-  "peerDependencies": {
-    "typescript": "^5.0.0"
-  },
-  "dependencies": {
-    "gif.js": "^0.2.0"
-  }
+  "type": "module"
 }

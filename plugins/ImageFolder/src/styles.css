@@ -1,156 +1,167 @@
-.imgFolderBtn {
+.if-button {
     aspect-ratio: 1 / 1;
     padding: 0;
     cursor: pointer;
     height: 23px;
 }
 
-.imgFolderBtn path {
+.if-button path {
     fill: var(--interactive-normal);
 }
 
-.imgFolderBtn:hover path {
+.if-button:hover path {
     fill: var(--interactive-hover);
 }
 
-.imageTab {
+.if-view {
     width: 100%;
     height: 100%;
     display: flex;
     flex-direction: column;
+    min-height: 0;
 }
 
-.imageTab .icon {
-    cursor: pointer;
-    width: 35px;
-    height: 35px;
+.if-svg-wrap {
+    display: contents;
 }
 
-.imageTab .icon path {
-    fill: hsl(190, 80%, 42%);
+.if-view svg {
+    width: 28px;
+    height: 28px;
+    color: #15A4C1;
 }
 
-.imageTab {
-    color: var(--text-normal);
-}
-
-.pathContainer {
+.if-path, .if-back, .if-controls {
     display: flex;
     align-items: center;
-    width: 100%;
 }
 
-.pathContainer > :first-child {
-    margin-left: 10px;
+.if-controls {
+    padding: 0 6px;
 }
 
-.pathContainer > :last-child {
-    margin-right: 15px;
+.if-path {
+    padding-left: 8px;
 }
 
-.pathContainer .path {
-    flex-grow: 1;
-    padding-left: 5px;
-    padding-right: 5px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    direction: rtl;
-    text-align: left;
+.if-path button, .if-controls button {
+    background-color: transparent;
+    color: white;
+    padding: 0;
+    margin: 0;
+    padding-right: 3px;
 }
 
-.imageTab .content {
-    flex-grow: 1;
+.if-content {
+    overflow-x: hidden;
     overflow-y: auto;
-    /* hardcoding this because I'm lazy */
-    height: 366px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--background-accent) transparent;
 }
 
-.imageTab .images {
+.if-media-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-    padding: 7px;
-    gap: 7px;
-}
-
-.imageTab img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    cursor: pointer;
-}
-
-.imageTab .folderReturn {
-    float: right;
-}
-
-.imageTab .folder {
-    display: flex;
-    border-radius: 12px;
-    background-color: var(--primary-500);
-    padding: 6px;
-    margin: 7px;
-    cursor: pointer;
-    transition: background-color 0.2s ease-in-out;
-    align-items: center;
-    gap: 5px;
-}
-
-.imageTab .folder:hover {
-    background-color: var(--primary-430);
-}
-
-.folder .folderName {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    overflow-y: auto;
+    gap: 3px;
     flex-grow: 1;
+    align-content: flex-start;
+    padding: 3px;
 }
 
-.if-nameWrap {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.if-nameInput {
-    width: 90%;
-    border-radius: 12px;
-    padding: 8px;
-}
-
-.imageTab .image {
-    position: relative;
-}
-
-.imageTab .image .icon {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    cursor: pointer;
-    opacity: 0;
-    transition: opacity 0.2s ease-in-out;
-}
-
-.imageTab .image:hover .icon {
-    opacity: 1;
-}
-
-.if-caption-creator {
+.if-folder-list {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 5px;
 }
 
-.if-caption-creator canvas {
+.if-folder {
+    display: flex;
+    background-color: var(--background-accent);
+    color: white;
+    align-items: center;
+    padding: 5px;
+    border-radius: 5px;
+    gap: 3px;
+    margin: 3px;
+    font-size: 16px;
+}
+
+.if-media {
+    height: 200px;
+    border: 1px dashed #aaa;
+    border-radius: 5px;
+}
+
+.if-media > button {
+    width: 100%;
+    height: 100%;
+    background-color: transparent;
+    color: white;
+}
+
+.if-audio-label {
+    width: 100%;
+    text-align: center;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.if-media audio {
+    width: 100%;
+    height: 40px;
+}
+
+.if-media img, .if-media video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.if-no-preview {
+    width: 100%;
+    height: 100%;
+    word-break: break-word;
+    text-align: center;
+    align-content: center;
+}
+
+.if-captioner {
+    display: flex;
+    flex-direction: column;
+}
+
+.if-captioner canvas {
     width: 100%;
 }
 
-.if-caption-settings {
+.if-caption {
+    background-color: var(--background-accent);
+    color: white;
+    border: 1px solid black;
+    border-radius: 5px;
+    padding: 4px;
+}
+
+.if-fontsize {
     display: flex;
     align-items: center;
     gap: 5px;
-    color: var(--text-normal);
+    color: white;
+    margin: 10px 0;
 }
 
-.if-caption-settings .if-caption {
+.if-fontsize input {
     flex-grow: 1;
+}
+
+.if-no-media {
+    grid-column: 1 / -1;
+    color: white;
+    text-align: center;
+    font-size: 16px;
+    border: 1px dashed #aaa;
+    border-radius: 5px;
+    align-content: center;
+    height: 130px;
 }

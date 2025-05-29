@@ -1,9 +1,9 @@
 // @ts-ignore
 import GifWorker from "./gif.worker.txt";
-import { uploadFile } from "$shared/upload.ts";
-import { onStart, onStop } from "$shared/bdFuncs";
+import { uploadFile } from "$shared/util/upload.ts";
+import { onStart, onStop } from "$shared/bd.ts";
 import GIF from "gif.js";
-import { getLines } from "./util.ts";
+import { getLines } from "$shared/util/canvas";
 import { decompressFrames, type ParsedFrame, type ParsedGif } from "gifuct-js";
 import { channelStore } from "$shared/modules.ts";
 

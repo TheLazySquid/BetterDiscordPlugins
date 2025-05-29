@@ -1,0 +1,9 @@
+.lazys-input {
+    width: 100%;
+    color: white;
+    background-color: var(--background-highlight);
+    border: 1px solid #bbb;
+    border-radius: 5px;
+    font-size: 20px;
+    padding: 6px;
+}

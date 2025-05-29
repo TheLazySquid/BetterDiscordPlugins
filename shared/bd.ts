@@ -1,5 +1,8 @@
 declare let plugin: any;
-import type { ReactElement } from "npm:@types/react";
+import type { ReactElement } from "react";
+import meta from "meta";
+
+export const Api = new BdApi(meta.pluginName);
 
 const createCallbackHandler = (callbackName: string) => {
     const fullName = callbackName + "Callbacks";
@@ -77,4 +80,4 @@ export function setSettingsPanel(fn: () => El): void;
 export function setSettingsPanel(el: El | (() => El)): void {
     if(typeof el === "function") plugin.getSettingsPanel = el;
     plugin.getSettingsPanel = () => el;
-};
+}

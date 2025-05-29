@@ -1,5 +1,5 @@
-import { onStart } from "./bdFuncs";
-import { channelStore, CloudUploader, uploader } from "./modules";
+import { onStart } from "../bd";
+import { channelStore, CloudUploader, uploader } from "../modules";
 import { pluginName } from "meta";
 
 // Mostly taken from https://github.com/Yentis/betterdiscord-emotereplacer/blob/master/EmoteReplacer.plugin.js

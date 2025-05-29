@@ -1,4 +1,4 @@
-import type { Plugin } from "esbuild"
+import type { Plugin } from "esbuild";
 
 export function metaPlugin(pluginName: string): Plugin {
 	return {

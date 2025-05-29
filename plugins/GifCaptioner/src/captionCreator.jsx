@@ -1,4 +1,4 @@
-import { getLines } from '../src/util.ts';
+import { getLines } from "$shared/util/canvas";
 
 export default function CaptionCreator({ src, width, onUpdate, isVideo }) {
     const React = BdApi.React;

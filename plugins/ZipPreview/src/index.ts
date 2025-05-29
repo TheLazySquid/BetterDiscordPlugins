@@ -1,4 +1,4 @@
-import { onStart, onStop, onSwitch } from "$shared/bdFuncs.ts";
+import { onStart, onStop, onSwitch } from "$shared/bd.ts";
 import { fileModule } from "$shared/modules.ts";
 import css from './styles.css'
 import ZipPreview from "./ZipPreview.tsx"

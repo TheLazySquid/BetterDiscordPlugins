@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { existsSync } from "node:fs";
 import { parseArgs } from "node:util";
 import { metaPlugin } from "./meta.ts";
+import { stylesPlugin } from "./styles.ts";
 
 const args = parseArgs({
     args: process.argv.slice(2),
@@ -57,9 +58,8 @@ let esbuildConfig: BuildOptions = {
     bundle: true,
     outfile: `plugins/${args.plugin}/${args.plugin}.plugin.js`,
     loader: {
-        ".svg": "text",
-        ".css": "text",
-        ".otf": "binary"
+        ".otf": "binary",
+        ".svg": "text"
     },
     banner: {
         js: header
@@ -68,9 +68,9 @@ let esbuildConfig: BuildOptions = {
         js: footer
     },
     format: "esm",
-    plugins: [metaPlugin(args.plugin)],
+    plugins: [metaPlugin(args.plugin), stylesPlugin()],
     external: [
-        "fs", "path", "buffer"
+        "fs", "path", "buffer", "electron"
     ],
     jsx: "transform",
     jsxFactory: "BdApi.React.createElement"
