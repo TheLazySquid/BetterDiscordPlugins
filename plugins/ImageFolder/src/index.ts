@@ -1,6 +1,6 @@
 import imagePlusOutline from '$assets/image-plus-outline.svg';
 import { after, tempAfter } from '$shared/api/patching';
-import { buttonsModule, expressionModule, expressionPicker } from "$shared/modules";
+import { buttonsModule, expressionModule, expressionPicker, uploadClasses, uploadOverlay } from "$shared/modules";
 import View from "./ui/view";
 import { addFont } from '$shared/api/fonts';
 import futura from "$assets/Futura Condensed Extra Bold.otf";
@@ -8,6 +8,7 @@ import "./styles.css";
 import { settings } from './settings';
 import { patchContextMenu } from '$shared/api/contextmenu';
 import Manager, { types } from './manager';
+import { onStart, onStop } from '$shared/bd';
 
 addFont(futura, "futuraBoldCondensed");
 
@@ -65,6 +66,26 @@ after(expressionModule, "type", ({ returnVal }) => {
             sections.push(el);
         }
     });
+});
+
+// Hide the default upload overlay when the expression picker is open
+const uploadClass = uploadClasses.uploadArea;
+const hideCss = `.${uploadClass} { display: none; pointer-events: none; }`;
+
+onStart(() => {
+    let unsub = expressionPicker.store.subscribe((state) => {
+        if(state.activeView) {
+            BdApi.DOM.addStyle("if-hide-upload", hideCss);
+        } else {
+            BdApi.DOM.removeStyle("if-hide-upload");
+        }
+    });
+
+    onStop(unsub, true);
+});
+
+onStop(() => {
+    BdApi.DOM.removeStyle("if-hide-upload");
 });
 
 patchContextMenu("message", (element, props) => {

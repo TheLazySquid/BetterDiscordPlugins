@@ -1,12 +1,11 @@
-import FolderOpen from "$assets/folder-open.svg";
+import type { DirContents } from "../types";
+import Manager from "../manager";
+import MediaDisplay from "./mediaDisplay";
+import FolderDisplay from "./folderDisplay";
 import FolderBack from "$assets/folder-back.svg";
 import FolderTree from "$assets/folder-tree.svg";
 import FolderPlus from "$assets/folder-plus-outline.svg";
 import FilePlus from "$assets/file-plus.svg";
-
-import Manager from "../manager";
-import type { DirContents, Folder } from "../types";
-import MediaDisplay from "./mediaDisplay";
 
 export default function View() {
 	const React = BdApi.React;
@@ -31,32 +30,35 @@ export default function View() {
 		setDir(dir.split("/").slice(0, depth + 1).join("/"));
 	}
 	
-	const folderContextMenu = (e: React.MouseEvent, folder: Folder) => {
-		BdApi.ContextMenu.open(e, BdApi.ContextMenu.buildMenu([
-			{
-				type: "text",
-				label: "Rename",
-				onClick: () => Manager.renameFolder(folder)
-			},
-			{
-				type: "text",
-				label: "Delete",
-				onClick: () => {
-					BdApi.UI.showConfirmationModal("Deletion confirmation", `Are you sure you want to delete ${folder.name}?`, {
-						danger: true,
-						confirmText: "Confirm",
-						onConfirm() {
-							Manager.deleteFolder(folder);
-						}
-					});
-				}
-			}
-		]));
-	}
-	
 	React.useEffect(() => {
 		Manager.read(dir, setContents);
 	}, [dir]);
+
+	const [canDrop, setCanDrop] = React.useState(false);
+	const dragEnterCount = React.useRef(0);
+
+	const onDragOver = (e: React.DragEvent) => {
+		e.preventDefault();
+	}
+
+	const onDragEnter = () => {
+		dragEnterCount.current++;
+		setCanDrop(true);
+	}
+
+	const onDragLeave = () => {
+		dragEnterCount.current--;
+		setCanDrop(dragEnterCount.current > 0);
+	}
+
+	const onDrop = (e: React.DragEvent) => {
+		e.preventDefault();
+		dragEnterCount.current = 0;
+		setCanDrop(false);
+		if(!e.dataTransfer.files) return;
+
+		Manager.addFileList(e.dataTransfer.files);
+	}
 
 	return (<div className="if-view">
 		<div className="if-controls">
@@ -87,14 +89,11 @@ export default function View() {
 		</div> : null}
 		<div className="if-content">
 			<div className="if-folder-list">
-				{contents.folders.map((folder) => (<button className="if-folder"
-				onContextMenu={(e) => folderContextMenu(e, folder)}
-				onClick={() => navigate(folder.name)} key={dir + "/" + folder.name}>
-					<div className="if-svg-wrap" dangerouslySetInnerHTML={{ __html: FolderOpen }}></div>
-					{folder.name}
-				</button>))}
+				{contents.folders.map((folder) => (<FolderDisplay folder={folder}
+					onClick={() => navigate(folder.name)} key={dir + "/" + folder.name} />))}
 			</div>
-			<div className="if-media-list">
+			<div className={`if-media-list ${canDrop ? "highlighted" : ""}`} onDrop={onDrop}
+			onDragOver={onDragOver} onDragEnter={onDragEnter} onDragLeave={onDragLeave}>
 				{contents.media.length === 0 ? <div className="if-no-media">
 					There isn't any media in this folder! Use the button at the top left to upload some.
 				</div> : null}

@@ -224,30 +224,64 @@ export default class Manager {
         input.addEventListener("change", async () => {
             if(!input.files) return;
             
-            await Promise.allSettled(Array.from(input.files).map(async (file) => {
-                const info = this.getInfo(file.name);
-                if(!info) return;
-                const [type, mime] = info;
-
-                await this.copyFile(file);
-
-                // No need to sort, automatically goes to the top
-                this.contents?.media.unshift({
-                    name: file.name,
-                    size: file.size,
-                    type,
-                    mime,
-                    lastUsed: Date.now()
-                });
-            }));
-
-            if(!this.contents) return;
-            this.update?.({ ...this.contents });
+            this.addFileList(input.files);
         });
     }
 
-    static async copyFile(file: File) {
-        const filePath = path.join(this.base, this.dir, file.name);
+    static async addFileList(files: FileList, subdir?: string) {
+        await Promise.allSettled(Array.from(files).map(async (file) => {
+            const info = this.getInfo(file.name);
+            if(!info) return;
+            const [type, mime] = info;
+
+            await this.copyFile(file, subdir);
+            if(subdir) return;
+
+            // No need to sort, automatically goes to the top
+            this.contents?.media.unshift({
+                name: file.name,
+                size: file.size,
+                type,
+                mime,
+                lastUsed: Date.now()
+            });
+        }));
+
+        if(!this.contents) return;
+        this.update?.({ ...this.contents });
+    }
+
+    static async copyFile(file: File, subdir?: string) {
+        // make sure that the file has a name that isn't taken
+        let parts = file.name.split(".");
+        let base = parts.slice(0, -1).join(".");
+        let ext = parts.pop();
+
+        const files = await new Promise<string[] | null>((res) => {
+            fs.readdir(path.join(this.base, this.dir, subdir ?? ""), {}, (err, contents) => {
+                if(err) {
+                    Api.Logger.error(err);
+                    res(null);
+                    return;
+                }
+
+                res(contents as string[]);
+            });
+        });
+        if(!files) {
+            Api.UI.showToast("ImageFolder: Failed to copy image since its containing directory could not be read", { type: "error" });
+            return;
+        }
+
+        let name = file.name;
+        let index = 2;
+        while(files.includes(name)) name = `${base} (${index++}).${ext}`;
+
+        if(name !== file.name) {
+            file = new File([ file ], name, { type: file.type });
+        }
+
+        const filePath = path.join(this.base, this.dir, subdir ?? "", file.name);
         const reader = file.stream().getReader();
 
         await this.readToFile(filePath, reader);
