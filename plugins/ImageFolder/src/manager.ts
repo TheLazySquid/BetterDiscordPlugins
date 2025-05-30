@@ -8,7 +8,7 @@ const path: typeof import('path') = require("path");
 const { shell } = require("electron");
 
 // Unsupported: mkv, flv
-const types: Record<string, [Media["type"], string]> = {
+export const types: Record<string, [Media["type"], string]> = {
     "jpg": ["image", "image/jpeg"],
     "jpeg": ["image", "image/jpeg"],
     "png": ["image", "image/png"],
@@ -28,6 +28,7 @@ const types: Record<string, [Media["type"], string]> = {
 export default class Manager {
     static base = path.join(__dirname, "imageFolder");
     static dir = Api.Data.load("dir") ?? "";
+    static saveDir = Api.Data.load("saveDir") ?? this.base;
     static contents?: DirContents;
     static update?: (contents: DirContents) => void;
 
@@ -150,12 +151,12 @@ export default class Manager {
         const blob = await this.readWhole(media);
         if(!blob) return BdApi.UI.showToast(`ImageFolder: Failed to read ${media.name}`, { type: "error" });
 
-        const file = new File([ blob ], media.name);
-        await uploadFile(file);
-
         media.lastUsed = Date.now();
         Api.Data.save(`used-${path.join(this.dir, media.name)}`, media.lastUsed);
         this.contents?.media.sort((a, b) => b.lastUsed - a.lastUsed);
+
+        const file = new File([ blob ], media.name);
+        await uploadFile(file);
     }
 
     static createFolder() {
@@ -247,11 +248,49 @@ export default class Manager {
 
     static async copyFile(file: File) {
         const filePath = path.join(this.base, this.dir, file.name);
-        const writeStream = fs.createWriteStream(filePath);
         const reader = file.stream().getReader();
 
-        await new Promise((res) => writeStream.once("ready", res));
+        await this.readToFile(filePath, reader);
 
+        BdApi.UI.showToast(`Copied ${file.name}`, { type: "success" });
+    }
+
+    static async saveImage(url: string) {
+        const name = url.split("/").pop()?.split("?").shift() ?? "";
+        const mediaPath = path.join(this.saveDir, name);
+
+        let dialog = await BdApi.UI.openDialog({
+            mode: "save",
+            defaultPath: mediaPath,
+            filters: [
+                {
+                    name: "Media",
+                    extensions: Object.keys(types).map(k => "." + k)
+                }
+            ],
+            title: "Save media"
+        });
+
+        if(dialog.canceled) return;
+
+        let res = await fetch(url);
+        if(!res.body) return;
+        let reader = res.body.getReader();
+        await this.readToFile(dialog.filePath, reader);
+
+        const dirname = path.dirname(dialog.filePath);
+        const basename = path.basename(dialog.filePath);
+
+        this.saveDir = dirname;
+        Api.Data.save("saveDir", dirname);
+        
+        BdApi.UI.showToast(`Downloaded ${basename}`, { type: "success" });
+    }
+
+    static async readToFile(path: string, reader: ReadableStreamDefaultReader<Uint8Array>) {
+        const writeStream = fs.createWriteStream(path);
+        await new Promise((res) => writeStream.once("ready", res));
+        
         while(true) {
             const { done, value } = await reader.read();
             if(done) break;
@@ -259,7 +298,6 @@ export default class Manager {
             writeStream.write(value);
         }
 
-        BdApi.UI.showToast(`Copied ${file.name}`, { type: "success" });
         writeStream.close();
     }
 }

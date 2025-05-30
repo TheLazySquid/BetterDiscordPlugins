@@ -6,6 +6,8 @@ import { addFont } from '$shared/api/fonts';
 import futura from "$assets/Futura Condensed Extra Bold.otf";
 import "./styles.css";
 import { settings } from './settings';
+import { patchContextMenu } from '$shared/api/contextmenu';
+import Manager, { types } from './manager';
 
 addFont(futura, "futuraBoldCondensed");
 
@@ -63,4 +65,19 @@ after(expressionModule, "type", ({ returnVal }) => {
             sections.push(el);
         }
     });
+});
+
+patchContextMenu("message", (element, props) => {
+    if(!props?.mediaItem) return;
+    if(Object.values(types).every((t) => t[1] !== props.mediaItem.contentType)) return;
+    console.log(JSON.stringify(props.mediaItem.url));
+
+    element.props.children.props.children.push(
+        BdApi.ContextMenu.buildItem({ type: "separator"}),
+        BdApi.ContextMenu.buildItem({
+            type: "text",
+            label: "Add to ImageFolder",
+            onClick: () => Manager.saveImage(props.mediaItem.url)
+        })
+    );
 });
