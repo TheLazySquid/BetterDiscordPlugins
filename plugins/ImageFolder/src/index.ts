@@ -55,7 +55,7 @@ after(expressionModule, "type", ({ returnVal }) => {
             "aria-selected": activeView === 'if-image',
             isActive: activeView === 'if-image',
             viewType: "if-image",
-            children: 'Images'
+            children: "Media"
         });
         
         categories.splice(0, 0, newCategory);

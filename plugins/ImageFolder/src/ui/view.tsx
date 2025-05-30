@@ -95,7 +95,7 @@ export default function View() {
 			<div className={`if-media-list ${canDrop ? "highlighted" : ""}`} onDrop={onDrop}
 			onDragOver={onDragOver} onDragEnter={onDragEnter} onDragLeave={onDragLeave}>
 				{contents.media.length === 0 ? <div className="if-no-media">
-					There isn't any media in this folder! Use the button at the top left to upload some.
+					There isn't any media in this folder! Use the button at the top left or drag and drop to upload some.
 				</div> : null}
 				{contents.media.map((media) => (<div className="if-media" key={dir + "/" + media.name}>
 					<MediaDisplay media={media} />

@@ -234,7 +234,9 @@ export default class Manager {
             if(!info) return;
             const [type, mime] = info;
 
-            await this.copyFile(file, subdir);
+            let name = await this.copyFile(file, subdir);
+            if(!name) return;
+            Api.Data.save(`used-${path.join(this.dir, subdir ?? "", name)}`, Date.now());
             if(subdir) return;
 
             // No need to sort, automatically goes to the top
@@ -287,6 +289,7 @@ export default class Manager {
         await this.readToFile(filePath, reader);
 
         BdApi.UI.showToast(`Copied ${file.name}`, { type: "success" });
+        return file.name;
     }
 
     static async saveImage(url: string) {

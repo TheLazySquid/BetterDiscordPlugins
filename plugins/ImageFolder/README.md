@@ -1,11 +1,13 @@
 # ImageFolder
 
-This plugin adds a new tab to the expression picker window that makes it easy to store and send images.
+This plugin adds a new tab to the expression picker window that makes it easy to store and send images, audio, and video.
 
 ![Preview](./images/preview.png)
 
 ## Usage
 
-With this plugin installed a new button will appear on the right of the text box, and a new tab will appear in the expression picker window. Within it you can add images from elsewhere on your computer. You can also create folders within the tab to organize your images. Clicking on an image will upload it to the current channel.
+With this plugin installed a tab called "media" will be added to the expression picker (the popup with gifs/stickers/emojis), and a button will be added to the chat bar to access it. You can add images/audio/video to this tab by dragging and dropping or clicking the upload button. Media can be sent to your current channel by clicking on it. You can also create folders within the tab and within other folders to stay organized.
 
-If you right click an image, a menu will pop up that lets you (among other things) send the image with a caption of your choosing.
+## Settings
+
+You can hide the button to open the media tab in settings, and the max preview size can be configured. By default media larger than 12mb will not be displayed, although it can still be sent.
