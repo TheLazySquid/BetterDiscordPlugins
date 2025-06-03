@@ -1,7 +1,7 @@
 /**
  * @name ImageFolder
  * @description A BetterDiscord plugin that allows you to save and send images from a folder for easy access
- * @version 1.0.0
+ * @version 1.0.1
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -510,12 +510,13 @@ function Captioner({ media, onCanvas }) {
   const img = React.useRef(null);
   const [text, setText] = React.useState("");
   const [size, setSize] = React.useState(30);
+  const input = React.useRef(null);
   const canvas = React.useRef(null);
   const ctx = React.useRef(null);
   const render = () => {
     if (!canvas.current || !ctx.current || !img.current) return;
     let lines = getLines(ctx.current, text || "Enter caption...", img.current.width);
-    let captionHeight = lines.length * size + 5;
+    let captionHeight = lines.length * size + 15;
     canvas.current.height = img.current.height + captionHeight;
     ctx.current.fillStyle = "white";
     ctx.current.fillRect(0, 0, img.current.width, captionHeight);
@@ -525,11 +526,12 @@ function Captioner({ media, onCanvas }) {
     ctx.current.font = `${size}px futuraBoldCondensed`;
     ctx.current.fillStyle = "black";
     for (let i = 0; i < lines.length; i++) {
-      ctx.current.fillText(lines[i], img.current.width / 2, size * i + 5);
+      ctx.current.fillText(lines[i], img.current.width / 2, size * i + 10);
     }
   };
   React.useEffect(render, [text, size]);
   React.useEffect(() => {
+    setTimeout(() => input.current?.focus(), 100);
     if (!canvas.current) return;
     onCanvas(canvas.current);
     ctx.current = canvas.current.getContext("2d");
@@ -551,7 +553,15 @@ function Captioner({ media, onCanvas }) {
       if (url) URL.revokeObjectURL(url);
     };
   }, []);
-  return /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-captioner" }, /* @__PURE__ */ BdApi.React.createElement("input", { onChange: (e) => setText(e.target.value), className: "if-caption", placeholder: "Enter caption..." }), /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-fontsize" }, /* @__PURE__ */ BdApi.React.createElement("div", null, "Font size"), /* @__PURE__ */ BdApi.React.createElement(
+  return /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-captioner" }, /* @__PURE__ */ BdApi.React.createElement(
+    "input",
+    {
+      onChange: (e) => setText(e.target.value),
+      ref: input,
+      className: "if-caption",
+      placeholder: "Enter caption..."
+    }
+  ), /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-fontsize" }, /* @__PURE__ */ BdApi.React.createElement("div", null, "Font size"), /* @__PURE__ */ BdApi.React.createElement(
     "input",
     {
       type: "range",
@@ -1097,5 +1107,12 @@ patchContextMenu("message", (element, props) => {
     })
   );
 });
+var onPaste = (e) => {
+  if (expressionPicker.store.getState().activeView !== "if-image") return;
+  let files = e.clipboardData?.files;
+  if (files) Manager.addFileList(files);
+};
+onStart(() => window.addEventListener("paste", onPaste, true));
+onStop(() => window.removeEventListener("paste", onPaste));
   }
 }

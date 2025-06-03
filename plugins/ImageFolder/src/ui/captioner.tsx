@@ -8,13 +8,14 @@ export default function Captioner({ media, onCanvas }:
     const img = React.useRef<HTMLImageElement | null>(null);
     const [text, setText] = React.useState("");
     const [size, setSize] = React.useState(30);
+    const input = React.useRef<HTMLInputElement | null>(null);
     const canvas = React.useRef<HTMLCanvasElement | null>(null);
     const ctx = React.useRef<CanvasRenderingContext2D | null>(null);
 
     const render = () => {
         if(!canvas.current || !ctx.current || !img.current) return;
         let lines = getLines(ctx.current, text || "Enter caption...", img.current.width);
-        let captionHeight = lines.length * size + 5; // 5px on top
+        let captionHeight = lines.length * size + 15; // 10px on top, 5px on bottom
         
         // Add the image
         canvas.current.height = img.current.height + captionHeight;
@@ -28,13 +29,15 @@ export default function Captioner({ media, onCanvas }:
         ctx.current.font = `${size}px futuraBoldCondensed`;
         ctx.current.fillStyle = "black";
         for(let i = 0; i < lines.length; i++) {
-            ctx.current.fillText(lines[i], img.current.width / 2, size * i + 5);
+            ctx.current.fillText(lines[i], img.current.width / 2, size * i + 10);
         }
     }
 
     React.useEffect(render, [text, size]);
 
     React.useEffect(() => {
+        setTimeout(() => input.current?.focus(), 100);
+
         if(!canvas.current) return;
         onCanvas(canvas.current);
         ctx.current = canvas.current.getContext("2d");
@@ -62,7 +65,8 @@ export default function Captioner({ media, onCanvas }:
     }, []);
     
     return (<div className="if-captioner">
-        <input onChange={(e) => setText(e.target.value)} className="if-caption" placeholder="Enter caption..." />
+        <input onChange={(e) => setText(e.target.value)} ref={input}
+            className="if-caption" placeholder="Enter caption..." />
         <div className="if-fontsize">
             <div>
                 Font size

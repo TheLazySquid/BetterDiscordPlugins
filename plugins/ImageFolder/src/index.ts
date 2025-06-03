@@ -88,6 +88,7 @@ onStop(() => {
     BdApi.DOM.removeStyle("if-hide-upload");
 });
 
+// Add to context menus
 patchContextMenu("message", (element, props) => {
     if(!props?.mediaItem) return;
     if(Object.values(types).every((t) => t[1] !== props.mediaItem.contentType)) return;
@@ -102,3 +103,12 @@ patchContextMenu("message", (element, props) => {
         })
     );
 });
+
+const onPaste = (e: ClipboardEvent) => {
+    if(expressionPicker.store.getState().activeView !== "if-image") return;
+    let files = e.clipboardData?.files;
+    if(files) Manager.addFileList(files);
+}
+
+onStart(() => window.addEventListener("paste", onPaste, true));
+onStop(() => window.removeEventListener("paste", onPaste));
