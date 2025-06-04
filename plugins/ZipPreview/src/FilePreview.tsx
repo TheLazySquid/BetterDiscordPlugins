@@ -1,15 +1,14 @@
 import Download from "$assets/download.svg"
 import Close from "$assets/close.svg";
 import Copy from "$assets/content-copy.svg";
+import { highlightModule } from "$shared/modules";
 
-const highlightModule = (BdApi.Webpack.getModule((exports) =>
-    exports?.default?.highlight && exports?.default?.hasLanguage) as any).default;
 const React = BdApi.React;
 
 export default function FilePreview({ name, type: startType, blob, buff, onClose }:
     { name: string, type: string, blob: Blob, buff: ArrayBuffer, onClose: () => void }) {
-    const [type, setType] = React.useState(startType)
-    const url = URL.createObjectURL(blob)
+    const [type, setType] = React.useState(startType);
+    const url = URL.createObjectURL(blob);
 
     function close() {
         URL.revokeObjectURL(url);
@@ -29,10 +28,8 @@ export default function FilePreview({ name, type: startType, blob, buff, onClose
 
     function copyFile() {
         if(type == "text") {
-            // @ts-ignore not documented
             DiscordNative.clipboard.copy(new TextDecoder().decode(buff));
         } else {
-            // @ts-ignore
             DiscordNative.clipboard.copyImage(new Uint8Array(buff), name);
         }
 

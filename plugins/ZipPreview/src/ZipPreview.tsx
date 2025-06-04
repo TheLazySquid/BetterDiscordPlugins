@@ -7,7 +7,7 @@ import ExpandUp from "$assets/arrow-expand-up.svg"
 import FolderReturn from "$assets/folder-arrow-left-outline.svg"
 import FilePreview from "./FilePreview.tsx";
 
-const React = BdApi.React
+const React = BdApi.React;
 
 interface IFolder {
     parent?: IFolder
@@ -17,14 +17,14 @@ interface IFolder {
 }
 
 function ZipPreview({ url }: { url: string }) {
-    const [expanded, setExpanded] = React.useState(false)
+    const [expanded, setExpanded] = React.useState(false);
     const [folderContents, setFolderContents] = React.useState<IFolder| null>(null);
 
-    let zipInfo: ZipInfo | null = null
+    let zipInfo: ZipInfo | null = null;
 
     function toggleExpanded() {     
         setExpanded(!expanded);
-        if(!(!expanded && zipInfo == null)) return
+        if(expanded || zipInfo != null) return;
 
         // need to do this because CORS
         BdApi.Net.fetch(url)
@@ -35,11 +35,11 @@ function ZipPreview({ url }: { url: string }) {
 
                 // parse the folder structure
                 for(let filename in info.entries) {
-                    let file = info.entries[filename]
+                    let file = info.entries[filename];
                     if(file.isDirectory) continue;
 
                     // it's theoretically possible to have slashes in the filename, but I don't care
-                    let path = filename.split("/")
+                    let path = filename.split("/");
 
                     let current = contents;
                     for(let i = 0; i < path.length - 1; i++) {
@@ -51,21 +51,21 @@ function ZipPreview({ url }: { url: string }) {
                                 parent: current
                             }
                         }
-                        current = current.folders[path[i]]
+                        current = current.folders[path[i]];
                     }
 
-                    current.files[path[path.length - 1]] = file
+                    current.files[path[path.length - 1]] = file;
                 }
 
-                console.log("[ZipPreview] extracted zip", contents)
-                setFolderContents(contents)
-            })
+                console.log("[ZipPreview] extracted zip", contents);
+                setFolderContents(contents);
+            });
     }
 
     async function openFile(name: string, file: ZipEntry) {
-        let [blob, buff] = await Promise.all([file.blob(), file.arrayBuffer()])
+        let [blob, buff] = await Promise.all([file.blob(), file.arrayBuffer()]);
 
-        const ext = name.split(".").pop()
+        const ext = name.split(".").pop();
 
         // probably not comprehensive, but it's good enough
         const images = ["png", "jpg", "jpeg", "webp", "avif"]
@@ -74,14 +74,11 @@ function ZipPreview({ url }: { url: string }) {
 
         let type = "text"
         if(ext) {
-            if(images.includes(ext)) type = "image"
-            else if(videos.includes(ext)) type = "video"
-            else if(audio.includes(ext)) type = "audio"
+            if(images.includes(ext)) type = "image";
+            else if(videos.includes(ext)) type = "video";
+            else if(audio.includes(ext)) type = "audio";
         }
-        if(type == "text") {
-            // @ts-ignore Buffer and ArrayBuffer are close enough and a type conversion would be slow
-            if(isBinaryFile(buff)) type = "binary"
-        }
+        if(type == "text" && isBinaryFile(buff)) type = "binary";
 
         let el = document.createElement("div");
         document.body.appendChild(el);
@@ -97,10 +94,10 @@ function ZipPreview({ url }: { url: string }) {
     }
 
     function formatSize(size: number) {
-        if(size < 1024) return size + " B"
-        if(size < 1024 * 1024) return (size / 1024).toFixed(2) + " KB"
-        if(size < 1024 * 1024 * 1024) return (size / 1024 / 1024).toFixed(2) + " MB"
-        return (size / 1024 / 1024 / 1024).toFixed(2) + " GB"
+        if(size < 1024) return size + " B";
+        if(size < 1024 * 1024) return (size / 1024).toFixed(2) + " KB";
+        if(size < 1024 * 1024 * 1024) return (size / 1024 / 1024).toFixed(2) + " MB";
+        return (size / 1024 / 1024 / 1024).toFixed(2) + " GB";
     }
 
     return (

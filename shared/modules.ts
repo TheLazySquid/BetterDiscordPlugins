@@ -12,6 +12,8 @@ interface ExpressionPicker {
 }
 
 const Webpack = BdApi.Webpack;
+
+// It's annoying how @__PURE__ needs to be spammed everywhere
 export const imgAdder: any = /* @__PURE__ */ Webpack.getByKeys("addFile");
 export const chatKeyHandlers: any = /* @__PURE__ */ Webpack.getByStrings("selectNextCommandOption", { defaultExport: false });
 export const fileModule: any = /* @__PURE__ */ Webpack.getModule((m) => m.Z?.toString().includes("filenameLinkWrapper"));
@@ -20,16 +22,17 @@ export const uploader: any = /* @__PURE__ */ Webpack.getByKeys('uploadFiles');
 export const channelStore: any = /* @__PURE__ */ Webpack.getStore("SelectedChannelStore");
 export const expressionModule = /* @__PURE__ */ Webpack.getModule<ReactElementModule>((m) => m.type?.toString?.().includes("onSelectGIF"));
 export const buttonsModule = /* @__PURE__ */ Webpack.getModule<ReactElementModule>((m) => m.type?.toString?.().includes(".isSubmitButtonEnabled"));
-export const uploadOverlay = /* @__PURE__ */ Webpack.getWithKey(Webpack.Filters.byStrings("TEXTAREA_FOCUS", "onDragClear"))
+export const uploadOverlay = /* @__PURE__ */ Webpack.getWithKey(/* @__PURE__ */ Webpack.Filters.byStrings("TEXTAREA_FOCUS", "onDragClear"))
 export const uploadClasses: Record<string, string> = /* @__PURE__ */ Webpack.getByKeys("uploadArea", "chat");
 export const gifDisplay: any = /* @__PURE__ */ Webpack.getByStrings("renderGIF()", "imagePool", { searchExports: true });
 export const premiumPremissions: any = /* @__PURE__ */ Webpack.getByKeys("getUserMaxFileSize");
+export const highlightModule: any = /* @__PURE__ */ Webpack.getByKeys("highlight", "hasLanguage");
 
 // Taken from Arven
 // @ts-expect-error Zerthox's repo hasn't documented this yet
 export const Modals = /* @__PURE__ */ Webpack.getMangled(".modalKey?", {
-  open: Webpack.Filters.byStrings(",instant:"),
-  close: Webpack.Filters.byStrings(".onCloseCallback()")
+  open: /* @__PURE__ */ Webpack.Filters.byStrings(",instant:"),
+  close: /* @__PURE__ */ Webpack.Filters.byStrings(".onCloseCallback()")
 });
 
 // @ts-expect-error

@@ -16,3 +16,10 @@ declare module "*.otf" {
 declare module "meta" {
     export const pluginName: string;
 }
+
+declare const DiscordNative: {
+    clipboard: {
+        copy: (text: string) => void;
+        copyImage: (buffer: Uint8Array, name: string) => void;
+    }
+}

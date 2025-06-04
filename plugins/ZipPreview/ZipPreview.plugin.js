@@ -1,7 +1,7 @@
 /**
  * @name ZipPreview
  * @description Lets you see inside zips and preview/download files without ever downloading/extracting the zip
- * @version 0.4.2
+ * @version 0.4.3
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -11,7 +11,11 @@ module.exports = class {
   constructor() {
     let plugin = this;
 
-// shared/bdFuncs.ts
+// meta-ns:meta
+var meta_default = { pluginName: "ZipPreview" };
+
+// shared/bd.ts
+var Api = new BdApi(meta_default.pluginName);
 var createCallbackHandler = (callbackName) => {
   const fullName = callbackName + "Callbacks";
   plugin[fullName] = [];
@@ -48,13 +52,250 @@ var onStart = createCallbackHandler("start");
 var onStop = createCallbackHandler("stop");
 var onSwitch = createCallbackHandler("onSwitch");
 
+// shared/api/patching.ts
+function after(module2, key, callback) {
+  onStart(() => {
+    Api.Patcher.after(module2, key, (thisVal, args, returnVal) => {
+      return callback({ thisVal, args, returnVal });
+    });
+  });
+}
+onStop(() => {
+  Api.Patcher.unpatchAll();
+});
+
 // shared/modules.ts
-var imgAdder = BdApi.Webpack.getModule((m) => m.addFiles);
-var chatKeyHandlers = BdApi.Webpack.getAllByStrings("selectNextCommandOption");
-var fileModule = BdApi.Webpack.getModule((m) => m.Z?.toString().includes("filenameLinkWrapper"));
+var Webpack = BdApi.Webpack;
+var fileModule = /* @__PURE__ */ Webpack.getModule((m) => m.Z?.toString().includes("filenameLinkWrapper"));
+var highlightModule = /* @__PURE__ */ Webpack.getByKeys("highlight", "hasLanguage");
+
+// shared/api/styles.ts
+var count = 0;
+function addStyle(css) {
+  onStart(() => {
+    Api.DOM.addStyle(`${meta_default.pluginName}-${count++}`, css);
+  });
+}
+onStop(() => {
+  for (let i = 0; i < count; i++) {
+    Api.DOM.removeStyle(`${meta_default.pluginName}-${i}`);
+  }
+});
 
 // plugins/ZipPreview/src/styles.css
-var styles_default = ".zp-wrap {\r\n    display: flex;\r\n    flex-direction: column;\r\n    width: 100%;\r\n}\r\n\r\n.zp-content {\r\n    padding: 16px;\r\n    padding-bottom: 10px;\r\n    display: flex;\r\n    align-items: center;\r\n}\r\n\r\n.zp-dropdown-expander {\r\n    width: 100%;\r\n    display: flex;\r\n    height: 16px;\r\n    align-items: center;\r\n    justify-content: center;\r\n    border-top: 2px solid var(--border-subtle);\r\n    cursor: pointer;\r\n}\r\n\r\n.zp-dropdown-expander svg {\r\n    width: 16px;\r\n    height: 16px;\r\n    fill: var(--text-link);   \r\n}\r\n\r\n.zp-zip-preview {\r\n    max-height: 0px;\r\n    overflow: hidden;\r\n    transition: max-height 0.3s ease;\r\n    color: var(--text-normal);\r\n    padding-left: 16px;\r\n}\r\n\r\n.zp-zip-preview.expanded {\r\n    max-height: 500px;\r\n    overflow-y: auto;\r\n    padding-bottom: 10px;\r\n}\r\n\r\n.zp-entry {\r\n    color: var(--text-link);\r\n    text-decoration: underline;\r\n    padding-bottom: 2px;\r\n    cursor: pointer;\r\n}\r\n\r\n.zp-filesize {\r\n    color: var(--text-normal);\r\n    text-decoration: none;\r\n    font-size: small;\r\n    padding-left: 5px;\r\n}\r\n\r\n.zp-path {\r\n    color: var(--text-normal);\r\n    padding-bottom: 2px;\r\n    display: flex;\r\n    align-items: center;\r\n    gap: 8px;\r\n}\r\n\r\n.zp-folderReturn {\r\n    cursor: pointer;\r\n}\r\n\r\n.zp-folderReturn svg {\r\n    fill: var(--text-normal);\r\n    width: 20px;\r\n    height: 20px;\r\n}\r\n\r\n.zp-preview-bg {\r\n    background-color: rgba(0, 0, 0, 0.5);\r\n    position: fixed;\r\n    top: 0;\r\n    left: 0;\r\n    width: 100vw;\r\n    height: 100vh;\r\n    z-index: 3500;\r\n}\r\n\r\n.zp-preview {\r\n    position: absolute;\r\n    background: var(--background-secondary);\r\n    color: var(--text-normal);\r\n    top: 50%;\r\n    left: 50%;\r\n    transform: translate(-50%, -50%);\r\n    max-width: 80%;\r\n    min-width: 30%;\r\n    max-height: 90%;\r\n    min-height: 20%;\r\n    border-radius: 15px;\r\n    overflow: hidden;\r\n    display: flex;\r\n    flex-direction: column;\r\n    user-select: text;\r\n}\r\n\r\n.zp-preview-header {\r\n    height: 45px;\r\n    background: var(--background-primary);\r\n    flex-shrink: 0;\r\n    display: flex;\r\n    align-items: center;\r\n    font-size: 28px;\r\n    padding-left: 20px;\r\n    padding-right: 20px;\r\n    font-weight: 700;\r\n    border-bottom: 1px solid #bbbbbb;\r\n}\r\n\r\n.zp-preview-title {\r\n    flex-grow: 1;\r\n    min-width: 0;\r\n    overflow: hidden;\r\n    text-wrap: nowrap;\r\n    text-overflow: ellipsis;\r\n    height: 100%;\r\n    display: flex;\r\n    align-items: center;\r\n}\r\n\r\n.zp-preview-close {\r\n    height: 35px;\r\n    width: 35px;\r\n    fill: var(--text-normal);\r\n    cursor: pointer;\r\n}\r\n\r\n.zp-preview-content-wrap {\r\n    margin: 20px;\r\n    margin-bottom: 0;\r\n    padding: 20px;\r\n    border: 1px solid #bbbbbb;\r\n    border-radius: 10px;\r\n    min-height: 0;\r\n    overflow: hidden;\r\n    display: flex;\r\n    position: relative;\r\n    align-self: stretch;\r\n    flex-grow: 1;\r\n}\r\n\r\n.zp-preview-copy {\r\n    position: absolute;\r\n    top: 10px;\r\n    right: 10px;\r\n    width: 20px;\r\n    height: 20px;\r\n    fill: var(--text-normal);\r\n    cursor: pointer;\r\n}\r\n\r\n.zp-preview-content {\r\n    min-height: 0;\r\n    overflow: auto;\r\n    width: 100%;\r\n    scrollbar-color: var(--background-primary) var(--background-secondary);\r\n    /* prevents a scrollbar from randomly appearing for some reason */\r\n    padding-top: 3px;\r\n    padding-bottom: 3px;\r\n}\r\n\r\n.zp-preview audio {\r\n    width: 100%;\r\n}\r\n\r\n.zp-preview img {\r\n    \r\n}\r\n\r\n.zp-preview img, .zp-preview video {\r\n    width: 100%;\r\n    height: auto;\r\n}\r\n\r\n.zp-preview-override {\r\n    margin: 10px;\r\n    padding: 3px;\r\n    padding-left: 10px;\r\n    padding-right: 10px;\r\n    border-radius: 5px;\r\n    background-color: red;\r\n    color: white;\r\n    font-weight: bold;\r\n    text-align: center;\r\n}\r\n\r\n.zp-preview-footer {\r\n    height: 55px;\r\n    flex-shrink: 0;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: flex-end;\r\n    padding-right: 20px;\r\n    align-self: stretch;\r\n}\r\n\r\n.zp-preview-footer .icon {\r\n    height: 35px;\r\n    width: 35px;\r\n    border: none;\r\n    background-color: transparent;\r\n    fill: var(--text-normal);\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n}";
+addStyle(`.zp-wrap {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.zp-content {
+  padding: 16px;
+  padding-bottom: 10px;
+  display: flex;
+  align-items: center;
+}
+
+.zp-dropdown-expander {
+  width: 100%;
+  display: flex;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
+  border-top: 2px solid var(--border-subtle);
+  cursor: pointer;
+}
+
+.zp-dropdown-expander svg {
+  width: 16px;
+  height: 16px;
+  fill: var(--text-link);   
+}
+
+.zp-zip-preview {
+  max-height: 0px;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+  color: var(--text-normal);
+  padding-left: 16px;
+}
+
+.zp-zip-preview.expanded {
+  max-height: 500px;
+  overflow-y: auto;
+  padding-bottom: 10px;
+}
+
+.zp-entry {
+  color: var(--text-link);
+  text-decoration: underline;
+  padding-bottom: 2px;
+  cursor: pointer;
+}
+
+.zp-filesize {
+  color: var(--text-normal);
+  text-decoration: none;
+  font-size: small;
+  padding-left: 5px;
+}
+
+.zp-path {
+  color: var(--text-normal);
+  padding-bottom: 2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.zp-folderReturn {
+  cursor: pointer;
+}
+
+.zp-folderReturn svg {
+  fill: var(--text-normal);
+  width: 20px;
+  height: 20px;
+}
+
+.zp-preview-bg {
+  background-color: rgba(0, 0, 0, 0.5);
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 3500;
+}
+
+.zp-preview {
+  position: absolute;
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 80%;
+  min-width: 30%;
+  max-height: 90%;
+  min-height: 20%;
+  border-radius: 15px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  user-select: text;
+}
+
+.zp-preview-header {
+  height: 45px;
+  background: var(--background-primary);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  font-size: 28px;
+  padding-left: 20px;
+  padding-right: 20px;
+  font-weight: 700;
+  border-bottom: 1px solid #bbbbbb;
+}
+
+.zp-preview-title {
+  flex-grow: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-wrap: nowrap;
+  text-overflow: ellipsis;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.zp-preview-close {
+  height: 35px;
+  width: 35px;
+  fill: var(--text-normal);
+  cursor: pointer;
+}
+
+.zp-preview-content-wrap {
+  margin: 20px;
+  margin-bottom: 0;
+  padding: 20px;
+  border: 1px solid #bbbbbb;
+  border-radius: 10px;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  position: relative;
+  align-self: stretch;
+  flex-grow: 1;
+}
+
+.zp-preview-copy {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 20px;
+  height: 20px;
+  fill: var(--text-normal);
+  cursor: pointer;
+}
+
+.zp-preview-content {
+  min-height: 0;
+  overflow: auto;
+  width: 100%;
+  scrollbar-color: var(--background-primary) var(--background-secondary);
+  /* prevents a scrollbar from randomly appearing for some reason */
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+
+.zp-preview audio {
+  width: 100%;
+}
+
+.zp-preview img {
+  
+}
+
+.zp-preview img, .zp-preview video {
+  width: 100%;
+  height: auto;
+}
+
+.zp-preview-override {
+  margin: 10px;
+  padding: 3px;
+  padding-left: 10px;
+  padding-right: 10px;
+  border-radius: 5px;
+  background-color: red;
+  color: white;
+  font-weight: bold;
+  text-align: center;
+}
+
+.zp-preview-footer {
+  height: 55px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 20px;
+  align-self: stretch;
+}
+
+.zp-preview-footer .icon {
+  height: 35px;
+  width: 35px;
+  border: none;
+  background-color: transparent;
+  fill: var(--text-normal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}`);
 
 // node_modules/unzipit/dist/unzipit.module.js
 function readBlobAsArrayBuffer(blob) {
@@ -1055,7 +1296,6 @@ var close_default = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
 var content_copy_default = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" /></svg>';
 
 // plugins/ZipPreview/src/FilePreview.tsx
-var highlightModule = BdApi.Webpack.getModule((exports) => exports?.default?.highlight && exports?.default?.hasLanguage).default;
 var React = BdApi.React;
 function FilePreview({ name, type: startType, blob, buff, onClose }) {
   const [type, setType] = React.useState(startType);
@@ -1132,7 +1372,7 @@ function ZipPreview({ url }) {
   let zipInfo = null;
   function toggleExpanded() {
     setExpanded(!expanded);
-    if (!(!expanded && zipInfo == null)) return;
+    if (expanded || zipInfo != null) return;
     BdApi.Net.fetch(url).then((res) => res.blob()).then((blob) => unzip(blob)).then((info) => {
       let contents = { folders: {}, files: {}, path: "/" };
       for (let filename in info.entries) {
@@ -1169,9 +1409,7 @@ function ZipPreview({ url }) {
       else if (videos.includes(ext)) type = "video";
       else if (audio.includes(ext)) type = "audio";
     }
-    if (type == "text") {
-      if (isBinaryFile(buff)) type = "binary";
-    }
+    if (type == "text" && isBinaryFile(buff)) type = "binary";
     let el = document.createElement("div");
     document.body.appendChild(el);
     BdApi.ReactDOM.createRoot(el).render(/* @__PURE__ */ BdApi.React.createElement(
@@ -1237,34 +1475,27 @@ var previews = /* @__PURE__ */ new Map();
 onSwitch(() => {
   previews.clear();
 });
-onStart(() => {
-  BdApi.DOM.addStyle("ZipPreview", styles_default);
-  BdApi.Patcher.after("ZipPreview", fileModule, "Z", (_, args, returnVal) => {
-    if (args[0].item.contentType !== "application/zip") return;
-    let url = args[0].url;
-    let preview;
-    if (!previews.has(url)) {
-      preview = BdApi.React.createElement(ZipPreview_default, {
-        url
-      });
-      previews.set(url, preview);
-    } else {
-      preview = previews.get(url);
-    }
+after(fileModule, "Z", ({ args, returnVal }) => {
+  if (args[0].item?.contentType !== "application/zip") return;
+  let url = args[0].url;
+  let preview;
+  if (!previews.has(url)) {
+    preview = BdApi.React.createElement(ZipPreview_default, {
+      url
+    });
+    previews.set(url, preview);
+  } else {
     preview = previews.get(url);
-    const content = BdApi.React.createElement("div", {
-      className: "zp-content"
-    }, returnVal.props.children[0].props.children);
-    const wrapDiv = BdApi.React.createElement("div", {
-      className: "zp-wrap"
-    }, [content, preview]);
-    returnVal.props.children[0].props.style = { padding: 0 };
-    returnVal.props.children[0].props.children = wrapDiv;
-  });
-});
-onStop(() => {
-  BdApi.DOM.removeStyle("ZipPreview");
-  BdApi.Patcher.unpatchAll("ZipPreview");
+  }
+  preview = previews.get(url);
+  const content = BdApi.React.createElement("div", {
+    className: "zp-content"
+  }, returnVal.props.children[0].props.children);
+  const wrapDiv = BdApi.React.createElement("div", {
+    className: "zp-wrap"
+  }, [content, preview]);
+  returnVal.props.children[0].props.style = { padding: 0 };
+  returnVal.props.children[0].props.children = wrapDiv;
 });
   }
 }
