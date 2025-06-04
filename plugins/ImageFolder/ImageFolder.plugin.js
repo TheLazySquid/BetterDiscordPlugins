@@ -1,7 +1,7 @@
 /**
  * @name ImageFolder
  * @description A BetterDiscord plugin that allows you to save and send images from a folder for easy access
- * @version 1.0.1
+ * @version 1.0.2
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -100,14 +100,14 @@ onStop(() => {
 });
 
 // shared/modules.ts
-var CloudUploader = /* @__PURE__ */ BdApi.Webpack.getByStrings("uploadFileToCloud", { searchExports: true });
-var uploader = /* @__PURE__ */ BdApi.Webpack.getByKeys("uploadFiles");
-var channelStore = /* @__PURE__ */ BdApi.Webpack.getStore("SelectedChannelStore");
-var expressionModule = /* @__PURE__ */ BdApi.Webpack.getModule((m) => m.type?.toString?.().includes("onSelectGIF"));
-var buttonsModule = /* @__PURE__ */ BdApi.Webpack.getModule((m) => m.type?.toString?.().includes(".isSubmitButtonEnabled"));
-var uploadOverlay = /* @__PURE__ */ BdApi.Webpack.getWithKey(BdApi.Webpack.Filters.byStrings("TEXTAREA_FOCUS", "onDragClear"));
-var uploadClasses = /* @__PURE__ */ BdApi.Webpack.getByKeys("uploadArea", "chat");
-var expressionPicker = /* @__PURE__ */ BdApi.Webpack.getMangled((m) => Object.values(m).some((v) => v?.toString().includes("lastActiveView")), {
+var Webpack = BdApi.Webpack;
+var CloudUploader = /* @__PURE__ */ Webpack.getByStrings("uploadFileToCloud", { searchExports: true });
+var uploader = /* @__PURE__ */ Webpack.getByKeys("uploadFiles");
+var channelStore = /* @__PURE__ */ Webpack.getStore("SelectedChannelStore");
+var expressionModule = /* @__PURE__ */ Webpack.getModule((m) => m.type?.toString?.().includes("onSelectGIF"));
+var buttonsModule = /* @__PURE__ */ Webpack.getModule((m) => m.type?.toString?.().includes(".isSubmitButtonEnabled"));
+var uploadClasses = /* @__PURE__ */ Webpack.getByKeys("uploadArea", "chat");
+var expressionPicker = /* @__PURE__ */ Webpack.getMangled("lastActiveView", {
   toggle: (f) => f.toString().includes("activeView==="),
   close: (f) => f.toString().includes("activeView:null"),
   store: (f) => f.getState
