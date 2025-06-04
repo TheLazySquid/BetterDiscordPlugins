@@ -1,75 +1,58 @@
-#progressDialog {
-    width: 100vw;
-    height: 100vh;
-    background-color: rgba(0, 0, 0, 0.5);
-    text-align: center;
-    color: white;
-    font-size: 80px;
-    outline: none;
-    border: none;
-}
-
-#cancelRender {
-    background-color: red;
-    border-radius: 9999px;
-    font-size: 30px;
-    padding: 10px;
-    padding-left: 35px;
-    padding-right: 35px;
-}
-
-.gif-captioner-btn {
+.gc-trigger {
     position: absolute;
-    z-index: 4;
-    top: 0px;
-    left: 0px;
+    top: 0;
+    left: 0;
+    z-index: 10;
     background-color: transparent;
-    border: none;
-    outline: none;
-    color: white;
-    padding: 0px;
+    margin: 0;
+    padding: 0;
 }
 
-.caption-creator {
+.gc-captioner {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    width: 100%;
+}
+
+.gc-caption {
+    background-color: var(--background-accent);
     color: white;
+    border: 1px solid black;
+    border-radius: 5px;
+    padding: 4px;
 }
 
-.settings {
+.gc-fontsize {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    width: 100%;
-    margin-bottom: 20px;
+    gap: 5px;
+    color: white;
+    margin: 10px 0;
 }
 
-.caption-input {
+.gc-fontsize input {
     flex-grow: 1;
-    margin-right: 10px;
 }
 
-.font-size-slider {
-    width: 100px;
-}
-
-.caption-canvas {
-    border: 1px solid #000;
+.gc-captioner canvas {
     width: 100%;
-    border: none;
-    outline: none;
 }
 
-.caption-preview {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+.gc-captioner img, .gc-captioner video {
     width: 100%;
-    border: 2px solid black;
 }
 
-.caption-gif {
-    width: 100%;
+.gc-progress {
+    background-color: var(--modal-background);
+    border-radius: 4px;
+    padding: 20px;
+    color: white;
+}
+
+.gc-status {
+    font-size: 30px;
+}
+
+.gc-progress progress {
+    width: 450px;
+    margin: 10px 0;
 }

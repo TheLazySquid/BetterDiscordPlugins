@@ -1,93 +1,73 @@
 import futura from "$assets/Futura Condensed Extra Bold.otf";
 import CaptionBtnSVG from "$assets/page-layout-header.svg";
-import css from "./styles.css";
-import captionCreator from "./captionCreator.jsx";
-import { onStart, onStop } from "$shared/bd.js";
-import { watchElement } from "$shared/api/dom.js";
-import { type ParsedGif, parseGIF } from "gifuct-js";
-import { renderGif } from "./render.js";
+import { addFont } from "$shared/api/fonts";
+import { after } from "$shared/api/patching";
+import { error } from "$shared/api/toast";
+import { expressionPicker, gifDisplay } from "$shared/modules";
+import Captioner from "./ui/captioner";
+import captionMp4 from "./render/mp4";
+import "./styles.css";
+import captionGif from "./render/gif";
 
-type Gif = HTMLVideoElement | HTMLImageElement;
+addFont(futura, "futuraBoldCondensed");
 
-const gifSelector = "video[class^='gif'], img[class^='gif']";
-watchElement(gifSelector, (gif) => {
-    if (gif.querySelector(".gif-captioner-btn")) return;
+after(gifDisplay.prototype, "render", ({ thisVal, returnVal }) => {
+    const button = BdApi.React.createElement("button", {
+        dangerouslySetInnerHTML: { __html: CaptionBtnSVG },
+        className: "gc-trigger",
+        onClick: (e) => {
+            e.stopPropagation();
+            let isGif = thisVal.props.format === 1;
+            let url = thisVal.props.src;
 
-    let captionBtn = document.createElement("button");
-    captionBtn.innerHTML = CaptionBtnSVG;
-    captionBtn.classList.add("gif-captioner-btn");
-    gif.before(captionBtn);
+            if(isGif) {
+                let image = document.createElement("img");
+                image.src = url;
+                
+                image.addEventListener("load", () => {
+                    // For some reason the height and width change once added to the dom
+                    let { width, height } = image;
+                    showCaptioner(width, image, (text, size) => {
+                        captionGif(url, width, height, text, size);
+                    });
+                });
+                image.addEventListener("error", () => error("Failed to load gif"));
+            } else {
+                let video = document.createElement("video");
+                video.src = url;
+                video.autoplay = true;
+                video.loop = true;
+                video.muted = true;
+                video.load();
 
-    BdApi.UI.createTooltip(captionBtn, "Add Custom Caption", {});
-
-    let isVideo = gif.nodeName === "VIDEO";
-
-    captionBtn.addEventListener("click", async (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-
-        let settings = { caption: "", fontSize: 35 };
-        let src = (gif as Gif).src;
-        let width: number;
-        let parsedGif: ParsedGif | undefined;
-
-        if (isVideo) width = (gif as HTMLVideoElement).videoWidth;
-        else {
-            // @ts-ignore types missing for some reason
-            let res = await (BdApi.Net.fetch as typeof fetch)(src);
-            let buff = await res.arrayBuffer();
-            parsedGif = parseGIF(buff);
-            width = parsedGif.lsd.width;
+                video.addEventListener("canplaythrough", () => {
+                    let { videoWidth, videoHeight } = video;
+                    showCaptioner(videoWidth, video, (text, size) => {
+                        captionMp4(url, videoWidth, videoHeight, text, size);
+                    });
+                }, { once: true });
+                video.addEventListener("error", () => error("Failed to load gif"));
+            }
         }
-
-        const reactEl = BdApi.React.createElement(captionCreator, {
-            src,
-            width,
-            onUpdate: (caption: string, fontSize: string) => {
-                settings.caption = caption;
-                settings.fontSize = parseInt(fontSize);
-            },
-            isVideo
-        });
-
-        const onConfirm = () => {
-            // close the GIF picker
-            renderGif(
-                src,
-                settings.caption,
-                settings.fontSize,
-                isVideo,
-                parsedGif
-            );
-            document
-                .querySelector<HTMLButtonElement>(
-                    ".expression-picker-chat-input-button > button"
-                )
-                ?.click();
-        };
-
-        BdApi.UI.showConfirmationModal("Add Caption", reactEl as any, {
-            confirmText: "Upload",
-            cancelText: "Cancel",
-            onConfirm
-        });
     });
+
+    returnVal.props.children.unshift(button);
 });
 
-let font = new FontFace("futuraBoldCondensed", futura);
+function showCaptioner(width: number, element: HTMLElement, onConfirm: (text: string, size: number) => void) {
+    let submitCallback: () => [text: string, size: number];
 
-onStart(() => {
-    BdApi.DOM.addStyle("gif-captioner-style", css);
-    document.fonts.add(font);
-});
+    const captioner = BdApi.React.createElement(Captioner, {
+        width,
+        element,
+        onSubmit: (cb) => submitCallback = cb
+    });
 
-onStop(() => {
-    BdApi.DOM.removeStyle("gif-captioner-style");
-    document.fonts.delete(font);
-
-    // cleanup any buttons that were added
-    let btns = document.querySelectorAll(".gif-captioner-btn");
-    for (let btn of btns) {
-        btn.remove();
-    }
-});
+    BdApi.UI.showConfirmationModal("Add caption", captioner, {
+        onConfirm: () => {
+            expressionPicker.close();
+            let res = submitCallback?.();
+            if(res) onConfirm(...res);
+        }
+    });
+}
