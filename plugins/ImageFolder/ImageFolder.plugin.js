@@ -1,7 +1,7 @@
 /**
  * @name ImageFolder
  * @description A BetterDiscord plugin that allows you to save and send images from a folder for easy access
- * @version 1.0.2
+ * @version 1.0.3
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -36,8 +36,7 @@ var __toBinary = /* @__PURE__ */ (() => {
 var image_plus_outline_default = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><path d="M13 19C13 19.7 13.13 20.37 13.35 21H5C3.9 21 3 20.11 3 19V5C3 3.9 3.9 3 5 3H19C20.11 3 21 3.9 21 5V13.35C20.37 13.13 19.7 13 19 13V5H5V19H13M13.96 12.29L11.21 15.83L9.25 13.47L6.5 17H13.35C13.75 15.88 14.47 14.91 15.4 14.21L13.96 12.29M20 18V15H18V18H15V20H18V23H20V20H23V18H20Z" /></svg>';
 
 // meta-ns:meta
-var pluginName = "ImageFolder";
-var meta_default = { pluginName };
+var meta_default = { pluginName: "ImageFolder" };
 
 // shared/bd.ts
 var Api = new BdApi(meta_default.pluginName);
@@ -82,7 +81,15 @@ function setSettingsPanel(el) {
 }
 
 // shared/api/patching.ts
+function check(module2, key) {
+  if (!module2 || !key) {
+    Api.Logger.warn("Missing module or key", module2, key);
+    return false;
+  }
+  return true;
+}
 function after(module2, key, callback) {
+  if (!check(module2, key)) return;
   onStart(() => {
     Api.Patcher.after(module2, key, (thisVal, args, returnVal) => {
       return callback({ thisVal, args, returnVal });
@@ -90,6 +97,7 @@ function after(module2, key, callback) {
   });
 }
 function tempAfter(module2, key, callback) {
+  if (!check(module2, key)) return;
   let unpatch = Api.Patcher.after(module2, key, (thisVal, args, returnVal) => {
     unpatch();
     return callback({ thisVal, args, returnVal });
@@ -168,26 +176,24 @@ function getInput(title, callback) {
 }
 
 // shared/util/upload.ts
-var pendingReply = null;
 var [module, createKey] = BdApi.Webpack.getWithKey(BdApi.Webpack.Filters.byStrings("CREATE_PENDING_REPLY"));
 var deleteKey;
 var setShouldMentionKey;
-for (const [k, v] of Object.entries(BdApi.Webpack)) {
+for (const [k, v] of Object.entries(module)) {
   const str = v.toString();
   if (str.includes("DELETE_PENDING_REPLY")) deleteKey = k;
   else if (str.includes("SET_PENDING_REPLY_SHOULD_MENTION")) setShouldMentionKey = k;
 }
-onStart(() => {
-  BdApi.Patcher.after(pluginName, module, createKey, (_, args) => {
-    if (args[0]) pendingReply = args[0];
-  });
-  BdApi.Patcher.after(pluginName, module, deleteKey, () => {
-    pendingReply = null;
-  });
-  BdApi.Patcher.after(pluginName, module, setShouldMentionKey, (_, args) => {
-    if (!args[0] || pendingReply?.channel.id === args[0]) return;
-    pendingReply.shouldMention = args[1];
-  });
+var pendingReply = null;
+after(module, createKey, ({ args }) => {
+  if (args[0]) pendingReply = args[0];
+});
+after(module, deleteKey, () => {
+  pendingReply = null;
+});
+after(module, setShouldMentionKey, ({ args }) => {
+  if (!args[0] || pendingReply?.channel.id === args[0]) return;
+  pendingReply.shouldMention = args[1];
 });
 async function uploadFile(file) {
   const channelId = channelStore.getCurrentlySelectedChannelId();

@@ -1,7 +1,7 @@
 /**
  * @name GifCaptioner
  * @description A BetterDiscord plugin that allows you to add a caption to discord gifs
- * @version 1.0.1
+ * @version 1.0.2
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -1190,7 +1190,15 @@ function addFont(data, family) {
 }
 
 // shared/api/patching.ts
+function check(module2, key) {
+  if (!module2 || !key) {
+    Api.Logger.warn("Missing module or key", module2, key);
+    return false;
+  }
+  return true;
+}
 function after(module2, key, callback) {
+  if (!check(module2, key)) return;
   onStart(() => {
     Api.Patcher.after(module2, key, (thisVal, args, returnVal) => {
       return callback({ thisVal, args, returnVal });
@@ -6874,26 +6882,24 @@ function getUrl(data, type = "application/javascript") {
 var import_gif = __toESM(require_gif(), 1);
 
 // shared/util/upload.ts
-var pendingReply = null;
 var [module, createKey] = BdApi.Webpack.getWithKey(BdApi.Webpack.Filters.byStrings("CREATE_PENDING_REPLY"));
 var deleteKey;
 var setShouldMentionKey;
-for (const [k, v2] of Object.entries(BdApi.Webpack)) {
+for (const [k, v2] of Object.entries(module)) {
   const str = v2.toString();
   if (str.includes("DELETE_PENDING_REPLY")) deleteKey = k;
   else if (str.includes("SET_PENDING_REPLY_SHOULD_MENTION")) setShouldMentionKey = k;
 }
-onStart(() => {
-  BdApi.Patcher.after(pluginName, module, createKey, (_2, args) => {
-    if (args[0]) pendingReply = args[0];
-  });
-  BdApi.Patcher.after(pluginName, module, deleteKey, () => {
-    pendingReply = null;
-  });
-  BdApi.Patcher.after(pluginName, module, setShouldMentionKey, (_2, args) => {
-    if (!args[0] || pendingReply?.channel.id === args[0]) return;
-    pendingReply.shouldMention = args[1];
-  });
+var pendingReply = null;
+after(module, createKey, ({ args }) => {
+  if (args[0]) pendingReply = args[0];
+});
+after(module, deleteKey, () => {
+  pendingReply = null;
+});
+after(module, setShouldMentionKey, ({ args }) => {
+  if (!args[0] || pendingReply?.channel.id === args[0]) return;
+  pendingReply.shouldMention = args[1];
 });
 async function uploadFile(file) {
   const channelId = channelStore.getCurrentlySelectedChannelId();
