@@ -1,7 +1,7 @@
 /**
  * @name ImageFolder
  * @description A BetterDiscord plugin that allows you to save and send images from a folder for easy access
- * @version 1.0.3
+ * @version 1.0.4
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -469,7 +469,7 @@ var Manager = class {
       title: "Save media"
     });
     if (dialog.canceled) return;
-    let res = await fetch(url);
+    let res = await BdApi.Net.fetch(url);
     if (!res.body) return;
     let reader = res.body.getReader();
     await this.readToFile(dialog.filePath, reader);
@@ -477,6 +477,10 @@ var Manager = class {
     const basename = path.basename(dialog.filePath);
     this.saveDir = dirname;
     Api.Data.save("saveDir", dirname);
+    if (dialog.filePath.includes(this.base)) {
+      let relativePath = dialog.filePath.replace(this.base, "").slice(1);
+      Api.Data.save(`used-${relativePath}`, Date.now());
+    }
     BdApi.UI.showToast(`Downloaded ${basename}`, { type: "success" });
   }
   static async readToFile(path2, reader) {
@@ -1103,7 +1107,6 @@ onStop(() => {
 patchContextMenu("message", (element, props) => {
   if (!props?.mediaItem) return;
   if (Object.values(types).every((t) => t[1] !== props.mediaItem.contentType)) return;
-  console.log(JSON.stringify(props.mediaItem.url));
   element.props.children.props.children.push(
     BdApi.ContextMenu.buildItem({ type: "separator" }),
     BdApi.ContextMenu.buildItem({

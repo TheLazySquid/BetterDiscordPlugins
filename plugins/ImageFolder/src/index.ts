@@ -92,7 +92,6 @@ onStop(() => {
 patchContextMenu("message", (element, props) => {
     if(!props?.mediaItem) return;
     if(Object.values(types).every((t) => t[1] !== props.mediaItem.contentType)) return;
-    console.log(JSON.stringify(props.mediaItem.url));
 
     element.props.children.props.children.push(
         BdApi.ContextMenu.buildItem({ type: "separator"}),

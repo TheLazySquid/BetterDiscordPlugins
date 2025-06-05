@@ -310,7 +310,7 @@ export default class Manager {
 
         if(dialog.canceled) return;
 
-        let res = await fetch(url);
+        let res = await BdApi.Net.fetch(url);
         if(!res.body) return;
         let reader = res.body.getReader();
         await this.readToFile(dialog.filePath, reader);
@@ -320,6 +320,12 @@ export default class Manager {
 
         this.saveDir = dirname;
         Api.Data.save("saveDir", dirname);
+
+        if(dialog.filePath.includes(this.base)) {
+            // Remove the base and the slash
+            let relativePath = dialog.filePath.replace(this.base, "").slice(1);
+            Api.Data.save(`used-${relativePath}`, Date.now());
+        }
         
         BdApi.UI.showToast(`Downloaded ${basename}`, { type: "success" });
     }
