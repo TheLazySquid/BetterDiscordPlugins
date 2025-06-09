@@ -1,7 +1,7 @@
 /**
  * @name GifCaptioner
  * @description A BetterDiscord plugin that allows you to add a caption to discord gifs
- * @version 1.0.2
+ * @version 1.0.3
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -1221,7 +1221,7 @@ var uploader = /* @__PURE__ */ Webpack.getByKeys("uploadFiles");
 var channelStore = /* @__PURE__ */ Webpack.getStore("SelectedChannelStore");
 var gifDisplay = /* @__PURE__ */ Webpack.getByStrings("renderGIF()", "imagePool", { searchExports: true });
 var premiumPremissions = /* @__PURE__ */ Webpack.getByKeys("getUserMaxFileSize");
-var Modals = /* @__PURE__ */ Webpack.getMangled(".modalKey?", {
+var ModalSystem = /* @__PURE__ */ Webpack.getMangled(".modalKey?", {
   open: /* @__PURE__ */ Webpack.Filters.byStrings(",instant:"),
   close: /* @__PURE__ */ Webpack.Filters.byStrings(".onCloseCallback()")
 });
@@ -1229,6 +1229,13 @@ var expressionPicker = /* @__PURE__ */ Webpack.getMangled("lastActiveView", {
   toggle: (f2) => f2.toString().includes("activeView==="),
   close: (f2) => f2.toString().includes("activeView:null"),
   store: (f2) => f2.getState
+});
+var Modal = /* @__PURE__ */ Webpack.getMangled(".MODAL_ROOT_LEGACY,properties", {
+  Root: /* @__PURE__ */ Webpack.Filters.byStrings(".ImpressionNames.MODAL_ROOT_LEGACY"),
+  Content: /* @__PURE__ */ Webpack.Filters.byStrings("scrollerRef", "scrollbarType"),
+  Header: /* @__PURE__ */ Webpack.Filters.byStrings(".header,"),
+  Close: /* @__PURE__ */ Webpack.Filters.byStrings(".closeWithCircleBackground]:"),
+  Footer: /* @__PURE__ */ Webpack.Filters.byStrings(".footerSeparator]:")
 });
 
 // shared/util/canvas.ts
@@ -7052,16 +7059,13 @@ function Progress({ onUpdater, status: initialStatus }) {
   return /* @__PURE__ */ BdApi.React.createElement("div", { className: "gc-progress" }, /* @__PURE__ */ BdApi.React.createElement("h2", { className: "gc-status" }, status), /* @__PURE__ */ BdApi.React.createElement("progress", { value: progress, max: 1 }));
 }
 
-// plugins/GifCaptioner/src/ui/createProgress.ts
+// plugins/GifCaptioner/src/ui/createProgress.tsx
 var ProgressDisplay = class {
   updater;
   modalId;
   constructor(status) {
-    this.modalId = Modals.open(() => {
-      return BdApi.React.createElement(Progress, {
-        status,
-        onUpdater: (updater) => this.updater = updater
-      });
+    this.modalId = ModalSystem.open((props) => {
+      return /* @__PURE__ */ BdApi.React.createElement(Modal.Root, { size: "dynamic", ...props }, /* @__PURE__ */ BdApi.React.createElement(Modal.Content, null, /* @__PURE__ */ BdApi.React.createElement(Progress, { status, onUpdater: (updater) => this.updater = updater })));
     }, {
       onCloseRequest: () => false
     });
@@ -7071,7 +7075,7 @@ var ProgressDisplay = class {
     this.updater(status, progress);
   }
   close() {
-    Modals.close(this.modalId);
+    ModalSystem.close(this.modalId);
   }
 };
 
@@ -7233,19 +7237,20 @@ addStyle(`.gc-trigger {
 }
 
 .gc-progress {
-  background-color: var(--modal-background);
-  border-radius: 4px;
-  padding: 20px;
   color: white;
+  width: 300px;
 }
 
 .gc-status {
   font-size: 30px;
+  font-weight: bold;
+  white-space: nowrap;
 }
 
 .gc-progress progress {
-  width: 450px;
+  width: 100%;
   margin: 10px 0;
+  height: 20px;
 }`);
 
 // plugins/GifCaptioner/src/render/gif.ts

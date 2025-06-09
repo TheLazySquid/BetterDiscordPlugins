@@ -30,7 +30,7 @@ export const highlightModule: any = /* @__PURE__ */ Webpack.getByKeys("highlight
 
 // Taken from Arven
 // @ts-expect-error Zerthox's repo hasn't documented this yet
-export const Modals = /* @__PURE__ */ Webpack.getMangled(".modalKey?", {
+export const ModalSystem = /* @__PURE__ */ Webpack.getMangled(".modalKey?", {
   open: /* @__PURE__ */ Webpack.Filters.byStrings(",instant:"),
   close: /* @__PURE__ */ Webpack.Filters.byStrings(".onCloseCallback()")
 });
@@ -40,4 +40,14 @@ export const expressionPicker: ExpressionPicker = /* @__PURE__ */ Webpack.getMan
     toggle: (f: any) => f.toString().includes("activeView==="),
     close: (f: any) => f.toString().includes("activeView:null"),
     store: (f: any) => f.getState,
+});
+
+// Taken from doggy
+// @ts-expect-error
+export const Modal = /* @__PURE__ */ Webpack.getMangled(".MODAL_ROOT_LEGACY,properties", {
+    Root: /* @__PURE__ */ Webpack.Filters.byStrings(".ImpressionNames.MODAL_ROOT_LEGACY"),
+    Content: /* @__PURE__ */ Webpack.Filters.byStrings("scrollerRef", "scrollbarType"),
+    Header: /* @__PURE__ */ Webpack.Filters.byStrings(".header,"),
+    Close: /* @__PURE__ */ Webpack.Filters.byStrings(".closeWithCircleBackground]:"),
+    Footer: /* @__PURE__ */ Webpack.Filters.byStrings(".footerSeparator]:")
 });

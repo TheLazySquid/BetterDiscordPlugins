@@ -42,17 +42,18 @@
 }
 
 .gc-progress {
-    background-color: var(--modal-background);
-    border-radius: 4px;
-    padding: 20px;
     color: white;
+    width: 300px;
 }
 
 .gc-status {
     font-size: 30px;
+    font-weight: bold;
+    white-space: nowrap;
 }
 
 .gc-progress progress {
-    width: 450px;
+    width: 100%;
     margin: 10px 0;
+    height: 20px;
 }
