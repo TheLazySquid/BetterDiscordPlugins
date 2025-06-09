@@ -1,3 +1,5 @@
+import type { ModuleFilter } from "betterdiscord";
+
 interface ReactElementModule {
     type: (...args: any[]) => any;
 }
@@ -11,7 +13,11 @@ interface ExpressionPicker {
     }
 }
 
+
 const Webpack = BdApi.Webpack;
+function getMangled<T>(filter: string | ModuleFilter, mapper: T): { [key in keyof T]: any } {
+    return (Webpack as any).getMangled(filter, mapper);
+}
 
 // It's annoying how @__PURE__ needs to be spammed everywhere
 export const imgAdder: any = /* @__PURE__ */ Webpack.getByKeys("addFile");
@@ -29,22 +35,19 @@ export const premiumPremissions: any = /* @__PURE__ */ Webpack.getByKeys("getUse
 export const highlightModule: any = /* @__PURE__ */ Webpack.getByKeys("highlight", "hasLanguage");
 
 // Taken from Arven
-// @ts-expect-error Zerthox's repo hasn't documented this yet
-export const ModalSystem = /* @__PURE__ */ Webpack.getMangled(".modalKey?", {
+export const ModalSystem = /* @__PURE__ */ getMangled(".modalKey?", {
   open: /* @__PURE__ */ Webpack.Filters.byStrings(",instant:"),
   close: /* @__PURE__ */ Webpack.Filters.byStrings(".onCloseCallback()")
 });
 
-// @ts-expect-error
-export const expressionPicker: ExpressionPicker = /* @__PURE__ */ Webpack.getMangled("lastActiveView", {
+export const expressionPicker: ExpressionPicker = /* @__PURE__ */ getMangled("lastActiveView", {
     toggle: (f: any) => f.toString().includes("activeView==="),
     close: (f: any) => f.toString().includes("activeView:null"),
     store: (f: any) => f.getState,
 });
 
 // Taken from doggy
-// @ts-expect-error
-export const Modal = /* @__PURE__ */ Webpack.getMangled(".MODAL_ROOT_LEGACY,properties", {
+export const Modal = /* @__PURE__ */ getMangled(".MODAL_ROOT_LEGACY,properties", {
     Root: /* @__PURE__ */ Webpack.Filters.byStrings(".ImpressionNames.MODAL_ROOT_LEGACY"),
     Content: /* @__PURE__ */ Webpack.Filters.byStrings("scrollerRef", "scrollbarType"),
     Header: /* @__PURE__ */ Webpack.Filters.byStrings(".header,"),

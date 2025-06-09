@@ -73,32 +73,22 @@
     height: 20px;
 }
 
-.zp-preview-bg {
-    background-color: rgba(0, 0, 0, 0.5);
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: 3500;
+.zp-no-padding {
+    padding: 0;
+    overflow: hidden !important;
 }
 
 .zp-preview {
-    position: absolute;
-    background: var(--background-secondary);
     color: var(--text-normal);
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    max-width: 80%;
-    min-width: 30%;
-    max-height: 90%;
-    min-height: 20%;
-    border-radius: 15px;
+    max-width: 80vw;
+    min-width: 30vw;
+    max-height: 90vh;
+    min-height: 20vh;
     overflow: hidden;
     display: flex;
     flex-direction: column;
     user-select: text;
+    border-radius: var(--radius-md);
 }
 
 .zp-preview-header {

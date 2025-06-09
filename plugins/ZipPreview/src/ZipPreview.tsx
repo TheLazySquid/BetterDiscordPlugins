@@ -6,6 +6,7 @@ import ExpandDown from "$assets/arrow-expand-down.svg"
 import ExpandUp from "$assets/arrow-expand-up.svg"
 import FolderReturn from "$assets/folder-arrow-left-outline.svg"
 import FilePreview from "./FilePreview.tsx";
+import { Modal, ModalSystem } from "$shared/modules.ts";
 
 const React = BdApi.React;
 
@@ -80,17 +81,16 @@ function ZipPreview({ url }: { url: string }) {
         }
         if(type == "text" && isBinaryFile(buff)) type = "binary";
 
-        let el = document.createElement("div");
-        document.body.appendChild(el);
-
-        // @ts-ignore type missing for some reason
-        BdApi.ReactDOM.createRoot(el).render(<FilePreview
-            name={name}
-            type={type}
-            blob={blob}
-            buff={buff}
-            onClose={() => document.body.removeChild(el)}
-        />);
+        let id = ModalSystem.open((props: any) => (
+            <Modal.Root size="dynamic" {...props}>
+                <Modal.Content className="zp-no-padding">
+                    <FilePreview
+                        name={name} type={type} blob={blob} buff={buff}
+                        onClose={() => ModalSystem.close(id)}
+                    />
+                </Modal.Content>
+            </Modal.Root>
+        ));
     }
 
     function formatSize(size: number) {

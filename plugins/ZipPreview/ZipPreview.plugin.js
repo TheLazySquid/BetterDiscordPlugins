@@ -1,7 +1,7 @@
 /**
  * @name ZipPreview
  * @description Lets you see inside zips and preview/download files without ever downloading/extracting the zip
- * @version 0.4.3
+ * @version 0.4.4
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -53,7 +53,15 @@ var onStop = createCallbackHandler("stop");
 var onSwitch = createCallbackHandler("onSwitch");
 
 // shared/api/patching.ts
+function check(module2, key) {
+  if (!module2 || !key) {
+    Api.Logger.warn("Missing module or key", module2, key);
+    return false;
+  }
+  return true;
+}
 function after(module2, key, callback) {
+  if (!check(module2, key)) return;
   onStart(() => {
     Api.Patcher.after(module2, key, (thisVal, args, returnVal) => {
       return callback({ thisVal, args, returnVal });
@@ -66,8 +74,22 @@ onStop(() => {
 
 // shared/modules.ts
 var Webpack = BdApi.Webpack;
+function getMangled(filter, mapper) {
+  return Webpack.getMangled(filter, mapper);
+}
 var fileModule = /* @__PURE__ */ Webpack.getModule((m) => m.Z?.toString().includes("filenameLinkWrapper"));
 var highlightModule = /* @__PURE__ */ Webpack.getByKeys("highlight", "hasLanguage");
+var ModalSystem = /* @__PURE__ */ getMangled(".modalKey?", {
+  open: /* @__PURE__ */ Webpack.Filters.byStrings(",instant:"),
+  close: /* @__PURE__ */ Webpack.Filters.byStrings(".onCloseCallback()")
+});
+var Modal = /* @__PURE__ */ getMangled(".MODAL_ROOT_LEGACY,properties", {
+  Root: /* @__PURE__ */ Webpack.Filters.byStrings(".ImpressionNames.MODAL_ROOT_LEGACY"),
+  Content: /* @__PURE__ */ Webpack.Filters.byStrings("scrollerRef", "scrollbarType"),
+  Header: /* @__PURE__ */ Webpack.Filters.byStrings(".header,"),
+  Close: /* @__PURE__ */ Webpack.Filters.byStrings(".closeWithCircleBackground]:"),
+  Footer: /* @__PURE__ */ Webpack.Filters.byStrings(".footerSeparator]:")
+});
 
 // shared/api/styles.ts
 var count = 0;
@@ -158,32 +180,22 @@ addStyle(`.zp-wrap {
   height: 20px;
 }
 
-.zp-preview-bg {
-  background-color: rgba(0, 0, 0, 0.5);
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 3500;
+.zp-no-padding {
+  padding: 0;
+  overflow: hidden !important;
 }
 
 .zp-preview {
-  position: absolute;
-  background: var(--background-secondary);
   color: var(--text-normal);
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  max-width: 80%;
-  min-width: 30%;
-  max-height: 90%;
-  min-height: 20%;
-  border-radius: 15px;
+  max-width: 80vw;
+  min-width: 30vw;
+  max-height: 90vh;
+  min-height: 20vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   user-select: text;
+  border-radius: var(--radius-md);
 }
 
 .zp-preview-header {
@@ -1324,7 +1336,7 @@ function FilePreview({ name, type: startType, blob, buff, onClose }) {
   }
   const ext = name.split(".").at(-1);
   const hasCode = highlightModule.hasLanguage(ext);
-  return /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview-bg", onClick: close }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview-header" }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview-title" }, name), /* @__PURE__ */ BdApi.React.createElement(
+  return /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview-header" }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview-title" }, name), /* @__PURE__ */ BdApi.React.createElement(
     "div",
     {
       className: "zp-preview-close",
@@ -1361,7 +1373,7 @@ function FilePreview({ name, type: startType, blob, buff, onClose }) {
       className: "bd-button bd-button-filled bd-button-color-brand bd-button-medium"
     },
     "Close"
-  ))));
+  )));
 }
 
 // plugins/ZipPreview/src/ZipPreview.tsx
@@ -1410,18 +1422,16 @@ function ZipPreview({ url }) {
       else if (audio.includes(ext)) type = "audio";
     }
     if (type == "text" && isBinaryFile(buff)) type = "binary";
-    let el = document.createElement("div");
-    document.body.appendChild(el);
-    BdApi.ReactDOM.createRoot(el).render(/* @__PURE__ */ BdApi.React.createElement(
+    let id = ModalSystem.open((props) => /* @__PURE__ */ BdApi.React.createElement(Modal.Root, { size: "dynamic", ...props }, /* @__PURE__ */ BdApi.React.createElement(Modal.Content, { className: "zp-no-padding" }, /* @__PURE__ */ BdApi.React.createElement(
       FilePreview,
       {
         name,
         type,
         blob,
         buff,
-        onClose: () => document.body.removeChild(el)
+        onClose: () => ModalSystem.close(id)
       }
-    ));
+    ))));
   }
   function formatSize(size) {
     if (size < 1024) return size + " B";
