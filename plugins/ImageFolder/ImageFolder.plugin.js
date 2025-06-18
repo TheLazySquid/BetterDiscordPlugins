@@ -1,7 +1,7 @@
 /**
  * @name ImageFolder
  * @description A BetterDiscord plugin that allows you to save and send images from a folder for easy access
- * @version 1.0.5
+ * @version 1.1.0
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -36,10 +36,10 @@ var __toBinary = /* @__PURE__ */ (() => {
 var image_plus_outline_default = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><path d="M13 19C13 19.7 13.13 20.37 13.35 21H5C3.9 21 3 20.11 3 19V5C3 3.9 3.9 3 5 3H19C20.11 3 21 3.9 21 5V13.35C20.37 13.13 19.7 13 19 13V5H5V19H13M13.96 12.29L11.21 15.83L9.25 13.47L6.5 17H13.35C13.75 15.88 14.47 14.91 15.4 14.21L13.96 12.29M20 18V15H18V18H15V20H18V23H20V20H23V18H20Z" /></svg>';
 
 // meta-ns:meta
-var meta_default = { pluginName: "ImageFolder" };
+var pluginName = "ImageFolder";
 
 // shared/bd.ts
-var Api = new BdApi(meta_default.pluginName);
+var Api = new BdApi(pluginName);
 var createCallbackHandler = (callbackName) => {
   const fullName = callbackName + "Callbacks";
   plugin[fullName] = [];
@@ -81,26 +81,34 @@ function setSettingsPanel(el) {
 }
 
 // shared/api/patching.ts
-function check(module2, key) {
-  if (!module2 || !key) {
-    Api.Logger.warn("Missing module or key", module2, key);
+function check(module, key) {
+  if (!module || !key) {
+    Api.Logger.warn("Missing module or key", module, key);
     return false;
   }
   return true;
 }
-function after(module2, key, callback) {
-  if (!check(module2, key)) return;
+function after(module, key, callback) {
+  if (!check(module, key)) return;
   onStart(() => {
-    Api.Patcher.after(module2, key, (thisVal, args, returnVal) => {
+    Api.Patcher.after(module, key, (thisVal, args, returnVal) => {
       return callback({ thisVal, args, returnVal });
     });
   });
 }
-function tempAfter(module2, key, callback) {
-  if (!check(module2, key)) return;
-  let unpatch = Api.Patcher.after(module2, key, (thisVal, args, returnVal) => {
+function tempAfter(module, key, callback) {
+  if (!check(module, key)) return;
+  let unpatch = Api.Patcher.after(module, key, (thisVal, args, returnVal) => {
     unpatch();
     return callback({ thisVal, args, returnVal });
+  });
+}
+function before(module, key, callback) {
+  if (!check(module, key)) return;
+  onStart(() => {
+    Api.Patcher.before(module, key, (thisVal, args) => {
+      callback({ thisVal, args });
+    });
   });
 }
 onStop(() => {
@@ -109,28 +117,40 @@ onStop(() => {
 
 // shared/modules.ts
 var Webpack = BdApi.Webpack;
+function getMangled(filter, mapper) {
+  return Webpack.getMangled(filter, mapper);
+}
 var CloudUploader = /* @__PURE__ */ Webpack.getByStrings("uploadFileToCloud", { searchExports: true });
-var uploader = /* @__PURE__ */ Webpack.getByKeys("uploadFiles");
 var channelStore = /* @__PURE__ */ Webpack.getStore("SelectedChannelStore");
 var expressionModule = /* @__PURE__ */ Webpack.getModule((m) => m.type?.toString?.().includes("onSelectGIF"));
 var buttonsModule = /* @__PURE__ */ Webpack.getModule((m) => m.type?.toString?.().includes(".isSubmitButtonEnabled"));
 var uploadClasses = /* @__PURE__ */ Webpack.getByKeys("uploadArea", "chat");
-var expressionPicker = /* @__PURE__ */ Webpack.getMangled("lastActiveView", {
+var chatbox = /* @__PURE__ */ Webpack.getModule((m) => {
+  let str = m?.Z?.type?.render?.toString();
+  if (!str) return false;
+  return str.includes("handleSubmit") && str.includes("channelTextAreaDisabled");
+});
+var expressionPicker = /* @__PURE__ */ getMangled("lastActiveView", {
   toggle: (f) => f.toString().includes("activeView==="),
   close: (f) => f.toString().includes("activeView:null"),
   store: (f) => f.getState
 });
 
+// shared/api/toast.ts
+function error(message) {
+  BdApi.UI.showToast(`${pluginName}: ${message}`, { type: "error" });
+}
+
 // shared/api/styles.ts
 var count = 0;
 function addStyle(css) {
   onStart(() => {
-    Api.DOM.addStyle(`${meta_default.pluginName}-${count++}`, css);
+    Api.DOM.addStyle(`${pluginName}-${count++}`, css);
   });
 }
 onStop(() => {
   for (let i = 0; i < count; i++) {
-    Api.DOM.removeStyle(`${meta_default.pluginName}-${i}`);
+    Api.DOM.removeStyle(`${pluginName}-${i}`);
   }
 });
 
@@ -176,52 +196,20 @@ function getInput(title, callback) {
 }
 
 // shared/util/upload.ts
-var [module, createKey] = BdApi.Webpack.getWithKey(BdApi.Webpack.Filters.byStrings("CREATE_PENDING_REPLY"));
-var deleteKey;
-var setShouldMentionKey;
-for (const [k, v] of Object.entries(module)) {
-  const str = v.toString();
-  if (str.includes("DELETE_PENDING_REPLY")) deleteKey = k;
-  else if (str.includes("SET_PENDING_REPLY_SHOULD_MENTION")) setShouldMentionKey = k;
-}
-var pendingReply = null;
-after(module, createKey, ({ args }) => {
-  if (args[0]) pendingReply = args[0];
-});
-after(module, deleteKey, () => {
-  pendingReply = null;
-});
-after(module, setShouldMentionKey, ({ args }) => {
-  if (!args[0] || pendingReply?.channel.id === args[0]) return;
-  pendingReply.shouldMention = args[1];
-});
+var onSubmit = null;
+before(chatbox.Z.type, "render", ({ args }) => onSubmit = args[0].onSubmit);
 async function uploadFile(file) {
   const channelId = channelStore.getCurrentlySelectedChannelId();
   const upload = new CloudUploader({ file, platform: 1 }, channelId);
-  let options = {
-    channelId,
-    uploads: [upload],
-    draftType: 0,
-    parsedMessage: {
-      content: "",
-      invalidEmojis: [],
-      tts: false,
-      channel_id: channelId
-    }
-  };
-  if (pendingReply) {
-    options.options = {
-      allowedMentions: {
-        replied_user: pendingReply.shouldMention
-      },
-      messageReference: {
-        channel_id: pendingReply.message.channel_id,
-        guild_id: pendingReply.channel.guild_id,
-        message_id: pendingReply.message.id
-      }
-    };
+  if (!onSubmit) {
+    error("Failed to send file, try switching channels");
+    return;
   }
-  await uploader.uploadFiles(options);
+  onSubmit({
+    value: "",
+    stickers: [],
+    uploads: [upload]
+  });
 }
 
 // plugins/ImageFolder/src/manager.ts
@@ -272,7 +260,7 @@ var Manager = class {
     fs.readdir(fullPath, { withFileTypes: true }, (err, files) => {
       if (err) {
         Api.Logger.error(err);
-        BdApi.UI.showToast(`ImageFolder: Failed to load ./${dir}`, { type: "error" });
+        error(`Failed to load ./${dir}`);
         return;
       }
       Api.Data.save("dir", dir);
@@ -316,7 +304,7 @@ var Manager = class {
     fs.unlink(fullPath, (err) => {
       if (err) {
         Api.Logger.error(err);
-        BdApi.UI.showToast(`ImageFolder: Error deleting ${media.name}`, { type: "error" });
+        error(`Error deleting ${media.name}`);
         return;
       }
     });
@@ -341,7 +329,7 @@ var Manager = class {
   }
   static async send(media) {
     const blob = await this.readWhole(media);
-    if (!blob) return BdApi.UI.showToast(`ImageFolder: Failed to read ${media.name}`, { type: "error" });
+    if (!blob) return error(`Failed to read ${media.name}`);
     media.lastUsed = Date.now();
     Api.Data.save(`used-${path.join(this.dir, media.name)}`, media.lastUsed);
     this.contents?.media.sort((a, b) => b.lastUsed - a.lastUsed);
@@ -353,7 +341,7 @@ var Manager = class {
       if (!this.contents) return;
       try {
         if (this.contents.folders.some((f) => f.name === name)) {
-          BdApi.UI.showToast(`ImageFolder: A folder named ${name} already exists`, { type: "error" });
+          error(`A folder named ${name} already exists`);
           return;
         }
         fs.mkdirSync(path.join(this.base, this.dir, name));
@@ -361,7 +349,7 @@ var Manager = class {
         this.update?.({ ...this.contents });
       } catch (e) {
         Api.Logger.error(e);
-        BdApi.UI.showToast("ImageFolder: Failed to create folder", { type: "error" });
+        error("Failed to create folder");
       }
     });
   }
@@ -375,7 +363,7 @@ var Manager = class {
         this.update?.({ ...this.contents });
       } catch (e) {
         Api.Logger.error(e);
-        BdApi.UI.showToast(`ImageFolder: Failed to rename folder ${folder.name} to ${name}`, { type: "error" });
+        error(`Failed to rename folder ${folder.name} to ${name}`);
         return;
       }
     });
@@ -385,7 +373,7 @@ var Manager = class {
     fs.rmdir(fullPath, { recursive: true }, (err) => {
       if (err) {
         Api.Logger.error(err);
-        BdApi.UI.showToast(`ImageFolder: Error deleting ${folder.name}`, { type: "error" });
+        error(`Error deleting ${folder.name}`);
         return;
       }
       if (!this.contents) return;
@@ -439,7 +427,7 @@ var Manager = class {
       });
     });
     if (!files) {
-      Api.UI.showToast("ImageFolder: Failed to copy image since its containing directory could not be read", { type: "error" });
+      error("Failed to copy image since its containing directory could not be read");
       return;
     }
     let name = file.name;
@@ -671,7 +659,7 @@ function MediaDisplay({ media }) {
       {
         confirmText: "Send",
         onConfirm() {
-          const err = () => BdApi.UI.showToast("ImageFolder: An error occured getting the captioned image", { type: "error" });
+          const err = () => error("An error occured getting the captioned image");
           if (!canvas) return err();
           canvas.toBlob((blob) => {
             if (!blob) return err();

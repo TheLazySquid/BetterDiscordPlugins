@@ -1,8 +1,8 @@
 declare let plugin: any;
 import type { ReactElement } from "react";
-import meta from "meta";
+import { pluginName } from "meta";
 
-export const Api = new BdApi(meta.pluginName);
+export const Api = new BdApi(pluginName);
 
 const createCallbackHandler = (callbackName: string) => {
     const fullName = callbackName + "Callbacks";

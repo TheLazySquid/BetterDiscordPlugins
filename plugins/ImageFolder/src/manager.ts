@@ -1,3 +1,4 @@
+import { error } from '$shared/api/toast';
 import { Api } from '$shared/bd';
 import { getInput } from '$shared/ui/input';
 import { uploadFile } from '$shared/util/upload';
@@ -62,7 +63,7 @@ export default class Manager {
         fs.readdir(fullPath, { withFileTypes: true }, (err, files) => {
             if(err) {
                 Api.Logger.error(err);
-                BdApi.UI.showToast(`ImageFolder: Failed to load ./${dir}`, { type: "error" });
+                error(`Failed to load ./${dir}`);
                 return;
             }
 
@@ -118,7 +119,7 @@ export default class Manager {
         fs.unlink(fullPath, (err) => {
             if(err) {
                 Api.Logger.error(err);
-                BdApi.UI.showToast(`ImageFolder: Error deleting ${media.name}`, { type: "error" });
+                error(`Error deleting ${media.name}`);
                 return;
             }
         });
@@ -149,7 +150,7 @@ export default class Manager {
 
     static async send(media: Media) {
         const blob = await this.readWhole(media);
-        if(!blob) return BdApi.UI.showToast(`ImageFolder: Failed to read ${media.name}`, { type: "error" });
+        if(!blob) return error(`Failed to read ${media.name}`);
 
         media.lastUsed = Date.now();
         Api.Data.save(`used-${path.join(this.dir, media.name)}`, media.lastUsed);
@@ -166,7 +167,7 @@ export default class Manager {
 
             try {
                 if(this.contents.folders.some(f => f.name === name)) {
-                    BdApi.UI.showToast(`ImageFolder: A folder named ${name} already exists`, { type: "error" });
+                    error(`A folder named ${name} already exists`);
                     return;
                 }
 
@@ -175,7 +176,7 @@ export default class Manager {
                 this.update?.({ ...this.contents });
             } catch(e) {
                 Api.Logger.error(e);
-                BdApi.UI.showToast("ImageFolder: Failed to create folder", { type: "error" });
+                error("Failed to create folder");
             }
         });
     }
@@ -192,7 +193,7 @@ export default class Manager {
                 this.update?.({ ...this.contents });
             } catch(e) {
                 Api.Logger.error(e);
-                BdApi.UI.showToast(`ImageFolder: Failed to rename folder ${folder.name} to ${name}`, { type: "error" });
+                error(`Failed to rename folder ${folder.name} to ${name}`);
                 return;
             }
         });
@@ -204,7 +205,7 @@ export default class Manager {
         fs.rmdir(fullPath, { recursive: true }, (err) => {
             if(err) {
                 Api.Logger.error(err);
-                BdApi.UI.showToast(`ImageFolder: Error deleting ${folder.name}`, { type: "error" });
+                error(`Error deleting ${folder.name}`);
                 return;
             }
 
@@ -271,7 +272,7 @@ export default class Manager {
             });
         });
         if(!files) {
-            Api.UI.showToast("ImageFolder: Failed to copy image since its containing directory could not be read", { type: "error" });
+            error("Failed to copy image since its containing directory could not be read");
             return;
         }
 

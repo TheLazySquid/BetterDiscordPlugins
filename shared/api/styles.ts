@@ -1,16 +1,16 @@
 import { Api, onStart, onStop } from "$shared/bd";
-import meta from "meta";
+import { pluginName } from "meta";
 
 let count = 0;
 
 export function addStyle(css: string) {
 	onStart(() => {
-		Api.DOM.addStyle(`${meta.pluginName}-${count++}`, css);
+		Api.DOM.addStyle(`${pluginName}-${count++}`, css);
 	});
 }
 
 onStop(() => {
 	for(let i = 0; i < count; i++) {
-		Api.DOM.removeStyle(`${meta.pluginName}-${i}`);
+		Api.DOM.removeStyle(`${pluginName}-${i}`);
 	}
 });

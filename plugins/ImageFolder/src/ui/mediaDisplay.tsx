@@ -5,6 +5,7 @@ import Manager from "../manager";
 import Captioner from "./captioner";
 import { uploadFile } from "$shared/util/upload";
 import { settings } from "../settings";
+import { error } from "$shared/api/toast";
 
 export default function MediaDisplay({ media }: { media: Media }) {
     const React = BdApi.React;
@@ -71,7 +72,7 @@ export default function MediaDisplay({ media }: { media: Media }) {
             <Captioner media={media} onCanvas={(c) => canvas = c} />, {
             confirmText: "Send",
             onConfirm() {
-                const err = () => BdApi.UI.showToast("ImageFolder: An error occured getting the captioned image", { type: "error" });
+                const err = () => error("An error occured getting the captioned image");
                 if(!canvas) return err();
 
                 canvas.toBlob((blob) => {

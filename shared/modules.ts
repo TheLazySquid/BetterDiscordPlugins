@@ -24,7 +24,7 @@ export const imgAdder: any = /* @__PURE__ */ Webpack.getByKeys("addFile");
 export const chatKeyHandlers: any = /* @__PURE__ */ Webpack.getByStrings("selectNextCommandOption", { defaultExport: false });
 export const fileModule: any = /* @__PURE__ */ Webpack.getModule((m) => m.Z?.toString().includes("filenameLinkWrapper"));
 export const CloudUploader: any = /* @__PURE__ */ Webpack.getByStrings('uploadFileToCloud', { searchExports: true });
-export const uploader: any = /* @__PURE__ */ Webpack.getByKeys('uploadFiles');
+export const uploader: any = /* @__PURE__ */ Webpack.getModule((_, __, id) => id === "680287");
 export const channelStore: any = /* @__PURE__ */ Webpack.getStore("SelectedChannelStore");
 export const expressionModule = /* @__PURE__ */ Webpack.getModule<ReactElementModule>((m) => m.type?.toString?.().includes("onSelectGIF"));
 export const buttonsModule = /* @__PURE__ */ Webpack.getModule<ReactElementModule>((m) => m.type?.toString?.().includes(".isSubmitButtonEnabled"));
@@ -33,6 +33,12 @@ export const uploadClasses: Record<string, string> = /* @__PURE__ */ Webpack.get
 export const gifDisplay: any = /* @__PURE__ */ Webpack.getByStrings("renderGIF()", "imagePool", { searchExports: true });
 export const premiumPremissions: any = /* @__PURE__ */ Webpack.getByKeys("getUserMaxFileSize");
 export const highlightModule: any = /* @__PURE__ */ Webpack.getByKeys("highlight", "hasLanguage");
+
+export const /* @__PURE__ */ chatbox: any = /* @__PURE__ */ Webpack.getModule((m) => {
+    let str = m?.Z?.type?.render?.toString();
+    if(!str) return false;
+    return str.includes("handleSubmit") && str.includes("channelTextAreaDisabled");
+});
 
 // Taken from Arven
 export const ModalSystem = /* @__PURE__ */ getMangled(".modalKey?", {
