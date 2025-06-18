@@ -24,7 +24,6 @@ export const imgAdder: any = /* @__PURE__ */ Webpack.getByKeys("addFile");
 export const chatKeyHandlers: any = /* @__PURE__ */ Webpack.getByStrings("selectNextCommandOption", { defaultExport: false });
 export const fileModule: any = /* @__PURE__ */ Webpack.getModule((m) => m.Z?.toString().includes("filenameLinkWrapper"));
 export const CloudUploader: any = /* @__PURE__ */ Webpack.getByStrings('uploadFileToCloud', { searchExports: true });
-export const uploader: any = /* @__PURE__ */ Webpack.getModule((_, __, id) => id === "680287");
 export const channelStore: any = /* @__PURE__ */ Webpack.getStore("SelectedChannelStore");
 export const expressionModule = /* @__PURE__ */ Webpack.getModule<ReactElementModule>((m) => m.type?.toString?.().includes("onSelectGIF"));
 export const buttonsModule = /* @__PURE__ */ Webpack.getModule<ReactElementModule>((m) => m.type?.toString?.().includes(".isSubmitButtonEnabled"));
