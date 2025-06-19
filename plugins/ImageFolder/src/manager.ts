@@ -242,10 +242,8 @@ export default class Manager {
 
             // No need to sort, automatically goes to the top
             this.contents?.media.unshift({
-                name: file.name,
+                name, type, mime,
                 size: file.size,
-                type,
-                mime,
                 lastUsed: Date.now()
             });
         }));
