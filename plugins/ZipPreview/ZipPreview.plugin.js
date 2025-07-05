@@ -1,7 +1,7 @@
 /**
  * @name ZipPreview
  * @description Lets you see inside zips and preview/download files without ever downloading/extracting the zip
- * @version 0.4.4
+ * @version 0.4.5
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -12,10 +12,10 @@ module.exports = class {
     let plugin = this;
 
 // meta-ns:meta
-var meta_default = { pluginName: "ZipPreview" };
+var pluginName = "ZipPreview";
 
 // shared/bd.ts
-var Api = new BdApi(meta_default.pluginName);
+var Api = new BdApi(pluginName);
 var createCallbackHandler = (callbackName) => {
   const fullName = callbackName + "Callbacks";
   plugin[fullName] = [];
@@ -95,12 +95,12 @@ var Modal = /* @__PURE__ */ getMangled(".MODAL_ROOT_LEGACY,properties", {
 var count = 0;
 function addStyle(css) {
   onStart(() => {
-    Api.DOM.addStyle(`${meta_default.pluginName}-${count++}`, css);
+    Api.DOM.addStyle(`${pluginName}-${count++}`, css);
   });
 }
 onStop(() => {
   for (let i = 0; i < count; i++) {
-    Api.DOM.removeStyle(`${meta_default.pluginName}-${i}`);
+    Api.DOM.removeStyle(`${pluginName}-${i}`);
   }
 });
 
@@ -138,7 +138,7 @@ addStyle(`.zp-wrap {
   max-height: 0px;
   overflow: hidden;
   transition: max-height 0.3s ease;
-  color: var(--text-normal);
+  color: var(--text-default);
   padding-left: 16px;
 }
 
@@ -156,14 +156,14 @@ addStyle(`.zp-wrap {
 }
 
 .zp-filesize {
-  color: var(--text-normal);
+  color: var(--text-default);
   text-decoration: none;
   font-size: small;
   padding-left: 5px;
 }
 
 .zp-path {
-  color: var(--text-normal);
+  color: var(--text-default);
   padding-bottom: 2px;
   display: flex;
   align-items: center;
@@ -175,7 +175,7 @@ addStyle(`.zp-wrap {
 }
 
 .zp-folderReturn svg {
-  fill: var(--text-normal);
+  fill: var(--text-default);
   width: 20px;
   height: 20px;
 }
@@ -186,7 +186,7 @@ addStyle(`.zp-wrap {
 }
 
 .zp-preview {
-  color: var(--text-normal);
+  color: var(--text-default);
   max-width: 80vw;
   min-width: 30vw;
   max-height: 90vh;
@@ -200,7 +200,7 @@ addStyle(`.zp-wrap {
 
 .zp-preview-header {
   height: 45px;
-  background: var(--background-primary);
+  background: var(--background-base-low);
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -225,7 +225,7 @@ addStyle(`.zp-wrap {
 .zp-preview-close {
   height: 35px;
   width: 35px;
-  fill: var(--text-normal);
+  fill: var(--text-default);
   cursor: pointer;
 }
 
@@ -249,7 +249,7 @@ addStyle(`.zp-wrap {
   right: 10px;
   width: 20px;
   height: 20px;
-  fill: var(--text-normal);
+  fill: var(--text-default);
   cursor: pointer;
 }
 
@@ -257,7 +257,7 @@ addStyle(`.zp-wrap {
   min-height: 0;
   overflow: auto;
   width: 100%;
-  scrollbar-color: var(--background-primary) var(--background-secondary);
+  scrollbar-color: var(--background-base-low) var(--background-base-lower);
   /* prevents a scrollbar from randomly appearing for some reason */
   padding-top: 3px;
   padding-bottom: 3px;
@@ -265,10 +265,6 @@ addStyle(`.zp-wrap {
 
 .zp-preview audio {
   width: 100%;
-}
-
-.zp-preview img {
-  
 }
 
 .zp-preview img, .zp-preview video {
@@ -303,7 +299,7 @@ addStyle(`.zp-wrap {
   width: 35px;
   border: none;
   background-color: transparent;
-  fill: var(--text-normal);
+  fill: var(--text-default);
   display: flex;
   align-items: center;
   justify-content: center;

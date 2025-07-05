@@ -31,7 +31,7 @@
     max-height: 0px;
     overflow: hidden;
     transition: max-height 0.3s ease;
-    color: var(--text-normal);
+    color: var(--text-default);
     padding-left: 16px;
 }
 
@@ -49,14 +49,14 @@
 }
 
 .zp-filesize {
-    color: var(--text-normal);
+    color: var(--text-default);
     text-decoration: none;
     font-size: small;
     padding-left: 5px;
 }
 
 .zp-path {
-    color: var(--text-normal);
+    color: var(--text-default);
     padding-bottom: 2px;
     display: flex;
     align-items: center;
@@ -68,7 +68,7 @@
 }
 
 .zp-folderReturn svg {
-    fill: var(--text-normal);
+    fill: var(--text-default);
     width: 20px;
     height: 20px;
 }
@@ -79,7 +79,7 @@
 }
 
 .zp-preview {
-    color: var(--text-normal);
+    color: var(--text-default);
     max-width: 80vw;
     min-width: 30vw;
     max-height: 90vh;
@@ -93,7 +93,7 @@
 
 .zp-preview-header {
     height: 45px;
-    background: var(--background-primary);
+    background: var(--background-base-low);
     flex-shrink: 0;
     display: flex;
     align-items: center;
@@ -118,7 +118,7 @@
 .zp-preview-close {
     height: 35px;
     width: 35px;
-    fill: var(--text-normal);
+    fill: var(--text-default);
     cursor: pointer;
 }
 
@@ -142,7 +142,7 @@
     right: 10px;
     width: 20px;
     height: 20px;
-    fill: var(--text-normal);
+    fill: var(--text-default);
     cursor: pointer;
 }
 
@@ -150,7 +150,7 @@
     min-height: 0;
     overflow: auto;
     width: 100%;
-    scrollbar-color: var(--background-primary) var(--background-secondary);
+    scrollbar-color: var(--background-base-low) var(--background-base-lower);
     /* prevents a scrollbar from randomly appearing for some reason */
     padding-top: 3px;
     padding-bottom: 3px;
@@ -158,10 +158,6 @@
 
 .zp-preview audio {
     width: 100%;
-}
-
-.zp-preview img {
-    
 }
 
 .zp-preview img, .zp-preview video {
@@ -196,7 +192,7 @@
     width: 35px;
     border: none;
     background-color: transparent;
-    fill: var(--text-normal);
+    fill: var(--text-default);
     display: flex;
     align-items: center;
     justify-content: center;
