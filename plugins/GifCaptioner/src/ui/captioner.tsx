@@ -1,6 +1,5 @@
 import { getLines } from "$shared/util/canvas";
-
-type OnSubmit = (callback: () => [text: string, size: number]) => void;
+import type { OnSubmit } from "../render/gifRenderer";
 
 export default function Captioner({ width, element, onSubmit }:
     { width: number, element: HTMLElement, onSubmit: OnSubmit }) {
@@ -12,10 +11,11 @@ export default function Captioner({ width, element, onSubmit }:
     const canvas = React.useRef<HTMLCanvasElement | null>(null);
     const ctx = React.useRef<CanvasRenderingContext2D | null>(null);
 
-    onSubmit(() => {
-        const res: [string, number] = [text || "Enter caption...", size];
-        return res;
-    });
+    onSubmit(() => ({
+        text,
+        size,
+        type: "caption"
+    }));
 
     const render = () => {
         if(!canvas.current || !ctx.current) return;
@@ -48,14 +48,16 @@ export default function Captioner({ width, element, onSubmit }:
         render();
     }, []);
 
-    return (<div className="gc-captioner" ref={wrapper}>
-        <input onChange={(e) => setText(e.target.value)} ref={input}
-        className="gc-caption" placeholder="Enter caption..." />
-        <div className="gc-fontsize">
-            <div>Font size</div>
-            <input type="range" min={5} max={200} value={size}
-                onChange={(e) => setSize(parseFloat(e.target.value))} />
+    return (
+        <div className="gc-editor" ref={wrapper}>
+            <input onChange={(e) => setText(e.target.value)} ref={input}
+            className="gc-caption" placeholder="Enter caption..." />
+            <div className="gc-range">
+                <div>Font size</div>
+                <input type="range" min={5} max={200} value={size}
+                    onChange={(e) => setSize(parseFloat(e.target.value))} />
+            </div>
+            <canvas width={width} ref={canvas} />
         </div>
-        <canvas width={width} ref={canvas} />
-    </div>)
+    )
 }

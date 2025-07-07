@@ -1,7 +1,7 @@
 /**
  * @name GifCaptioner
  * @description A BetterDiscord plugin that allows you to add a caption to discord gifs
- * @version 1.1.0
+ * @version 1.2.0
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -1251,81 +1251,6 @@ var Modal = /* @__PURE__ */ getMangled(".MODAL_ROOT_LEGACY,properties", {
   Close: /* @__PURE__ */ Webpack.Filters.byStrings(".closeWithCircleBackground]:"),
   Footer: /* @__PURE__ */ Webpack.Filters.byStrings(".footerSeparator]:")
 });
-
-// shared/util/canvas.ts
-function getLines(ctx, text, maxWidth) {
-  var words = text.split(" ");
-  var lines = [];
-  var currentLine = words[0];
-  for (var i = 1; i < words.length; i++) {
-    var word = words[i];
-    var width = ctx.measureText(currentLine + " " + word).width;
-    if (width < maxWidth) {
-      currentLine += " " + word;
-    } else {
-      lines.push(currentLine);
-      currentLine = word;
-    }
-  }
-  lines.push(currentLine);
-  return lines;
-}
-
-// plugins/GifCaptioner/src/ui/captioner.tsx
-function Captioner({ width, element, onSubmit: onSubmit2 }) {
-  const React = BdApi.React;
-  const [text, setText] = React.useState("");
-  const [size, setSize] = React.useState(width / 10);
-  const input = React.useRef(null);
-  const wrapper = React.useRef(null);
-  const canvas = React.useRef(null);
-  const ctx = React.useRef(null);
-  onSubmit2(() => {
-    const res = [text || "Enter caption...", size];
-    return res;
-  });
-  const render = () => {
-    if (!canvas.current || !ctx.current) return;
-    let lines = getLines(ctx.current, text || "Enter caption...", width);
-    let captionHeight = lines.length * size + 10;
-    canvas.current.height = captionHeight;
-    ctx.current.fillStyle = "white";
-    ctx.current.fillRect(0, 0, width, captionHeight);
-    ctx.current.textAlign = "center";
-    ctx.current.textBaseline = "top";
-    ctx.current.font = `${size}px futuraBoldCondensed`;
-    ctx.current.fillStyle = "black";
-    for (let i = 0; i < lines.length; i++) {
-      ctx.current.fillText(lines[i], width / 2, size * i + 5);
-    }
-  };
-  React.useEffect(render, [text, size]);
-  React.useEffect(() => {
-    setTimeout(() => input.current?.focus(), 100);
-    if (!wrapper.current || !canvas.current) return;
-    wrapper.current.appendChild(element);
-    ctx.current = canvas.current.getContext("2d");
-    render();
-  }, []);
-  return /* @__PURE__ */ BdApi.React.createElement("div", { className: "gc-captioner", ref: wrapper }, /* @__PURE__ */ BdApi.React.createElement(
-    "input",
-    {
-      onChange: (e) => setText(e.target.value),
-      ref: input,
-      className: "gc-caption",
-      placeholder: "Enter caption..."
-    }
-  ), /* @__PURE__ */ BdApi.React.createElement("div", { className: "gc-fontsize" }, /* @__PURE__ */ BdApi.React.createElement("div", null, "Font size"), /* @__PURE__ */ BdApi.React.createElement(
-    "input",
-    {
-      type: "range",
-      min: 5,
-      max: 200,
-      value: size,
-      onChange: (e) => setSize(parseFloat(e.target.value))
-    }
-  )), /* @__PURE__ */ BdApi.React.createElement("canvas", { width, ref: canvas }));
-}
 
 // node_modules/mp4box/dist/mp4box.all.js
 var so = Object.defineProperty;
@@ -6899,6 +6824,25 @@ function getUrl(data, type = "application/javascript") {
   return output;
 }
 
+// shared/util/canvas.ts
+function getLines(ctx, text, maxWidth) {
+  var words = text.split(" ");
+  var lines = [];
+  var currentLine = words[0];
+  for (var i = 1; i < words.length; i++) {
+    var word = words[i];
+    var width = ctx.measureText(currentLine + " " + word).width;
+    if (width < maxWidth) {
+      currentLine += " " + word;
+    } else {
+      lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+  lines.push(currentLine);
+  return lines;
+}
+
 // plugins/GifCaptioner/src/render/gifRenderer.ts
 var import_gif = __toESM(require_gif(), 1);
 
@@ -6919,32 +6863,72 @@ async function uploadFile(file) {
   });
 }
 
+// plugins/GifCaptioner/src/render/speechbubble.ts
+function bezierPoint(t, start, control, end) {
+  let x = (1 - t) * (1 - t) * start[0] + 2 * (1 - t) * t * control[0] + t * t * end[0];
+  let y = (1 - t) * (1 - t) * start[1] + 2 * (1 - t) * t * control[1] + t * t * end[1];
+  return [x, y - 1];
+}
+function renderSpeechbubble(ctx, width, height, tipX, tipY, tipBase) {
+  const start = [0, height * 0.1];
+  const control = [width * 0.5, height * 0.2];
+  const end = [width, height * 0.1];
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(...start);
+  ctx.quadraticCurveTo(...control, ...end);
+  ctx.lineTo(width, 0);
+  ctx.lineTo(0, 0);
+  ctx.fillStyle = "white";
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(...start);
+  ctx.quadraticCurveTo(...control, ...end);
+  ctx.strokeStyle = "black";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  const tipWidth = 0.2;
+  const base1 = bezierPoint(tipBase, start, control, end);
+  const base2 = bezierPoint(tipBase + tipWidth, start, control, end);
+  ctx.beginPath();
+  ctx.moveTo(...base1);
+  ctx.lineTo(tipX, tipY);
+  ctx.lineTo(...base2);
+  ctx.fillStyle = "white";
+  ctx.fill();
+  ctx.strokeStyle = "black";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
+
 // plugins/GifCaptioner/src/render/gifRenderer.ts
 var worker = getUrl(gif_worker_default);
 var GifRenderer = class {
   canvas = document.createElement("canvas");
   ctx = this.canvas.getContext("2d");
-  captionHeight = 0;
+  topOffset = 0;
   width;
   height;
-  text;
-  size;
+  // Doesn't include caption height
+  transform;
   gif;
   progress;
-  constructor({ progress, frames, width, height, text, size }) {
+  constructor({ progress, frames, width, height, transform }) {
     this.progress = progress;
     this.width = width;
     this.height = height;
-    this.text = text;
-    this.size = size;
+    this.transform = transform;
     if (!worker.url) {
       progress.close();
       error("Attempted to encode gif while plugin is disabled");
       throw new Error("Worker url missing");
     }
-    this.ctx.font = `${this.size}px futuraBoldCondensed`;
-    let lines = getLines(this.ctx, this.text, this.width);
-    const fullHeight = lines.length * this.size + 10 + this.height;
+    let fullHeight = height;
+    if (transform.type === "caption") {
+      this.ctx.font = `${transform.size}px futuraBoldCondensed`;
+      let lines = getLines(this.ctx, transform.text, this.width);
+      fullHeight = lines.length * transform.size + 10 + this.height;
+    }
     const fullSize = fullHeight * this.width;
     const sizeEstimate = fullSize * frames;
     const maxSize = premiumPremissions.getUserMaxFileSize();
@@ -6953,7 +6937,6 @@ var GifRenderer = class {
     const newWidth = Math.floor(this.width / scaleFactor);
     const newHeight = Math.floor(this.height / scaleFactor);
     const newFullHeight = Math.floor(fullHeight / scaleFactor);
-    const newSize = Math.floor(this.size / scaleFactor);
     this.width = this.canvas.width = newWidth;
     this.height = newHeight;
     this.canvas.height = newFullHeight;
@@ -6962,7 +6945,14 @@ var GifRenderer = class {
       height: newFullHeight,
       width: newWidth
     });
-    this.drawCaption(this.text, newWidth, newSize);
+    if (transform.type === "caption") {
+      const newSize = Math.floor(transform.size / scaleFactor);
+      this.drawCaption(transform.text, newWidth, newSize);
+    } else if (transform.type === "speechbubble") {
+      const newTipX = transform.tipX / scaleFactor;
+      const newTipY = transform.tipY / scaleFactor;
+      this.drawSpeechBubble(newTipX, newTipY, transform.tipBase);
+    }
   }
   tempCanvas;
   tempCtx;
@@ -6980,7 +6970,7 @@ var GifRenderer = class {
     }
     if (!this.gifCtx) this.gifCtx = this.gifCanvas.getContext("2d");
     if (this.needsDisposal) {
-      this.gifCtx.clearRect(0, this.captionHeight, this.width, this.height);
+      this.gifCtx.clearRect(0, this.topOffset, this.width, this.height);
       this.needsDisposal = false;
     }
     if (source.disposalType == 2) this.needsDisposal = true;
@@ -6992,17 +6982,23 @@ var GifRenderer = class {
     this.frameImageData.data.set(source.patch);
     this.tempCtx.putImageData(this.frameImageData, 0, 0);
     this.gifCtx.drawImage(this.tempCanvas, source.dims.left, source.dims.top);
-    this.ctx.drawImage(this.gifCanvas, 0, this.captionHeight, this.width, this.height);
-    this.gif.addFrame(this.ctx, { delay: source.delay, copy: true });
+    this.ctx.drawImage(this.gifCanvas, 0, this.topOffset, this.width, this.height);
+    this.addFrameToGif(source.delay);
   }
   addVideoFrame(source, delay) {
-    this.ctx.drawImage(source, 0, this.captionHeight, this.width, this.height);
-    this.gif.addFrame(this.ctx, { delay, copy: true });
+    this.ctx.drawImage(source, 0, this.topOffset, this.width, this.height);
+    this.addFrameToGif(delay);
     source.close();
+  }
+  addFrameToGif(delay) {
+    if (this.transform.type === "speechbubble" && this.speechBubbleCanvas) {
+      this.ctx.drawImage(this.speechBubbleCanvas, 0, this.topOffset, this.width, this.height);
+    }
+    this.gif.addFrame(this.ctx, { delay, copy: true });
   }
   render() {
     this.gif.once("finished", (blob) => {
-      const file = new File([blob], "captioned.gif", { type: "image/gif" });
+      const file = new File([blob], "rendered.gif", { type: "image/gif" });
       uploadFile(file);
       this.progress.close();
     });
@@ -7015,7 +7011,7 @@ var GifRenderer = class {
   drawCaption(text, width, size) {
     this.ctx.font = `${size}px futuraBoldCondensed`;
     let lines = getLines(this.ctx, text, width);
-    this.captionHeight = lines.length * size + 10;
+    this.topOffset = lines.length * size + 10;
     this.ctx.fillStyle = "white";
     this.ctx.fillRect(0, 0, width, lines.length * size + 10);
     this.ctx.fillStyle = "black";
@@ -7024,6 +7020,17 @@ var GifRenderer = class {
     for (let i = 0; i < lines.length; i++) {
       this.ctx.fillText(lines[i], width / 2, size * i + 5);
     }
+  }
+  speechBubbleCanvas;
+  speechBubbleCtx;
+  drawSpeechBubble(tipX, tipY, tipBase) {
+    if (!this.speechBubbleCanvas) {
+      this.speechBubbleCanvas = document.createElement("canvas");
+      this.speechBubbleCanvas.width = this.width;
+      this.speechBubbleCanvas.height = this.height;
+    }
+    if (!this.speechBubbleCtx) this.speechBubbleCtx = this.speechBubbleCanvas.getContext("2d");
+    renderSpeechbubble(this.speechBubbleCtx, this.width, this.height, tipX, tipY, tipBase);
   }
 };
 
@@ -7062,7 +7069,7 @@ var ProgressDisplay = class {
 };
 
 // plugins/GifCaptioner/src/render/mp4.ts
-async function captionMp4(url, width, height, text, size) {
+async function captionMp4(url, width, height, transform) {
   const progress = new ProgressDisplay("Fetching");
   let res = await fetch(url).catch(() => {
     progress.close();
@@ -7078,7 +7085,7 @@ async function captionMp4(url, width, height, text, size) {
     frames++;
   });
   progress.update("Rendering", 0);
-  const renderer = new GifRenderer({ progress, frames, width, height, text, size });
+  const renderer = new GifRenderer({ progress, frames, width, height, transform });
   let i = 0;
   await parseToFrames(arrayBuffer, progress, (frame) => {
     progress.update("Rendering", i / frames);
@@ -7185,7 +7192,28 @@ addStyle(`.gc-trigger {
   padding: 0;
 }
 
-.gc-captioner {
+.gc-tabs {
+  display: flex;
+  gap: 5px;
+  border-radius: 5px;
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+  margin-bottom: 5px;
+}
+
+.gc-tabs button {
+  color: white;
+  padding: 5px 10px;
+  border: none;
+  flex-grow: 1;
+  background-color: transparent;
+}
+
+.gc-tabs button.active {
+  background-color: var(--background-base-lower);
+}
+
+.gc-editor {
   display: flex;
   flex-direction: column;
 }
@@ -7198,7 +7226,7 @@ addStyle(`.gc-trigger {
   padding: 4px;
 }
 
-.gc-fontsize {
+.gc-range {
   display: flex;
   align-items: center;
   gap: 5px;
@@ -7206,15 +7234,15 @@ addStyle(`.gc-trigger {
   margin: 10px 0;
 }
 
-.gc-fontsize input {
+.gc-range input {
   flex-grow: 1;
 }
 
-.gc-captioner canvas {
+.gc-modal canvas {
   width: 100%;
 }
 
-.gc-captioner img, .gc-captioner video {
+.gc-modal img, .gc-modal video {
   width: 100%;
 }
 
@@ -7233,18 +7261,28 @@ addStyle(`.gc-trigger {
   width: 100%;
   margin: 10px 0;
   height: 20px;
+}
+
+.gc-speechbubbler {
+  position: relative;
+}
+
+.gc-speechbubbler canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
 }`);
 
 // plugins/GifCaptioner/src/render/gif.ts
 var import_gifuct_js = __toESM(require_lib2(), 1);
-async function captionGif(url, width, height, text, size) {
+async function captionGif(url, width, height, transform) {
   const progress = new ProgressDisplay("Fetching");
   let res = await fetch(url);
   let buffer = await res.arrayBuffer();
   let parsed = (0, import_gifuct_js.parseGIF)(buffer);
   let frames = (0, import_gifuct_js.decompressFrames)(parsed, true);
   let numFrames = frames.length;
-  const renderer = new GifRenderer({ progress, width, height, text, size, frames: frames.length });
+  const renderer = new GifRenderer({ progress, width, height, transform, frames: frames.length });
   let frame;
   let i = 0;
   while (frame = frames.shift()) {
@@ -7254,6 +7292,129 @@ async function captionGif(url, width, height, text, size) {
     await new Promise((res2) => setTimeout(res2));
   }
   renderer.render();
+}
+
+// plugins/GifCaptioner/src/ui/captioner.tsx
+function Captioner({ width, element, onSubmit: onSubmit2 }) {
+  const React = BdApi.React;
+  const [text, setText] = React.useState("");
+  const [size, setSize] = React.useState(width / 10);
+  const input = React.useRef(null);
+  const wrapper = React.useRef(null);
+  const canvas = React.useRef(null);
+  const ctx = React.useRef(null);
+  onSubmit2(() => ({
+    text,
+    size,
+    type: "caption"
+  }));
+  const render = () => {
+    if (!canvas.current || !ctx.current) return;
+    let lines = getLines(ctx.current, text || "Enter caption...", width);
+    let captionHeight = lines.length * size + 10;
+    canvas.current.height = captionHeight;
+    ctx.current.fillStyle = "white";
+    ctx.current.fillRect(0, 0, width, captionHeight);
+    ctx.current.textAlign = "center";
+    ctx.current.textBaseline = "top";
+    ctx.current.font = `${size}px futuraBoldCondensed`;
+    ctx.current.fillStyle = "black";
+    for (let i = 0; i < lines.length; i++) {
+      ctx.current.fillText(lines[i], width / 2, size * i + 5);
+    }
+  };
+  React.useEffect(render, [text, size]);
+  React.useEffect(() => {
+    setTimeout(() => input.current?.focus(), 100);
+    if (!wrapper.current || !canvas.current) return;
+    wrapper.current.appendChild(element);
+    ctx.current = canvas.current.getContext("2d");
+    render();
+  }, []);
+  return /* @__PURE__ */ BdApi.React.createElement("div", { className: "gc-editor", ref: wrapper }, /* @__PURE__ */ BdApi.React.createElement(
+    "input",
+    {
+      onChange: (e) => setText(e.target.value),
+      ref: input,
+      className: "gc-caption",
+      placeholder: "Enter caption..."
+    }
+  ), /* @__PURE__ */ BdApi.React.createElement("div", { className: "gc-range" }, /* @__PURE__ */ BdApi.React.createElement("div", null, "Font size"), /* @__PURE__ */ BdApi.React.createElement(
+    "input",
+    {
+      type: "range",
+      min: 5,
+      max: 200,
+      value: size,
+      onChange: (e) => setSize(parseFloat(e.target.value))
+    }
+  )), /* @__PURE__ */ BdApi.React.createElement("canvas", { width, ref: canvas }));
+}
+
+// plugins/GifCaptioner/src/ui/speechBubbler.tsx
+function SpeechBubbler({ width, height, element, onSubmit: onSubmit2 }) {
+  const React = BdApi.React;
+  const [tipX, setTipX] = React.useState(width / 3);
+  const [tipY, setTipY] = React.useState(height / 3);
+  const [tipBase, setTipBase] = React.useState(10);
+  const wrapper = React.useRef(null);
+  const canvas = React.useRef(null);
+  const ctx = React.useRef(null);
+  onSubmit2(() => ({
+    type: "speechbubble",
+    tipX,
+    tipY,
+    tipBase: tipBase / 100
+  }));
+  const render = () => {
+    if (!ctx.current) return;
+    ctx.current.clearRect(0, 0, width, height);
+    renderSpeechbubble(ctx.current, width, height, tipX, tipY, tipBase / 100);
+  };
+  const moveTip = (e) => {
+    if (!canvas.current) return;
+    const rect = canvas.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width * width;
+    const y = (e.clientY - rect.top) / rect.height * height;
+    setTipX(x);
+    setTipY(y);
+  };
+  React.useEffect(render, [tipX, tipY, tipBase]);
+  React.useEffect(() => {
+    if (!wrapper.current || !canvas.current) return;
+    wrapper.current.insertBefore(element, canvas.current);
+    ctx.current = canvas.current.getContext("2d");
+    render();
+  }, []);
+  return /* @__PURE__ */ BdApi.React.createElement("div", { className: "gc-editor" }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "gc-range" }, /* @__PURE__ */ BdApi.React.createElement("div", null, "Tip Base Position"), /* @__PURE__ */ BdApi.React.createElement(
+    "input",
+    {
+      type: "range",
+      min: 0,
+      max: 80,
+      value: tipBase,
+      onChange: (e) => setTipBase(parseFloat(e.target.value))
+    }
+  )), /* @__PURE__ */ BdApi.React.createElement("div", { className: "gc-speechbubbler", ref: wrapper }, /* @__PURE__ */ BdApi.React.createElement("canvas", { width, height, onClick: moveTip, ref: canvas })));
+}
+
+// plugins/GifCaptioner/src/ui/modal.tsx
+var tabs = [
+  { key: "caption", label: "Caption" },
+  { key: "speechbubble", label: "Speech Bubble" }
+];
+function Modal2({ width, height, element, onSubmit: onSubmit2 }) {
+  const React = BdApi.React;
+  const [activeTab, setTab] = React.useState(Api.Data.load("tab") || "caption");
+  return /* @__PURE__ */ BdApi.React.createElement("div", { className: "gc-modal" }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "gc-tabs" }, tabs.map((tab) => /* @__PURE__ */ BdApi.React.createElement(
+    "button",
+    {
+      key: tab.key,
+      onClick: () => setTab(tab.key),
+      className: activeTab === tab.key ? "active" : ""
+    },
+    tab.label
+  ))), activeTab === "caption" ? /* @__PURE__ */ BdApi.React.createElement(Captioner, { width, element, onSubmit: onSubmit2 }) : /* @__PURE__ */ BdApi.React.createElement(SpeechBubbler, { width, height, element, onSubmit: onSubmit2 }));
 }
 
 // plugins/GifCaptioner/src/index.ts
@@ -7271,8 +7432,8 @@ after(gifDisplay.prototype, "render", ({ thisVal, returnVal }) => {
         image.src = url;
         image.addEventListener("load", () => {
           let { width, height } = image;
-          showCaptioner(width, image, (text, size) => {
-            captionGif(url, width, height, text, size);
+          showCaptioner(width, height, image, (transform) => {
+            captionGif(url, width, height, transform);
           });
         });
         image.addEventListener("error", () => error("Failed to load gif"));
@@ -7285,8 +7446,8 @@ after(gifDisplay.prototype, "render", ({ thisVal, returnVal }) => {
         video.load();
         video.addEventListener("canplaythrough", () => {
           let { videoWidth, videoHeight } = video;
-          showCaptioner(videoWidth, video, (text, size) => {
-            captionMp4(url, videoWidth, videoHeight, text, size);
+          showCaptioner(videoWidth, videoHeight, video, (transform) => {
+            captionMp4(url, videoWidth, videoHeight, transform);
           });
         }, { once: true });
         video.addEventListener("error", () => error("Failed to load gif"));
@@ -7295,18 +7456,19 @@ after(gifDisplay.prototype, "render", ({ thisVal, returnVal }) => {
   });
   returnVal.props.children.unshift(button);
 });
-function showCaptioner(width, element, onConfirm) {
+function showCaptioner(width, height, element, onConfirm) {
   let submitCallback;
-  const captioner = BdApi.React.createElement(Captioner, {
+  const modal = BdApi.React.createElement(Modal2, {
     width,
+    height,
     element,
     onSubmit: (cb) => submitCallback = cb
   });
-  BdApi.UI.showConfirmationModal("Add caption", captioner, {
+  BdApi.UI.showConfirmationModal("Edit GIF", modal, {
     onConfirm: () => {
       expressionPicker.close();
       let res = submitCallback?.();
-      if (res) onConfirm(...res);
+      if (res) onConfirm(res);
     }
   });
 }

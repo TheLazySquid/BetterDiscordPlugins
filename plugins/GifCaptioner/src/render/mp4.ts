@@ -1,9 +1,9 @@
 import { error } from "$shared/api/toast";
 import { createFile, DataStream, ISOFile, MP4BoxBuffer } from "mp4box";
-import GifRenderer from "./gifRenderer";
+import GifRenderer, { type GifTransform } from "./gifRenderer";
 import ProgressDisplay from "../ui/createProgress";
 
-export default async function captionMp4(url: string, width: number, height: number, text: string, size: number) {
+export default async function captionMp4(url: string, width: number, height: number, transform: GifTransform) {
 	const progress = new ProgressDisplay("Fetching");
 	let res = await fetch(url).catch(() => {
 		progress.close();
@@ -24,7 +24,7 @@ export default async function captionMp4(url: string, width: number, height: num
 
 	// Actually render the gif
 	progress.update("Rendering", 0);
-	const renderer = new GifRenderer({ progress, frames, width, height, text, size });
+	const renderer = new GifRenderer({ progress, frames, width, height, transform });
 	let i = 0;
 	await parseToFrames(arrayBuffer, progress, (frame) => {
 		progress.update("Rendering", i / frames);

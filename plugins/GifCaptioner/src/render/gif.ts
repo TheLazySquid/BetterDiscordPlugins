@@ -1,8 +1,8 @@
 import { decompressFrames, parseGIF, type ParsedFrame } from "gifuct-js";
-import GifRenderer from "./gifRenderer";
+import GifRenderer, { type GifTransform } from "./gifRenderer";
 import ProgressDisplay from "../ui/createProgress";
 
-export default async function captionGif(url: string, width: number, height: number, text: string, size: number) {
+export default async function captionGif(url: string, width: number, height: number, transform: GifTransform) {
     const progress = new ProgressDisplay("Fetching");
     let res = await fetch(url);
     let buffer = await res.arrayBuffer();
@@ -11,7 +11,7 @@ export default async function captionGif(url: string, width: number, height: num
     let frames = decompressFrames(parsed, true);
     let numFrames = frames.length;
 
-    const renderer = new GifRenderer({ progress, width, height, text, size, frames: frames.length });
+    const renderer = new GifRenderer({ progress, width, height, transform, frames: frames.length });
     let frame: ParsedFrame | undefined;
     let i = 0;
     while(frame = frames.shift()) {

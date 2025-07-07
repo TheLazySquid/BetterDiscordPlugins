@@ -8,27 +8,42 @@ import { uploadFile } from "$shared/util/upload";
 import type ProgressDisplay from "../ui/createProgress";
 import type { ParsedFrame, ParsedGif } from "gifuct-js";
 import { Api } from "$shared/bd";
+import { renderSpeechbubble } from "./speechbubble";
+
+export interface CaptionTransform {
+	text: string;
+	size: number;
+	type: "caption";
+}
+
+export interface SpeechBubbleTransform {
+	tipX: number;
+	tipY: number;
+	tipBase: number;
+	type: "speechbubble";
+}
+
+export type GifTransform = CaptionTransform | SpeechBubbleTransform;
+export type OnSubmit = (callback: () => GifTransform) => void;
 
 let worker = getUrl(GifWorker);
 
 export default class GifRenderer {
 	canvas = document.createElement("canvas");
 	ctx = this.canvas.getContext("2d")!;
-	captionHeight = 0;
+	topOffset = 0;
 	width: number;
-	height: number;
-	text: string;
-	size: number;
+	height: number; // Doesn't include caption height
+	transform: GifTransform;
 	gif: GIF;
 	progress: ProgressDisplay;
 
-	constructor({ progress, frames, width, height, text, size }:
-		{ progress: ProgressDisplay, frames: number, width: number, height: number, text: string, size: number }) {
+	constructor({ progress, frames, width, height, transform }:
+		{ progress: ProgressDisplay, frames: number, width: number, height: number, transform: GifTransform }) {
 		this.progress = progress;
 		this.width = width;
 		this.height = height;
-		this.text = text;
-		this.size = size;
+		this.transform = transform;
 
 		if(!worker.url) {
 			progress.close();
@@ -36,10 +51,14 @@ export default class GifRenderer {
 			throw new Error("Worker url missing");
 		}
 
-		this.ctx.font = `${this.size}px futuraBoldCondensed`;
-		let lines = getLines(this.ctx, this.text, this.width);
+		let fullHeight = height;
 
-		const fullHeight = lines.length * this.size + 10 + this.height;
+		if(transform.type === "caption") {
+			this.ctx.font = `${transform.size}px futuraBoldCondensed`;
+			let lines = getLines(this.ctx, transform.text, this.width);
+			fullHeight = lines.length * transform.size + 10 + this.height;
+		}
+
 		const fullSize = fullHeight * this.width;
 		// Gifs are compressed a bit so this is always going to overshoot
 		const sizeEstimate = fullSize * frames;
@@ -50,7 +69,6 @@ export default class GifRenderer {
 		const newWidth = Math.floor(this.width / scaleFactor);
 		const newHeight = Math.floor(this.height / scaleFactor);
 		const newFullHeight = Math.floor(fullHeight / scaleFactor);
-		const newSize = Math.floor(this.size / scaleFactor);
 
 		this.width = this.canvas.width = newWidth;
 		this.height = newHeight;
@@ -62,7 +80,14 @@ export default class GifRenderer {
 			width: newWidth
 		});
 		
-		this.drawCaption(this.text, newWidth, newSize);
+		if(transform.type === "caption") {
+			const newSize = Math.floor(transform.size / scaleFactor);
+			this.drawCaption(transform.text, newWidth, newSize);
+		} else if(transform.type === "speechbubble") {
+			const newTipX = transform.tipX / scaleFactor;
+			const newTipY = transform.tipY / scaleFactor;
+			this.drawSpeechBubble(newTipX, newTipY, transform.tipBase);
+		}
 	}
 
 	tempCanvas?: HTMLCanvasElement;
@@ -82,7 +107,7 @@ export default class GifRenderer {
 		if(!this.gifCtx) this.gifCtx = this.gifCanvas.getContext("2d")!;
 
 		if(this.needsDisposal) {
-			this.gifCtx.clearRect(0, this.captionHeight, this.width, this.height);
+			this.gifCtx.clearRect(0, this.topOffset, this.width, this.height);
 			this.needsDisposal = false;
 		}
 
@@ -102,19 +127,28 @@ export default class GifRenderer {
 		this.frameImageData.data.set(source.patch);
 		this.tempCtx.putImageData(this.frameImageData, 0, 0);
 		this.gifCtx.drawImage(this.tempCanvas, source.dims.left, source.dims.top);
-		this.ctx.drawImage(this.gifCanvas, 0, this.captionHeight, this.width, this.height);
-		this.gif.addFrame(this.ctx, { delay: source.delay, copy: true });
+		this.ctx.drawImage(this.gifCanvas, 0, this.topOffset, this.width, this.height);
+		this.addFrameToGif(source.delay);
 	}
 
 	addVideoFrame(source: VideoFrame, delay: number) {
-		this.ctx.drawImage(source, 0, this.captionHeight, this.width, this.height);
-		this.gif.addFrame(this.ctx, { delay, copy: true });
+		this.ctx.drawImage(source, 0, this.topOffset, this.width, this.height);
+		this.addFrameToGif(delay);
 		source.close();
+	}
+
+	addFrameToGif(delay: number) {
+		// Tack on any overlays
+		if(this.transform.type === "speechbubble" && this.speechBubbleCanvas) {
+			this.ctx.drawImage(this.speechBubbleCanvas, 0, this.topOffset, this.width, this.height);
+		}
+
+		this.gif.addFrame(this.ctx, { delay, copy: true });
 	}
 
 	render() {
 		this.gif.once("finished", (blob) => {
-			const file = new File([ blob ], "captioned.gif", { type: "image/gif" });
+			const file = new File([ blob ], "rendered.gif", { type: "image/gif" });
 			uploadFile(file);
 			this.progress.close();
 		});
@@ -130,7 +164,7 @@ export default class GifRenderer {
 	drawCaption(text: string, width: number, size: number) {
 		this.ctx.font = `${size}px futuraBoldCondensed`;
 		let lines = getLines(this.ctx, text, width);
-		this.captionHeight = lines.length * size + 10;
+		this.topOffset = lines.length * size + 10;
 
 		// add background
 		this.ctx.fillStyle = "white";
@@ -143,5 +177,18 @@ export default class GifRenderer {
 		for(let i = 0; i < lines.length; i++) {
 			this.ctx.fillText(lines[i], width / 2, size * i + 5);
 		}
+	}
+
+	speechBubbleCanvas?: HTMLCanvasElement;
+	speechBubbleCtx?: CanvasRenderingContext2D;
+	drawSpeechBubble(tipX: number, tipY: number, tipBase: number) {
+		if(!this.speechBubbleCanvas) {
+			this.speechBubbleCanvas = document.createElement("canvas");
+			this.speechBubbleCanvas.width = this.width;
+			this.speechBubbleCanvas.height = this.height;
+		}
+		if(!this.speechBubbleCtx) this.speechBubbleCtx = this.speechBubbleCanvas.getContext("2d")!;
+
+		renderSpeechbubble(this.speechBubbleCtx, this.width, this.height, tipX, tipY, tipBase);
 	}
 }
