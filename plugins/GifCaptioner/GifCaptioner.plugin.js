@@ -1,7 +1,7 @@
 /**
  * @name GifCaptioner
  * @description A BetterDiscord plugin that allows you to add a caption to discord gifs
- * @version 1.2.0
+ * @version 1.2.1
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -6867,7 +6867,14 @@ async function uploadFile(file) {
 function bezierPoint(t, start, control, end) {
   let x = (1 - t) * (1 - t) * start[0] + 2 * (1 - t) * t * control[0] + t * t * end[0];
   let y = (1 - t) * (1 - t) * start[1] + 2 * (1 - t) * t * control[1] + t * t * end[1];
-  return [x, y - 1];
+  return [x, y];
+}
+function moveAway(point, from, distance) {
+  const dx = point[0] - from[0];
+  const dy2 = point[1] - from[1];
+  const length = Math.sqrt(dx ** 2 + dy2 ** 2);
+  const scale = distance / length;
+  return [point[0] + dx * scale, point[1] + dy2 * scale];
 }
 function renderSpeechbubble(ctx, width, height, tipX, tipY, tipBase) {
   const start = [0, height * 0.1];
@@ -6890,12 +6897,18 @@ function renderSpeechbubble(ctx, width, height, tipX, tipY, tipBase) {
   const tipWidth = 0.2;
   const base1 = bezierPoint(tipBase, start, control, end);
   const base2 = bezierPoint(tipBase + tipWidth, start, control, end);
+  const tip = [tipX, tipY];
+  const bgDistance = 5;
+  ctx.beginPath();
+  ctx.moveTo(...moveAway(base1, tip, bgDistance));
+  ctx.lineTo(tipX, tipY);
+  ctx.lineTo(...moveAway(base2, tip, bgDistance));
+  ctx.fillStyle = "white";
+  ctx.fill();
   ctx.beginPath();
   ctx.moveTo(...base1);
   ctx.lineTo(tipX, tipY);
   ctx.lineTo(...base2);
-  ctx.fillStyle = "white";
-  ctx.fill();
   ctx.strokeStyle = "black";
   ctx.lineWidth = 2;
   ctx.stroke();

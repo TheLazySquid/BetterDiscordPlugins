@@ -5,8 +5,16 @@ function bezierPoint(t: number, start: Point, control: Point, end: Point): Point
 	let x = (1 - t) * (1 - t) * start[0] + 2 * (1 - t) * t * control[0] + t * t * end[0];
 	let y = (1 - t) * (1 - t) * start[1] + 2 * (1 - t) * t * control[1] + t * t * end[1];
 
-	// Adjust for stroke width
-	return [x, y - 1];
+	return [x, y];
+}
+
+function moveAway(point: Point, from: Point, distance: number): Point {
+	const dx = point[0] - from[0];
+	const dy = point[1] - from[1];
+	const length = Math.sqrt(dx ** 2 + dy ** 2);
+	const scale = distance / length;
+
+	return [point[0] + dx * scale, point[1] + dy * scale];
 }
 
 export function renderSpeechbubble(ctx: CanvasRenderingContext2D, width: number, height: number,
@@ -33,16 +41,25 @@ export function renderSpeechbubble(ctx: CanvasRenderingContext2D, width: number,
 	ctx.lineWidth = 2;
 	ctx.stroke();
 
-	// Draw the tip
 	const tipWidth = 0.2;
 	const base1 = bezierPoint(tipBase, start, control, end);
 	const base2 = bezierPoint(tipBase + tipWidth, start, control, end);
+	const tip: Point = [tipX, tipY];
+
+	// Draw the tip's background
+	const bgDistance = 5;
+	ctx.beginPath();
+	ctx.moveTo(...moveAway(base1, tip, bgDistance));
+	ctx.lineTo(tipX, tipY);
+	ctx.lineTo(...moveAway(base2, tip, bgDistance));
+	ctx.fillStyle = "white";
+	ctx.fill();
+
+	// Draw the tip's outline
 	ctx.beginPath();
 	ctx.moveTo(...base1);
 	ctx.lineTo(tipX, tipY);
 	ctx.lineTo(...base2);
-	ctx.fillStyle = "white";
-	ctx.fill();
 	ctx.strokeStyle = "black";
 	ctx.lineWidth = 2;
 	ctx.stroke();
