@@ -81,3 +81,7 @@ export function setSettingsPanel(el: El | (() => El)): void {
     if(typeof el === "function") plugin.getSettingsPanel = el;
     plugin.getSettingsPanel = () => el;
 }
+
+export function expose(key: string, value: any): void {
+    plugin[key] = value;
+}

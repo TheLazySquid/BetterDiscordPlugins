@@ -1,7 +1,7 @@
 /**
  * @name GifCaptioner
  * @description A BetterDiscord plugin that allows you to add a caption to discord gifs
- * @version 1.2.1
+ * @version 1.2.2
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -1173,6 +1173,9 @@ var createCallbackHandler = (callbackName) => {
 var onStart = createCallbackHandler("start");
 var onStop = createCallbackHandler("stop");
 var onSwitch = createCallbackHandler("onSwitch");
+function expose(key, value) {
+  plugin[key] = value;
+}
 
 // shared/api/fonts.ts
 function addFont(data, family) {
@@ -7090,26 +7093,39 @@ async function captionMp4(url, width, height, transform) {
   });
   if (!res) return;
   let arrayBuffer = await res.arrayBuffer();
-  arrayBuffer.fileStart = 0;
+  const onError = () => {
+    progress.close();
+    error("Failed to parse gif");
+  };
   progress.update("Preparing");
   let frames = 0;
-  await parseToFrames(arrayBuffer, progress, (frame) => {
-    frame.source.close();
-    frames++;
+  await parseMp4({
+    buffer: arrayBuffer,
+    onError,
+    onFrame: (frame) => {
+      frame.source.close();
+      frames++;
+    }
   });
   progress.update("Rendering", 0);
   const renderer = new GifRenderer({ progress, frames, width, height, transform });
   let i = 0;
-  await parseToFrames(arrayBuffer, progress, (frame) => {
-    progress.update("Rendering", i / frames);
-    renderer.addVideoFrame(frame.source, frame.delay);
-    i++;
+  await parseMp4({
+    buffer: arrayBuffer,
+    onError,
+    onFrame: (frame) => {
+      progress.update("Rendering", i / frames);
+      renderer.addVideoFrame(frame.source, frame.delay);
+      i++;
+    }
   });
   renderer.render();
 }
 var minFrameLength = 1e3 / 50;
-function parseToFrames(buffer, progress, onFrame) {
+function parseMp4({ buffer, onFrame, onError }) {
   return new Promise((res) => {
+    let mp4Buffer = buffer;
+    mp4Buffer.fileStart = 0;
     let time = 0;
     let lastFrameTime = 0;
     const decoder = new VideoDecoder({
@@ -7126,15 +7142,11 @@ function parseToFrames(buffer, progress, onFrame) {
         }
       },
       error() {
-        progress.close();
-        error("Failed to parse gif");
+        onError?.();
       }
     });
     let file = au();
-    file.onError = () => {
-      progress.close();
-      error("Failed to parse gif");
-    };
+    file.onError = () => onError?.();
     file.onReady = (info) => {
       const track = info.videoTracks[0];
       if (!track.video) return;
@@ -7148,8 +7160,7 @@ function parseToFrames(buffer, progress, onFrame) {
         file.setExtractionOptions(track.id);
         file.start();
       } catch {
-        progress.close();
-        error("Failed to parse gif");
+        onError?.();
       }
     };
     file.onSamples = (id, ref, samples) => {
@@ -7165,7 +7176,7 @@ function parseToFrames(buffer, progress, onFrame) {
       }
       decoder.flush().then(res);
     };
-    file.appendBuffer(buffer);
+    file.appendBuffer(mp4Buffer);
   });
 }
 function getDescription(file, id) {
@@ -7305,6 +7316,11 @@ async function captionGif(url, width, height, transform) {
     await new Promise((res2) => setTimeout(res2));
   }
   renderer.render();
+}
+function parseGif(buffer) {
+  let parsed = (0, import_gifuct_js.parseGIF)(buffer);
+  let frames = (0, import_gifuct_js.decompressFrames)(parsed, true);
+  return { parsed, frames };
 }
 
 // plugins/GifCaptioner/src/ui/captioner.tsx
@@ -7485,5 +7501,7 @@ function showCaptioner(width, height, element, onConfirm) {
     }
   });
 }
+expose("parseMp4", parseMp4);
+expose("parseGif", parseGif);
   }
 }

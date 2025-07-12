@@ -4,11 +4,12 @@ import { addFont } from "$shared/api/fonts";
 import { after } from "$shared/api/patching";
 import { error } from "$shared/api/toast";
 import { expressionPicker, gifDisplay } from "$shared/modules";
-import captionMp4 from "./render/mp4";
+import captionMp4, { parseMp4 } from "./render/mp4";
 import "./styles.css";
-import captionGif from "./render/gif";
+import captionGif, { parseGif } from "./render/gif";
 import Modal from "./ui/modal";
 import type { GifTransform } from "./render/gifRenderer";
+import { expose } from "$shared/bd";
 
 addFont(futura, "futuraBoldCondensed");
 
@@ -73,3 +74,6 @@ function showCaptioner(width: number, height: number, element: HTMLElement, onCo
         }
     });
 }
+
+expose("parseMp4", parseMp4);
+expose("parseGif", parseGif);

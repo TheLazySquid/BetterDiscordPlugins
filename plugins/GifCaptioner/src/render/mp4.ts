@@ -11,25 +11,38 @@ export default async function captionMp4(url: string, width: number, height: num
 	});
 
 	if(!res) return;
-	let arrayBuffer = await res.arrayBuffer() as MP4BoxBuffer;
-	arrayBuffer.fileStart = 0;
+	let arrayBuffer = await res.arrayBuffer();
+
+	const onError = () => {
+		progress.close();
+		error("Failed to parse gif");
+	}
 
 	// Count up the number of frames
 	progress.update("Preparing");
 	let frames = 0;
-	await parseToFrames(arrayBuffer, progress, (frame) => {
-		frame.source.close();
-		frames++;
+
+	await parseMp4({
+		buffer: arrayBuffer,
+		onError,
+		onFrame: (frame) => {
+			frame.source.close();
+			frames++;
+		}
 	});
 
 	// Actually render the gif
 	progress.update("Rendering", 0);
 	const renderer = new GifRenderer({ progress, frames, width, height, transform });
 	let i = 0;
-	await parseToFrames(arrayBuffer, progress, (frame) => {
-		progress.update("Rendering", i / frames);
-		renderer.addVideoFrame(frame.source, frame.delay);
-		i++;
+	await parseMp4({
+		buffer: arrayBuffer,
+		onError,
+		onFrame: (frame) => {
+			progress.update("Rendering", i / frames);
+			renderer.addVideoFrame(frame.source, frame.delay);
+			i++;
+		}
 	});
 
 	// Encode it
@@ -39,9 +52,17 @@ export default async function captionMp4(url: string, width: number, height: num
 // browsers tend to cap gifs at 50 fps
 const minFrameLength = 1000 / 50;
 
-function parseToFrames(buffer: MP4BoxBuffer, progress: ProgressDisplay,
-	onFrame: (frame: { source: VideoFrame, delay: number }) => void) {
+interface ParseMP4Options {
+	buffer: ArrayBuffer;
+	onFrame: (frame: { source: VideoFrame, delay: number }) => void;
+	onError?: () => void;
+}
+
+export function parseMp4({ buffer, onFrame, onError }: ParseMP4Options) {
 	return new Promise<void>((res) => {
+		let mp4Buffer = buffer as MP4BoxBuffer;
+		mp4Buffer.fileStart = 0;
+
 		let time = 0;
 		let lastFrameTime = 0;
 	
@@ -61,16 +82,12 @@ function parseToFrames(buffer: MP4BoxBuffer, progress: ProgressDisplay,
 				}
 			},
 			error() {
-				progress.close();
-				error("Failed to parse gif");
+				onError?.();
 			}
 		});
 	
 		let file = createFile();
-		file.onError = () => {
-			progress.close();
-			error("Failed to parse gif");
-		}
+		file.onError = () => onError?.();
 		file.onReady = (info) => {
 			const track = info.videoTracks[0];
 			if(!track.video) return;
@@ -86,8 +103,7 @@ function parseToFrames(buffer: MP4BoxBuffer, progress: ProgressDisplay,
 				file.setExtractionOptions(track.id);
 				file.start();
 			} catch {
-				progress.close();
-				error("Failed to parse gif");
+				onError?.();
 			}
 		}
 		file.onSamples = (id, ref, samples) => {
@@ -108,7 +124,7 @@ function parseToFrames(buffer: MP4BoxBuffer, progress: ProgressDisplay,
 			decoder.flush().then(res);
 		}
 	
-		file.appendBuffer(buffer);
+		file.appendBuffer(mp4Buffer);
 	});
 }
 

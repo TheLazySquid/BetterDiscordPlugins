@@ -23,3 +23,10 @@ export default async function captionGif(url: string, width: number, height: num
 
     renderer.render();
 }
+
+export function parseGif(buffer: ArrayBuffer) {
+    let parsed = parseGIF(buffer);
+    let frames = decompressFrames(parsed, true);
+
+    return { parsed, frames };
+}
