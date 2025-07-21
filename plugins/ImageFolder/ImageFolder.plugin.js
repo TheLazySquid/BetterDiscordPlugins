@@ -1,7 +1,7 @@
 /**
  * @name ImageFolder
  * @description A BetterDiscord plugin that allows you to save and send images from a folder for easy access
- * @version 1.1.1
+ * @version 1.1.2
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -626,8 +626,8 @@ function MediaDisplay({ media }) {
             setUrl(null);
           }, 1e4);
         } else {
-          if (url2) continue;
           if (unloadTimeout) clearTimeout(unloadTimeout);
+          if (url2) continue;
           Manager.readWhole(media).then((blob) => {
             if (!blob) return;
             url2 = URL.createObjectURL(blob);

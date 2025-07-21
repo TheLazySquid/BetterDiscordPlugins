@@ -31,13 +31,14 @@ export default function MediaDisplay({ media }: { media: Media }) {
 
                     unloadTimeout = setTimeout(() => {
                         if(!url) return;
+
                         URL.revokeObjectURL(url);
                         url = undefined;
                         setUrl(null);
                     }, 10e3);
                 } else {
-                    if(url) continue;
                     if(unloadTimeout) clearTimeout(unloadTimeout);
+                    if(url) continue;
 
                     // Load the image
                     Manager.readWhole(media).then((blob) => {
