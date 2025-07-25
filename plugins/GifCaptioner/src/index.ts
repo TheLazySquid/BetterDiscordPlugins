@@ -20,15 +20,13 @@ after(gifDisplay.prototype, "render", ({ thisVal, returnVal }) => {
         onClick: (e) => {
             e.stopPropagation();
             let isGif = thisVal.props.format === 1;
-            let urlParts = thisVal.props.src.split("/");
+            let url = thisVal.props.src;
 
-            // For some reason tenor urls have an id that ends with "s" for webm and "o" for mp4
-            if(urlParts[urlParts.length - 2].endsWith("s")) {
-                urlParts[urlParts.length - 2] = urlParts[urlParts.length - 2].slice(0, -1) + "o";
-                urlParts[urlParts.length - 1] = urlParts[urlParts.length - 1].replace(".webm", ".mp4");
+            // For some reason tenor urls have an id that ends with "o" for mp4
+            if(!isGif) {
+                let typeIndex = url.lastIndexOf("/") - 1;
+                url = url.slice(0, typeIndex) + "o" + url.slice(typeIndex + 1);
             }
-
-            let url = urlParts.join("/");
 
             if(isGif) {
                 let image = document.createElement("img");
