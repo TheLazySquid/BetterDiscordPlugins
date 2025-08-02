@@ -3,7 +3,7 @@ import { error } from "$shared/api/toast";
 import { channelStore, chatbox, CloudUploader } from "../modules";
 
 let onSubmit: ((args: any) => void) | null = null;
-before(chatbox.Z.type, "render", ({ args }) => 	onSubmit = args[0].onSubmit);
+before(chatbox?.type, "render", ({ args }) => 	onSubmit = args[0].onSubmit);
 
 export async function uploadFile(file: File) {
 	const channelId = channelStore.getCurrentlySelectedChannelId();

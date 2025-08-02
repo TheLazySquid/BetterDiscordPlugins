@@ -34,10 +34,10 @@ export const premiumPremissions: any = /* @__PURE__ */ Webpack.getByKeys("getUse
 export const highlightModule: any = /* @__PURE__ */ Webpack.getByKeys("highlight", "hasLanguage");
 
 export const /* @__PURE__ */ chatbox: any = /* @__PURE__ */ Webpack.getModule((m) => {
-    let str = m?.Z?.type?.render?.toString();
+    let str = m?.type?.render?.toString?.();
     if(!str) return false;
-    return str.includes("handleSubmit") && str.includes("channelTextAreaDisabled");
-});
+    return str.includes("pendingScheduledMessage") && str.includes(".CHANNEL_TEXT_AREA");
+}, {searchExports: true});
 
 // Taken from Arven
 export const ModalSystem = /* @__PURE__ */ getMangled(".modalKey?", {

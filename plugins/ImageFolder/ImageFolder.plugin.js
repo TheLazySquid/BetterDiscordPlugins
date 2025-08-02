@@ -1,7 +1,7 @@
 /**
  * @name ImageFolder
  * @description A BetterDiscord plugin that allows you to save and send images from a folder for easy access
- * @version 1.1.2
+ * @version 1.1.3
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -126,10 +126,10 @@ var expressionModule = /* @__PURE__ */ Webpack.getModule((m) => m.type?.toString
 var buttonsModule = /* @__PURE__ */ Webpack.getModule((m) => m.type?.toString?.().includes(".isSubmitButtonEnabled"));
 var uploadClasses = /* @__PURE__ */ Webpack.getByKeys("uploadArea", "chat");
 var chatbox = /* @__PURE__ */ Webpack.getModule((m) => {
-  let str = m?.Z?.type?.render?.toString();
+  let str = m?.type?.render?.toString?.();
   if (!str) return false;
-  return str.includes("handleSubmit") && str.includes("channelTextAreaDisabled");
-});
+  return str.includes("pendingScheduledMessage") && str.includes(".CHANNEL_TEXT_AREA");
+}, { searchExports: true });
 var expressionPicker = /* @__PURE__ */ getMangled("lastActiveView", {
   toggle: (f) => f.toString().includes("activeView==="),
   close: (f) => f.toString().includes("activeView:null"),
@@ -197,7 +197,7 @@ function getInput(title, callback) {
 
 // shared/util/upload.ts
 var onSubmit = null;
-before(chatbox.Z.type, "render", ({ args }) => onSubmit = args[0].onSubmit);
+before(chatbox?.type, "render", ({ args }) => onSubmit = args[0].onSubmit);
 async function uploadFile(file) {
   const channelId = channelStore.getCurrentlySelectedChannelId();
   const upload = new CloudUploader({ file, platform: 1 }, channelId);
