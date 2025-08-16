@@ -21,8 +21,8 @@
   "scripts": {
     "GifCaptioner": "bun run bundler/index.ts --plugin GifCaptioner",
     "ImageFolder": "bun run bundler/index.ts --plugin ImageFolder",
-    "WiderUserArea": "bun run bundler/index.ts --plugin WiderUserArea",
-    "ZipPreview": "bun run bundler/index.ts --plugin ZipPreview"
+    "ZipPreview": "bun run bundler/index.ts --plugin ZipPreview",
+    "UnicodeEmojis": "bun run bundler/index.ts --plugin UnicodeEmojis"
   },
   "type": "module"
 }

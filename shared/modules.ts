@@ -39,6 +39,8 @@ export const /* @__PURE__ */ chatbox: any = /* @__PURE__ */ Webpack.getModule((m
     return str.includes("pendingScheduledMessage") && str.includes(".CHANNEL_TEXT_AREA");
 }, {searchExports: true});
 
+export const createSlate: any = /* @__PURE__ */ Webpack.getByStrings("insertText=", "onChange=", { defaultExport: false });
+
 // Taken from Arven
 export const ModalSystem = /* @__PURE__ */ getMangled(".modalKey?", {
   open: /* @__PURE__ */ Webpack.Filters.byStrings(",instant:"),

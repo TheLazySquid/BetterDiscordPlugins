@@ -1,89 +1,112 @@
 /**
  * @name UnicodeEmojis
  * @description Replaces discord emojis that you send with their unicode equivalent
+ * @version 1.0.0
  * @author TheLazySquid
- * @version 0.2.0
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
  * @source https://github.com/TheLazySquid/BetterDiscordPlugins/tree/main/plugins/UnicodeEmojis/UnicodeEmojis.plugin.js
  */
+module.exports = class {
+  constructor() {
+    let plugin = this;
 
-let editor;
-let waitingToUpdate = false;
+// meta-ns:meta
+var pluginName = "UnicodeEmojis";
 
-function onChange() {
-    // count backwards to minimize lag from shuffling around nodes
-    for(let lineIndex = editor.children.length - 1; lineIndex >= 0; lineIndex--) {
-        let line = editor.children[lineIndex];
-        for(let i = line.children.length - 1; i >= 0; i--) {
-            let child = line.children[i];
-            if (child.type != 'emoji') continue;
-            let replacement = child.emoji.surrogate;
-            if (!replacement) continue;
-            
-            // remove the emoji
-            editor.apply({ type: 'remove_node', path: [lineIndex, i] });
-    
-            let lastNode = line.children[i - 1];
-            // insert the replacement
-            editor.apply({ type: 'insert_text', path: [lineIndex, i - 1], offset: lastNode.text.length, text: `\\${replacement}` });
-
-            // if the user copy-pastes in a large amount of emojis, discord will freeze/crash otherwise
-            waitingToUpdate = true;
-            requestAnimationFrame(onChange)
-            return;
-        }
+// shared/bd.ts
+var Api = new BdApi(pluginName);
+var createCallbackHandler = (callbackName) => {
+  const fullName = callbackName + "Callbacks";
+  plugin[fullName] = [];
+  plugin[callbackName] = () => {
+    for (let i = 0; i < plugin[fullName].length; i++) {
+      plugin[fullName][i].callback();
     }
-    
-    waitingToUpdate = false;
+  };
+  return (callback, once, id) => {
+    let object = { callback };
+    const delCallback = () => {
+      plugin[fullName].splice(plugin[fullName].indexOf(object), 1);
+    };
+    if (once === true) {
+      object.callback = () => {
+        callback();
+        delCallback();
+      };
+    }
+    if (id) {
+      object.id = id;
+      for (let i = 0; i < plugin[fullName].length; i++) {
+        if (plugin[fullName][i].id === id) {
+          plugin[fullName][i] = object;
+          return delCallback;
+        }
+      }
+    }
+    plugin[fullName].push(object);
+    return delCallback;
+  };
+};
+var onStart = createCallbackHandler("start");
+var onStop = createCallbackHandler("stop");
+var onSwitch = createCallbackHandler("onSwitch");
+
+// shared/api/patching.ts
+function check(module, key) {
+  if (!module || !key) {
+    Api.Logger.warn("Missing module or key", module, key);
+    return false;
+  }
+  return true;
 }
-
-let textArea;
-
-let changeObserver = new MutationObserver(() => {
-    if(waitingToUpdate) return;
-
-    // confirm that there is an emoji
-    if(!textArea.querySelector("img")) return;
-    onChange();
+function after(module, key, callback) {
+  if (!check(module, key)) return;
+  onStart(() => {
+    Api.Patcher.after(module, key, (thisVal, args, returnVal) => {
+      return callback({ thisVal, args, returnVal });
+    });
+  });
+}
+onStop(() => {
+  Api.Patcher.unpatchAll();
 });
 
-function onAreaFound(newArea) {
-    textArea = newArea;
+// shared/modules.ts
+var Webpack = BdApi.Webpack;
+var createSlate = /* @__PURE__ */ Webpack.getByStrings("insertText=", "onChange=", { defaultExport: false });
 
-    // this code adapted from https://github.com/rauenzi/BDPluginLibrary/blob/master/src/modules/reacttools.js
-    let reactInstance = textArea[Object.keys(textArea).find((key) => key.startsWith("__reactInternalInstance") || key.startsWith("__reactFiber"))]
-    editor = reactInstance?.return?.return?.stateNode?.ref?.current?.getSlateEditor()
-    if(!editor) return;
-
-    changeObserver.observe(textArea, {childList: true, subtree: true})
+// plugins/UnicodeEmojis/src/index.ts
+var cancelOnChange;
+after(createSlate, "Z", ({ returnVal: editor }) => {
+  cancelOnChange?.();
+  let waitingToUpdate = false;
+  function onChange() {
+    for (let lineIndex = editor.children.length - 1; lineIndex >= 0; lineIndex--) {
+      let line = editor.children[lineIndex];
+      for (let i = line.children.length - 1; i >= 0; i--) {
+        let child = line.children[i];
+        if (child.type != "emoji") continue;
+        let replacement = child.emoji.surrogate;
+        if (!replacement) continue;
+        editor.apply({ type: "remove_node", path: [lineIndex, i] });
+        let lastNode = line.children[i - 1];
+        editor.apply({ type: "insert_text", path: [lineIndex, i - 1], offset: lastNode.text.length, text: `\\${replacement}` });
+        waitingToUpdate = true;
+        requestAnimationFrame(onChange);
+        return;
+      }
+    }
+    waitingToUpdate = false;
+  }
+  cancelOnChange = Api.Patcher.after(editor, "onChange", (_, args) => {
+    if (waitingToUpdate) return;
+    let operation = args?.[0]?.operation;
+    if (!operation) return;
+    if (operation.type !== "insert_text" && operation.type !== "remove_text") return;
+    if (!operation.text.includes(":")) return;
+    onChange();
+  });
+});
+  }
 }
-
-const textareaSelector = "[class*='textArea_']"
-let textareaObserver = new MutationObserver((mutations) => {
-    for(let mutation of mutations) {
-        for(let node of mutation.addedNodes) {
-            let found = node.matches?.(textareaSelector) ? node : node.querySelector?.(textareaSelector)
-            if(!found) continue;
-
-            onAreaFound(found)
-        }
-    }
-})
-
-module.exports = class UnicodeEmojis {
-    start() {
-        let textarea = document.querySelector(textareaSelector)
-        if(textarea) onAreaFound(textarea)
-
-        textareaObserver.observe(document.body, {
-            childList: true,
-            subtree: true
-        })
-    }
-
-    stop() {
-        textareaObserver.disconnect()
-        changeObserver.disconnect()
-    }
-};
