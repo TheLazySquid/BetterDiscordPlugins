@@ -22,5 +22,5 @@ export default function waitForEnter(callback: () => void) {
             // build the plugin
             callback();
         }
-    })
+    });
 }

@@ -6,6 +6,7 @@ import { existsSync } from "node:fs";
 import { parseArgs } from "node:util";
 import { metaPlugin } from "./meta.ts";
 import { stylesPlugin } from "./styles.ts";
+import { modulesPlugin } from "./modules.ts";
 
 const args = parseArgs({
     args: process.argv.slice(2),
@@ -75,6 +76,8 @@ let esbuildConfig: BuildOptions = {
     jsx: "transform",
     jsxFactory: "BdApi.React.createElement"
 }
+
+if(config.modules) esbuildConfig.plugins?.push(modulesPlugin(config.modules));
 
 // I'm unusure if this works cross-platform
 let pluginsDir: string | null = null;

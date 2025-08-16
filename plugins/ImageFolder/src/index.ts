@@ -1,6 +1,6 @@
 import imagePlusOutline from '$assets/image-plus-outline.svg';
 import { after, tempAfter } from '$shared/api/patching';
-import { buttonsModule, expressionModule, expressionPicker, uploadClasses, uploadOverlay } from "$shared/modules";
+import { buttonsModule, expressionModule, expressionPicker, uploadClasses } from "$shared/modules";
 import View from "./ui/view";
 import { addFont } from '$shared/api/fonts';
 import futura from "$assets/Futura Condensed Extra Bold.otf";
@@ -62,7 +62,7 @@ after(expressionModule, "type", ({ returnVal }) => {
 
         if(activeView === 'if-image') {
             // display our content
-            const el = BdApi.React.createElement(View, {})
+            const el = BdApi.React.createElement(View, {});
             sections.push(el);
         }
     });

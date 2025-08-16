@@ -6,7 +6,7 @@ import ExpandDown from "$assets/arrow-expand-down.svg"
 import ExpandUp from "$assets/arrow-expand-up.svg"
 import FolderReturn from "$assets/folder-arrow-left-outline.svg"
 import FilePreview from "./FilePreview.tsx";
-import { Modal, ModalSystem } from "$shared/modules.ts";
+import { Modal, ModalSystem } from "$shared/modules";
 
 const React = BdApi.React;
 

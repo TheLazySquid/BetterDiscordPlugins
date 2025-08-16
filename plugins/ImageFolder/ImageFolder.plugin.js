@@ -1,7 +1,7 @@
 /**
  * @name ImageFolder
  * @description A BetterDiscord plugin that allows you to save and send images from a folder for easy access
- * @version 1.1.3
+ * @version 1.2.0
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -115,22 +115,36 @@ onStop(() => {
   Api.Patcher.unpatchAll();
 });
 
-// shared/modules.ts
-var Webpack = BdApi.Webpack;
-function getMangled(filter, mapper) {
-  return Webpack.getMangled(filter, mapper);
+// shared/util/demangle.ts
+function demangle(module, demangler) {
+  let returned = {};
+  let values = Object.values(module);
+  for (let id in demangler) {
+    for (let i = 0; i < values.length; i++) {
+      if (demangler[id](values[i])) {
+        returned[id] = values[i];
+        break;
+      }
+    }
+  }
+  return returned;
 }
-var CloudUploader = /* @__PURE__ */ Webpack.getByStrings("uploadFileToCloud", { searchExports: true });
-var channelStore = /* @__PURE__ */ Webpack.getStore("SelectedChannelStore");
-var expressionModule = /* @__PURE__ */ Webpack.getModule((m) => m.type?.toString?.().includes("onSelectGIF"));
-var buttonsModule = /* @__PURE__ */ Webpack.getModule((m) => m.type?.toString?.().includes(".isSubmitButtonEnabled"));
-var uploadClasses = /* @__PURE__ */ Webpack.getByKeys("uploadArea", "chat");
-var chatbox = /* @__PURE__ */ Webpack.getModule((m) => {
-  let str = m?.type?.render?.toString?.();
-  if (!str) return false;
-  return str.includes("pendingScheduledMessage") && str.includes(".CHANNEL_TEXT_AREA");
-}, { searchExports: true });
-var expressionPicker = /* @__PURE__ */ getMangled("lastActiveView", {
+
+// modules-ns:$shared/modules
+var Filters = BdApi.Webpack.Filters;
+var [chatbox, CloudUploader, buttonsModule, expressionModule, expressionPickerMangled, uploadClasses] = BdApi.Webpack.getBulk(
+  { filter: (m) => {
+    let str = m?.type?.render?.toString?.();
+    if (!str) return false;
+    return str.includes("pendingScheduledMessage") && str.includes(".CHANNEL_TEXT_AREA");
+  }, searchExports: true },
+  { filter: Filters.byStrings("uploadFileToCloud"), searchExports: true },
+  { filter: (m) => m.type?.toString?.().includes(".isSubmitButtonEnabled") },
+  { filter: (m) => m.type?.toString?.().includes("onSelectGIF") },
+  { filter: Filters.bySource("lastActiveView") },
+  { filter: Filters.byKeys("uploadArea", "chat") }
+);
+var expressionPicker = demangle(expressionPickerMangled, {
   toggle: (f) => f.toString().includes("activeView==="),
   close: (f) => f.toString().includes("activeView:null"),
   store: (f) => f.getState
@@ -194,6 +208,9 @@ function getInput(title, callback) {
     }
   });
 }
+
+// shared/stores.ts
+var channelStore = BdApi.Webpack.getStore("SelectedChannelStore");
 
 // shared/util/upload.ts
 var onSubmit = null;

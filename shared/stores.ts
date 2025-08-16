@@ -1,0 +1,1 @@
+export const channelStore: any = BdApi.Webpack.getStore("SelectedChannelStore");

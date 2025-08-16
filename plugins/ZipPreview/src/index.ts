@@ -1,6 +1,6 @@
 import { after } from "$shared/api/patching.ts";
 import { onSwitch } from "$shared/bd.ts";
-import { fileModule } from "$shared/modules.ts";
+import { fileModule } from "$shared/modules";
 import './styles.css'
 import ZipPreview from "./ZipPreview.tsx"
 

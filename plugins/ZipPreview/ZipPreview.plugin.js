@@ -1,7 +1,7 @@
 /**
  * @name ZipPreview
  * @description Lets you see inside zips and preview/download files without ever downloading/extracting the zip
- * @version 0.4.5
+ * @version 0.5.0
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -72,23 +72,39 @@ onStop(() => {
   Api.Patcher.unpatchAll();
 });
 
-// shared/modules.ts
-var Webpack = BdApi.Webpack;
-function getMangled(filter, mapper) {
-  return Webpack.getMangled(filter, mapper);
+// shared/util/demangle.ts
+function demangle(module2, demangler) {
+  let returned = {};
+  let values = Object.values(module2);
+  for (let id in demangler) {
+    for (let i = 0; i < values.length; i++) {
+      if (demangler[id](values[i])) {
+        returned[id] = values[i];
+        break;
+      }
+    }
+  }
+  return returned;
 }
-var fileModule = /* @__PURE__ */ Webpack.getModule((m) => m.Z?.toString().includes("filenameLinkWrapper"));
-var highlightModule = /* @__PURE__ */ Webpack.getByKeys("highlight", "hasLanguage");
-var ModalSystem = /* @__PURE__ */ getMangled(".modalKey?", {
-  open: /* @__PURE__ */ Webpack.Filters.byStrings(",instant:"),
-  close: /* @__PURE__ */ Webpack.Filters.byStrings(".onCloseCallback()")
+
+// modules-ns:$shared/modules
+var Filters = BdApi.Webpack.Filters;
+var [fileModule, highlightModule, ModalMangled, ModalSystemMangled] = BdApi.Webpack.getBulk(
+  { filter: (m) => m.Z?.toString().includes("filenameLinkWrapper") },
+  { filter: Filters.byKeys("highlight", "hasLanguage") },
+  { filter: Filters.bySource(".MODAL_ROOT_LEGACY,properties") },
+  { filter: Filters.bySource(".modalKey?") }
+);
+var Modal = demangle(ModalMangled, {
+  Root: Filters.byStrings(".ImpressionNames.MODAL_ROOT_LEGACY"),
+  Content: Filters.byStrings("scrollerRef", "scrollbarType"),
+  Header: Filters.byStrings(".header,"),
+  Close: Filters.byStrings(".closeWithCircleBackground]:"),
+  Footer: Filters.byStrings(".footerSeparator]:")
 });
-var Modal = /* @__PURE__ */ getMangled(".MODAL_ROOT_LEGACY,properties", {
-  Root: /* @__PURE__ */ Webpack.Filters.byStrings(".ImpressionNames.MODAL_ROOT_LEGACY"),
-  Content: /* @__PURE__ */ Webpack.Filters.byStrings("scrollerRef", "scrollbarType"),
-  Header: /* @__PURE__ */ Webpack.Filters.byStrings(".header,"),
-  Close: /* @__PURE__ */ Webpack.Filters.byStrings(".closeWithCircleBackground]:"),
-  Footer: /* @__PURE__ */ Webpack.Filters.byStrings(".footerSeparator]:")
+var ModalSystem = demangle(ModalSystemMangled, {
+  open: Filters.byStrings(",instant:"),
+  close: Filters.byStrings(".onCloseCallback()")
 });
 
 // shared/api/styles.ts

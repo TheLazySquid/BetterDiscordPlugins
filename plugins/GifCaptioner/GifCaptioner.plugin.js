@@ -1,7 +1,7 @@
 /**
  * @name GifCaptioner
  * @description A BetterDiscord plugin that allows you to add a caption to discord gifs
- * @version 1.2.5
+ * @version 1.3.0
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -1224,35 +1224,51 @@ function error(message) {
   BdApi.UI.showToast(`${pluginName}: ${message}`, { type: "error" });
 }
 
-// shared/modules.ts
-var Webpack = BdApi.Webpack;
-function getMangled(filter, mapper) {
-  return Webpack.getMangled(filter, mapper);
+// shared/util/demangle.ts
+function demangle(module, demangler) {
+  let returned = {};
+  let values = Object.values(module);
+  for (let id in demangler) {
+    for (let i = 0; i < values.length; i++) {
+      if (demangler[id](values[i])) {
+        returned[id] = values[i];
+        break;
+      }
+    }
+  }
+  return returned;
 }
-var CloudUploader = /* @__PURE__ */ Webpack.getByStrings("uploadFileToCloud", { searchExports: true });
-var channelStore = /* @__PURE__ */ Webpack.getStore("SelectedChannelStore");
-var gifDisplay = /* @__PURE__ */ Webpack.getByStrings("renderGIF()", "imagePool", { searchExports: true });
-var premiumPremissions = /* @__PURE__ */ Webpack.getByKeys("getUserMaxFileSize");
-var chatbox = /* @__PURE__ */ Webpack.getModule((m) => {
-  let str = m?.type?.render?.toString?.();
-  if (!str) return false;
-  return str.includes("pendingScheduledMessage") && str.includes(".CHANNEL_TEXT_AREA");
-}, { searchExports: true });
-var ModalSystem = /* @__PURE__ */ getMangled(".modalKey?", {
-  open: /* @__PURE__ */ Webpack.Filters.byStrings(",instant:"),
-  close: /* @__PURE__ */ Webpack.Filters.byStrings(".onCloseCallback()")
-});
-var expressionPicker = /* @__PURE__ */ getMangled("lastActiveView", {
+
+// modules-ns:$shared/modules
+var Filters = BdApi.Webpack.Filters;
+var [chatbox, CloudUploader, expressionPickerMangled, gifDisplay, ModalSystemMangled, ModalMangled, premiumPremissions] = BdApi.Webpack.getBulk(
+  { filter: (m) => {
+    let str = m?.type?.render?.toString?.();
+    if (!str) return false;
+    return str.includes("pendingScheduledMessage") && str.includes(".CHANNEL_TEXT_AREA");
+  }, searchExports: true },
+  { filter: Filters.byStrings("uploadFileToCloud"), searchExports: true },
+  { filter: Filters.bySource("lastActiveView") },
+  { filter: Filters.byStrings("renderGIF()", "imagePool"), searchExports: true },
+  { filter: Filters.bySource(".modalKey?") },
+  { filter: Filters.bySource(".MODAL_ROOT_LEGACY,properties") },
+  { filter: Filters.byKeys("getUserMaxFileSize") }
+);
+var expressionPicker = demangle(expressionPickerMangled, {
   toggle: (f2) => f2.toString().includes("activeView==="),
   close: (f2) => f2.toString().includes("activeView:null"),
   store: (f2) => f2.getState
 });
-var Modal = /* @__PURE__ */ getMangled(".MODAL_ROOT_LEGACY,properties", {
-  Root: /* @__PURE__ */ Webpack.Filters.byStrings(".ImpressionNames.MODAL_ROOT_LEGACY"),
-  Content: /* @__PURE__ */ Webpack.Filters.byStrings("scrollerRef", "scrollbarType"),
-  Header: /* @__PURE__ */ Webpack.Filters.byStrings(".header,"),
-  Close: /* @__PURE__ */ Webpack.Filters.byStrings(".closeWithCircleBackground]:"),
-  Footer: /* @__PURE__ */ Webpack.Filters.byStrings(".footerSeparator]:")
+var ModalSystem = demangle(ModalSystemMangled, {
+  open: Filters.byStrings(",instant:"),
+  close: Filters.byStrings(".onCloseCallback()")
+});
+var Modal = demangle(ModalMangled, {
+  Root: Filters.byStrings(".ImpressionNames.MODAL_ROOT_LEGACY"),
+  Content: Filters.byStrings("scrollerRef", "scrollbarType"),
+  Header: Filters.byStrings(".header,"),
+  Close: Filters.byStrings(".closeWithCircleBackground]:"),
+  Footer: Filters.byStrings(".footerSeparator]:")
 });
 
 // node_modules/mp4box/dist/mp4box.all.js
@@ -6848,6 +6864,9 @@ function getLines(ctx, text, maxWidth) {
 
 // plugins/GifCaptioner/src/render/gifRenderer.ts
 var import_gif = __toESM(require_gif(), 1);
+
+// shared/stores.ts
+var channelStore = BdApi.Webpack.getStore("SelectedChannelStore");
 
 // shared/util/upload.ts
 var onSubmit = null;
