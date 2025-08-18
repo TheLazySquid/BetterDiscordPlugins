@@ -12,39 +12,58 @@ export function modulesPlugin(ids: (keyof Modules)[]): Plugin {
             }));
 
             build.onLoad({ filter: /.*/, namespace: "modules-ns" }, () => {
-                const array = ids.map(id => modules[id].demangler ? `${id}Mangled` : id);
-
-                let contents = `import demangle from "$shared/util/demangle";\n\n` +
-                `const Filters = BdApi.Webpack.Filters;\nconst [${array}] = BdApi.Webpack.getBulk(\n`;
-
-                for(let i = 0; i < ids.length; i++) {
-                    let module = modules[ids[i]];
-
-                    let entry = `{ filter: ${module.filter}`
-                    if(module.defaultExport !== undefined) entry += `, defaultExport: ${module.defaultExport}`;
-                    if(module.searchExports !== undefined) entry += `, searchExports: ${module.searchExports}`;
-                    entry += ` }`;
-
-                    contents += "  " + entry + ",\n";
-                }
-
-                contents += `);\n\n`;
-
-                for(let i = 0; i < ids.length; i++) {
-                    let demangler = modules[ids[i]].demangler;
-                    if(!demangler) continue;
-
-                    contents += `const ${ids[i]} = demangle(${ids[i]}Mangled, {\n`;
-                    for(let id in demangler) {
-                        contents += `  ${id}: ${demangler[id]},\n`;
-                    }
-                    contents += `});\n`
-                }
-
-                contents += `\nexport {${ids.join(",")}}`;
+                const contents = createModulesFile(ids);
 
                 return { contents, loader: "js", resolveDir: __dirname }
             });
         }
     }
+}
+
+function createModulesFile(ids: (keyof Modules)[]): string {
+    const array = ids.map(id => modules[id].demangler ? `${id}Mangled` : id);
+
+    let contents = `import demangle from "$shared/util/demangle";\n\n` +
+    `const Filters = BdApi.Webpack.Filters;\n`;
+
+    if(array.length === 1) {
+        let module = modules[ids[0]];
+        contents += `const ${array[0]} = BdApi.Webpack.getModule(${module.filter}`;
+        if(module.defaultExport !== undefined || module.searchExports !== undefined) {
+            contents += `, {\n`;
+            if(module.defaultExport !== undefined) contents += `  defaultExport: ${module.defaultExport},\n`;
+            if(module.searchExports !== undefined) contents += `  searchExports: ${module.searchExports},\n`;
+            contents += `}`;
+        }
+        contents += `);\n\n`;
+    } else {
+        contents += `const [${array}] = BdApi.Webpack.getBulk(\n`;
+        for(let i = 0; i < ids.length; i++) {
+            let module = modules[ids[i]];
+    
+            let entry = `{ filter: ${module.filter}`
+            if(module.defaultExport !== undefined) entry += `, defaultExport: ${module.defaultExport}`;
+            if(module.searchExports !== undefined) entry += `, searchExports: ${module.searchExports}`;
+            entry += ` }`;
+    
+            contents += "  " + entry + ",\n";
+        }
+    
+        contents += `);\n\n`;
+    }
+
+    for(let i = 0; i < ids.length; i++) {
+        let demangler = modules[ids[i]].demangler;
+        if(!demangler) continue;
+
+        contents += `const ${ids[i]} = demangle(${ids[i]}Mangled, {\n`;
+        for(let id in demangler) {
+            contents += `  ${id}: ${demangler[id]},\n`;
+        }
+        contents += `});\n`
+    }
+
+    contents += `\nexport {${ids.join(",")}}`;
+
+    return contents;
 }
