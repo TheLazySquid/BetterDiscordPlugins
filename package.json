@@ -22,7 +22,11 @@
     "GifCaptioner": "bun run bundler/index.ts --plugin GifCaptioner",
     "ImageFolder": "bun run bundler/index.ts --plugin ImageFolder",
     "ZipPreview": "bun run bundler/index.ts --plugin ZipPreview",
-    "UnicodeEmojis": "bun run bundler/index.ts --plugin UnicodeEmojis"
+    "UnicodeEmojis": "bun run bundler/index.ts --plugin UnicodeEmojis",
+    "VideoCompressor": "bun run bundler/index.ts --plugin VideoCompressor"
   },
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "mediabunny": "^1.8.0"
+  }
 }

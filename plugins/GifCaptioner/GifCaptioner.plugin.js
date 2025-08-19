@@ -1241,7 +1241,7 @@ function demangle(module, demangler) {
 
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var [chatbox, CloudUploader, expressionPickerMangled, gifDisplay, ModalSystemMangled, ModalMangled, premiumPremissions] = BdApi.Webpack.getBulk(
+var [chatbox, CloudUploader, expressionPickerMangled, gifDisplay, ModalSystemMangled, ModalMangled, premiumPermissions] = BdApi.Webpack.getBulk(
   { filter: (m) => {
     let str = m?.type?.render?.toString?.();
     if (!str) return false;
@@ -6966,7 +6966,7 @@ var GifRenderer = class {
     }
     const fullSize = fullHeight * this.width;
     const sizeEstimate = fullSize * frames;
-    const maxSize = premiumPremissions.getUserMaxFileSize();
+    const maxSize = premiumPermissions.getUserMaxFileSize();
     let scaleFactor = Math.max(1, Math.sqrt(sizeEstimate / maxSize));
     Api.Logger.log("Scale factor set to", scaleFactor);
     const newWidth = Math.floor(this.width / scaleFactor);

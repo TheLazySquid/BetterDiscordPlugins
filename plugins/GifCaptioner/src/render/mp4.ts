@@ -1,7 +1,7 @@
 import { error } from "$shared/api/toast";
 import { createFile, DataStream, ISOFile, MP4BoxBuffer } from "mp4box";
 import GifRenderer, { type GifTransform } from "./gifRenderer";
-import ProgressDisplay from "../ui/createProgress";
+import ProgressDisplay from "$shared/util/progress";
 
 export default async function captionMp4(url: string, width: number, height: number, transform: GifTransform) {
 	const progress = new ProgressDisplay("Fetching");

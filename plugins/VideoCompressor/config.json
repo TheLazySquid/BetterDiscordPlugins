@@ -1,0 +1,10 @@
+{
+    "description": "Compress videos that are too large to upload normally",
+    "version": "0.1.0",
+    "modules": [
+        "attachFiles",
+        "premiumPermissions",
+        "ModalSystem",
+        "Modal"
+    ]
+}

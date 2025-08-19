@@ -21,14 +21,23 @@ export function modulesPlugin(ids: (keyof Modules)[]): Plugin {
 }
 
 function createModulesFile(ids: (keyof Modules)[]): string {
-    const array = ids.map(id => modules[id].demangler ? `${id}Mangled` : id);
+    const normalModules = ids.filter(id => !modules[id].getWithKey);
+    const moduleIds = normalModules.map(id => modules[id].demangler ? `${id}Mangled` : id);
 
     let contents = `import demangle from "$shared/util/demangle";\n\n` +
     `const Filters = BdApi.Webpack.Filters;\n`;
 
-    if(array.length === 1) {
-        let module = modules[ids[0]];
-        contents += `const ${array[0]} = BdApi.Webpack.getModule(${module.filter}`;
+    // Do getWithKey modules first
+    for(let i = 0; i < ids.length; i++) {
+        let module = modules[ids[i]];
+        if(!module.getWithKey) continue;
+
+        contents += `const ${ids[i]} = [...BdApi.Webpack.getWithKey(${module.filter})];\n`
+    }
+
+    if(normalModules.length === 1) {
+        let module = modules[normalModules[0]];
+        contents += `const ${moduleIds[0]} = BdApi.Webpack.getModule(${module.filter}`;
         if(module.defaultExport !== undefined || module.searchExports !== undefined) {
             contents += `, {\n`;
             if(module.defaultExport !== undefined) contents += `  defaultExport: ${module.defaultExport},\n`;
@@ -36,10 +45,11 @@ function createModulesFile(ids: (keyof Modules)[]): string {
             contents += `}`;
         }
         contents += `);\n\n`;
-    } else {
-        contents += `const [${array}] = BdApi.Webpack.getBulk(\n`;
+    } else if(normalModules.length > 1) {
+        contents += `const [${moduleIds}] = BdApi.Webpack.getBulk(\n`;
         for(let i = 0; i < ids.length; i++) {
             let module = modules[ids[i]];
+            if(module.getWithKey) continue;
     
             let entry = `{ filter: ${module.filter}`
             if(module.defaultExport !== undefined) entry += `, defaultExport: ${module.defaultExport}`;

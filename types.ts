@@ -3,6 +3,7 @@ export interface ModuleDefinition {
     defaultExport?: boolean;
     searchExports?: boolean;
     demangler?: Record<string, string>;
+    getWithKey?: boolean;
 }
 
 interface ReactElementModule {
@@ -27,9 +28,10 @@ export interface Modules {
     buttonsModule: ReactElementModule;
     uploadClasses: Record<string, string>;
     gifDisplay: any;
-    premiumPremissions: any;
+    premiumPermissions: any;
     highlightModule: any;
     createSlate: any;
+    attachFiles: [any, string];
     chatbox: any;
     ModalSystem: { open: any; close: any };
     expressionPicker: ExpressionPicker;

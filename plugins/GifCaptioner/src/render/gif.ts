@@ -1,6 +1,6 @@
 import { decompressFrames, parseGIF, type ParsedFrame } from "gifuct-js";
 import GifRenderer, { type GifTransform } from "./gifRenderer";
-import ProgressDisplay from "../ui/createProgress";
+import ProgressDisplay from "$shared/util/progress";
 
 export default async function captionGif(url: string, width: number, height: number, transform: GifTransform) {
     const progress = new ProgressDisplay("Fetching");

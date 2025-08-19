@@ -9,9 +9,10 @@ export const modules: Record<keyof Modules, ModuleDefinition> = {
     buttonsModule: { filter: `(m) => m.type?.toString?.().includes(".isSubmitButtonEnabled")` },
     uploadClasses: { filter: `Filters.byKeys("uploadArea", "chat")` },
     gifDisplay: { filter: `Filters.byStrings("renderGIF()", "imagePool")`, searchExports: true },
-    premiumPremissions: { filter: `Filters.byKeys("getUserMaxFileSize")` },
+    premiumPermissions: { filter: `Filters.byKeys("getUserMaxFileSize")` },
     highlightModule: { filter: `Filters.byKeys("highlight", "hasLanguage")` },
     createSlate: { filter: `Filters.byStrings("insertText=", "onChange=")`, defaultExport: false },
+    attachFiles: { filter: `Filters.byStrings("filesMetadata:", "requireConfirm:")`, getWithKey: true },
     chatbox: {
         filter: `(m) => {
             let str = m?.type?.render?.toString?.();
@@ -56,9 +57,10 @@ export let expressionModule: Modules['expressionModule'];
 export let buttonsModule: Modules['buttonsModule'];
 export let uploadClasses: Modules['uploadClasses'];
 export let gifDisplay: Modules['gifDisplay'];
-export let premiumPremissions: Modules['premiumPremissions'];
+export let premiumPermissions: Modules['premiumPermissions'];
 export let highlightModule: Modules['highlightModule'];
 export let createSlate: Modules['createSlate'];
+export let attachFiles: Modules['attachFiles'];
 export let chatbox: Modules['chatbox'];
 export let ModalSystem: Modules['ModalSystem'];
 export let expressionPicker: Modules['expressionPicker'];

@@ -1,0 +1,20 @@
+.vc-options .estimate {
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 15px;
+}
+
+.vc-options span {
+    padding: 0 5px;
+}
+
+.vc-options .big {
+    color: red;
+}
+
+.vc-options .small {
+    color: green;
+}
+
+.vc-options input {
+    width: 100%;
+}

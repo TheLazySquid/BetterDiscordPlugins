@@ -17,3 +17,7 @@ Lets you see inside zips and preview/download files without ever downloading/ext
 ## UnicodeEmojis [Page](https://betterdiscord.app/plugin/UnicodeEmojis) [Source](/plugins/UnicodeEmojis/)
 
 Replaces discord emojis that you send with their unicode equivalent.
+
+## VideoCompressor [Source](/plugins/VideoCompressor/)
+
+Easily compress videos that would otherwise be too large to send.
