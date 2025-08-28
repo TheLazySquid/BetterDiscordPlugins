@@ -2,11 +2,7 @@ import { after } from "$shared/api/patching";
 import { Api } from "$shared/bd";
 import { createSlate } from "$shared/modules";
 
-let cancelOnChange: () => void;
-
 after(createSlate, "Z", ({ returnVal: editor }) => {
-    cancelOnChange?.();
-
     let waitingToUpdate = false;
 
     function onChange() {
@@ -36,15 +32,17 @@ after(createSlate, "Z", ({ returnVal: editor }) => {
         waitingToUpdate = false;
     }
 
-    cancelOnChange = Api.Patcher.after(editor, "onChange", (_, args: any[]) => {
+    const editorOnChange = editor.onChange;
+    editor.onChange = function() {
+        editorOnChange.apply(this, arguments);
+        
         if(waitingToUpdate) return;
-
-        let operation = args?.[0]?.operation;
+        let operation = arguments?.[0]?.operation;
         
         if(!operation) return;
         if(operation.type !== "insert_text" && operation.type !== "remove_text") return;
         if(!operation.text.includes(":")) return;
-
+    
         onChange();
-    });
+    }
 });
