@@ -9,6 +9,7 @@ import { settings } from './settings';
 import { patchContextMenu } from '$shared/api/contextmenu';
 import Manager, { types } from './manager';
 import { onStart, onStop } from '$shared/bd';
+import { findReactChild } from '$shared/util/findInTree';
 
 addFont(futura, "futuraBoldCondensed");
 
@@ -42,8 +43,8 @@ after(expressionModule, "type", ({ returnVal }) => {
     tempAfter(returnVal.props.children.props, "children", ({ returnVal: returnVal2 }) => {
         if(!returnVal2) return returnVal2;
 
-        let sections = returnVal2?.props?.children?.props?.children?.[1]?.props?.children;
-        let categories = sections?.[0]?.props?.children?.props?.children; // react moment
+        let sections = findReactChild(returnVal2, (el) => el?.[0]?.type === "nav");
+        let categories = findReactChild(sections, (el) => el?.[0]?.props?.["aria-selected"] !== undefined);
         if (!categories) return;
 
         let activeView = expressionPicker.store.getState().activeView;

@@ -45,7 +45,9 @@ export const modules: Record<keyof Modules, ModuleDefinition> = {
             Close: `Filters.byStrings(".closeWithCircleBackground]:")`,
             Footer: `Filters.byStrings(".footerSeparator]:")`
         }
-    }
+    },
+    AttachmentButtons: { filter: `Filters.byStrings("draftType:", "keyboardModeEnabled:", "currentColor")`, defaultExport: false },
+    AttachmentButton: { filter: `Filters.byStrings("actionBarIcon", "hideOnClick")` }
 }
 
 // Needed for typescript
@@ -65,3 +67,5 @@ export let chatbox: Modules['chatbox'];
 export let ModalSystem: Modules['ModalSystem'];
 export let expressionPicker: Modules['expressionPicker'];
 export let Modal: Modules['Modal'];
+export let AttachmentButtons: Modules['AttachmentButtons'];
+export let AttachmentButton: Modules['AttachmentButton'];

@@ -1,7 +1,7 @@
 /**
  * @name ImageFolder
  * @description A BetterDiscord plugin that allows you to save and send images from a folder for easy access
- * @version 1.2.0
+ * @version 1.2.1
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -151,8 +151,9 @@ var expressionPicker = demangle(expressionPickerMangled, {
 });
 
 // shared/api/toast.ts
-function error(message) {
-  BdApi.UI.showToast(`${pluginName}: ${message}`, { type: "error" });
+function error(message, showName = true) {
+  if (showName) BdApi.UI.showToast(`${pluginName}: ${message}`, { type: "error" });
+  else BdApi.UI.showToast(message, { type: "error" });
 }
 
 // shared/api/styles.ts
@@ -1053,6 +1054,12 @@ function patchContextMenu(type, callback) {
   onStop(() => BdApi.ContextMenu.unpatch(type, callback));
 }
 
+// shared/util/findInTree.ts
+function findReactChild(element, filter) {
+  if (!element) return null;
+  return BdApi.Utils.findInTree(element, filter, { walkable: ["props", "children"] });
+}
+
 // plugins/ImageFolder/src/index.ts
 addFont(Futura_Condensed_Extra_Bold_default, "futuraBoldCondensed");
 after(buttonsModule, "type", ({ returnVal }) => {
@@ -1075,8 +1082,8 @@ after(expressionModule, "type", ({ returnVal }) => {
   if (!returnVal) return returnVal;
   tempAfter(returnVal.props.children.props, "children", ({ returnVal: returnVal2 }) => {
     if (!returnVal2) return returnVal2;
-    let sections = returnVal2?.props?.children?.props?.children?.[1]?.props?.children;
-    let categories = sections?.[0]?.props?.children?.props?.children;
+    let sections = findReactChild(returnVal2, (el) => el?.[0]?.type === "nav");
+    let categories = findReactChild(sections, (el) => el?.[0]?.props?.["aria-selected"] !== void 0);
     if (!categories) return;
     let activeView = expressionPicker.store.getState().activeView;
     let newCategory = BdApi.React.createElement(categories[0].type, {
