@@ -2,6 +2,21 @@
     aspect-ratio: 1 / 1;
     padding: 0;
     cursor: pointer;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    transition-duration: 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.if-button:hover {
+    background-color: var(--background-modifier-selected);
+}
+
+.if-button svg {
+    width: 23px;
     height: 23px;
 }
 
