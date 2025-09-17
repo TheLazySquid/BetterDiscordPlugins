@@ -1,0 +1,95 @@
+.ea-editor {
+    padding-top: 16px;
+    padding-bottom: 24px;
+}
+
+.ea-interactive {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.ea-footer {
+    padding-top: 12px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+}
+
+.ea-cancel:hover {
+    text-decoration: underline;
+}
+
+.ea-controls {
+    padding-bottom: 12px;
+}
+
+.ea-tools {
+    width: 150px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(30px, 1fr));
+    gap: 5px;
+}
+
+.ea-tool {
+    cursor: pointer;
+    padding: 3px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ea-tool:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.ea-tool.selected {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.ea-canvas {
+    aspect-ratio: 16 / 9;
+    width: min(calc(100vw - 200px), 60vw);
+    background-position: 0px 0px, 10px 10px;
+    background-size: 20px 20px;
+    background-image: linear-gradient(45deg, black 25%, transparent 25%, transparent 75%, black 75%, black 100%),
+        linear-gradient(45deg, black 25%, #333 25%, #333 75%, black 75%, black 100%);
+    cursor: pointer;
+}
+
+.ea-controls .react-colorful {
+    width: 150px;
+    height: 150px;
+}
+
+.ea-thickness {
+    color: white;
+    padding-top: 12px;
+}
+
+.ea-thickness-range {
+    width: 100%;
+}
+
+.ea-colors {
+    padding-top: 12px;
+    display: grid;
+    gap: 5px;
+    grid-template-columns: repeat(6, 1fr);
+}
+
+.ea-pipette {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ea-color {
+    aspect-ratio: 1 / 1;
+    border-radius: 4px;
+    border: 2px solid white;
+    cursor: pointer;
+}

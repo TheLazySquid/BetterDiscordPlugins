@@ -19,6 +19,28 @@ interface ExpressionPicker {
     }
 }
 
+interface ModalOptions {
+    onCloseCallback?: () => void;
+    onCloseRequest?: () => boolean;
+}
+
+interface ModalSystem {
+    open: (render: (props: any) => React.ReactNode, options: ModalOptions) => string;
+    close: (id: string) => void;
+}
+
+interface AttachmentSystem {
+    popFirstFile: (channelId: string) => void;
+    addFile: (props: any) => void;
+    addFiles: (props: any) => void;
+    remove: (channelId: string, id: string, draftType: number) => void;
+    removeFiles: (channelId: string, ids: string, draftType: number) => void;
+    clearAll: (channelId: string, draftType: number) => void;
+    update: (channelId: string, id: string, draftType: number, props: any) => void;
+    setUploads: (props: any) => void;
+    setFile: (props: any) => void;
+}
+
 export interface Modules {
     imgAdder: any;
     chatKeyHandlers: any;
@@ -33,9 +55,12 @@ export interface Modules {
     createSlate: any;
     attachFiles: [any, string];
     chatbox: any;
-    ModalSystem: { open: any; close: any };
+    ModalSystem: ModalSystem;
     expressionPicker: ExpressionPicker;
     Modal: { Root: any; Content: any; Header: any; Close: any; Footer: any };
+    AttachmentButtons: any;
+    AttachmentButton: any;
+    AttachmentSystem: AttachmentSystem;
 }
 
 export interface PluginConfig {

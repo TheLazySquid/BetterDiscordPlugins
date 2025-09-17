@@ -4,9 +4,10 @@ import waitForEnter, { write } from "./util.ts";
 import { join } from "node:path";
 import { existsSync } from "node:fs";
 import { parseArgs } from "node:util";
-import { metaPlugin } from "./meta.ts";
-import { stylesPlugin } from "./styles.ts";
-import { modulesPlugin } from "./modules.ts";
+import { metaPlugin } from "./plugins/meta.ts";
+import { stylesPlugin } from "./plugins/styles.ts";
+import { modulesPlugin } from "./plugins/modules.ts";
+import { noReactPlugin } from "./plugins/noReact.ts";
 
 const args = parseArgs({
     args: process.argv.slice(2),
@@ -53,8 +54,9 @@ const header = meta + '\n' +
 const footer = `  }
 }`;
 
+const isTsx = existsSync(`./plugins/${args.plugin}/src/index.tsx`);
 let esbuildConfig: BuildOptions = {
-    entryPoints: [`./plugins/${args.plugin}/src/index.ts`],
+    entryPoints: [`./plugins/${args.plugin}/src/index.${isTsx ? "tsx" : "ts"}`],
     conditions: ["browser"],
     bundle: true,
     outfile: `plugins/${args.plugin}/${args.plugin}.plugin.js`,
@@ -69,12 +71,13 @@ let esbuildConfig: BuildOptions = {
         js: footer
     },
     format: "esm",
-    plugins: [metaPlugin(args.plugin), stylesPlugin()],
+    plugins: [metaPlugin(args.plugin), stylesPlugin(), noReactPlugin()],
     external: [
         "fs", "path", "buffer", "electron"
     ],
     jsx: "transform",
-    jsxFactory: "BdApi.React.createElement"
+    jsxFactory: "BdApi.React.createElement",
+    legalComments: "none"
 }
 
 if(config.modules) esbuildConfig.plugins?.push(modulesPlugin(config.modules));

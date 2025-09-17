@@ -27,7 +27,6 @@
         "paths": {
             "$assets/*": ["./assets/*"],
             "$shared/*": ["./shared/*"],
-        },
-        "jsxFactory": "BdApi.React.createElement"
+        }
     }
 }

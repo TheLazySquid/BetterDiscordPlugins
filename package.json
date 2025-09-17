@@ -6,7 +6,7 @@
     "@types/betterdiscord": "github:Zerthox/betterdiscord-types",
     "@types/bun": "latest",
     "@types/gif.js": "^0.2.5",
-    "@types/react": "^19.1.6",
+    "@types/react": "19.0.0",
     "arraybuffer-isbinary": "^1.0.2",
     "esbuild": "^0.24.2",
     "events": "^3.3.0",
@@ -23,10 +23,16 @@
     "ImageFolder": "bun run bundler/index.ts --plugin ImageFolder",
     "ZipPreview": "bun run bundler/index.ts --plugin ZipPreview",
     "UnicodeEmojis": "bun run bundler/index.ts --plugin UnicodeEmojis",
-    "VideoCompressor": "bun run bundler/index.ts --plugin VideoCompressor"
+    "VideoCompressor": "bun run bundler/index.ts --plugin VideoCompressor",
+    "EditAttachments": "bun run bundler/index.ts --plugin EditAttachments"
   },
   "type": "module",
   "dependencies": {
-    "mediabunny": "^1.8.0"
+    "lucide-react": "^0.542.0",
+    "mediabunny": "^1.8.0",
+    "react-colorful": "^5.6.1"
+  },
+  "overrides": {
+    "@types/react": "19.0.0"
   }
 }

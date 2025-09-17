@@ -47,7 +47,8 @@ export const modules: Record<keyof Modules, ModuleDefinition> = {
         }
     },
     AttachmentButtons: { filter: `Filters.byStrings("draftType:", "keyboardModeEnabled:", "currentColor")`, defaultExport: false },
-    AttachmentButton: { filter: `Filters.byStrings("actionBarIcon", "hideOnClick")` }
+    AttachmentButton: { filter: `Filters.byStrings("actionBarIcon", "hideOnClick")` },
+    AttachmentSystem: { filter: `(m) => m.setUploads?.name === "setUploads"`, searchExports: true }
 }
 
 // Needed for typescript
@@ -69,3 +70,4 @@ export let expressionPicker: Modules['expressionPicker'];
 export let Modal: Modules['Modal'];
 export let AttachmentButtons: Modules['AttachmentButtons'];
 export let AttachmentButton: Modules['AttachmentButton'];
+export let AttachmentSystem: Modules['AttachmentSystem'];
