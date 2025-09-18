@@ -9,10 +9,12 @@ import { error } from "$shared/api/toast";
 Editor.init();
 
 after(AttachmentButtons, "Z", ({ args, returnVal }) => {
+    const { channelId, draftType, upload } = args[0];
+    if(!upload.isImage) return;
+
     const editButton = BdApi.React.createElement(AttachmentButton, {
         tooltip: "Edit Attachment",
         onClick: () => {
-            const { channelId, draftType, upload } = args[0];
 
             const onConfirm = (blob: Blob | null) => {
                 ModalSystem.close(id);

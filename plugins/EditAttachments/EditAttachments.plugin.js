@@ -1200,9 +1200,6 @@ function EditorElement({ url, onCancel, onConfirm }) {
     Editor.zoom(e.clientX, e.clientY, e.deltaY);
     if (using.current) Editor.moveUse(e.clientX, e.clientY, e.shiftKey);
   };
-  const exportRender = () => {
-    Editor.export(onConfirm);
-  };
   return /* @__PURE__ */ BdApi.React.createElement("div", { className: "ea-editor" }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "ea-interactive" }, /* @__PURE__ */ BdApi.React.createElement("div", null, /* @__PURE__ */ BdApi.React.createElement("div", { className: "ea-controls" }, /* @__PURE__ */ BdApi.React.createElement(Z, { color, onChange: onColorUpdate }), /* @__PURE__ */ BdApi.React.createElement("div", { className: "ea-colors" }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "ea-pipette", onClick: () => {
     if (canvas.current) canvas.current.style.cursor = "crosshair";
     picking.current = true;
@@ -1250,7 +1247,7 @@ function EditorElement({ url, onCancel, onConfirm }) {
     "button",
     {
       className: "bd-button bd-button-filled bd-button-color-brand bd-button-medium",
-      onClick: exportRender
+      onClick: () => Editor.export(onConfirm)
     },
     "Confirm"
   )));
@@ -1265,10 +1262,11 @@ function error(message, showName = true) {
 // plugins/EditAttachments/src/index.tsx
 Editor.init();
 after(AttachmentButtons, "Z", ({ args, returnVal }) => {
+  const { channelId, draftType, upload } = args[0];
+  if (!upload.isImage) return;
   const editButton = BdApi.React.createElement(AttachmentButton, {
     tooltip: "Edit Attachment",
     onClick: () => {
-      const { channelId, draftType, upload } = args[0];
       const onConfirm = (blob) => {
         ModalSystem.close(id);
         if (!blob) {
