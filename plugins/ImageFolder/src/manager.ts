@@ -1,4 +1,4 @@
-import { error } from '$shared/api/toast';
+import { error, success } from '$shared/api/toast';
 import { Api } from '$shared/bd';
 import { getInput } from '$shared/ui/input';
 import { uploadFile } from '$shared/util/upload';
@@ -128,6 +128,40 @@ export default class Manager {
         Api.Data.delete(`used-${path.join(this.dir, media.name)}`);
         this.contents.media = this.contents.media.filter((m) => m !== media);
         this.update?.({ ...this.contents });
+    }
+
+    static async renameMedia(media: Media) {
+        const mediaPath = path.join(this.saveDir, this.dir, media.name);
+
+        let dialog = await BdApi.UI.openDialog({
+            mode: "save",
+            defaultPath: mediaPath,
+            filters: [
+                {
+                    name: "Media",
+                    extensions: Object.keys(types)
+                }
+            ],
+            title: "Rename media"
+        });
+
+        if(dialog.canceled) return;
+
+        try {
+            fs.renameSync(mediaPath, dialog.filePath);
+
+            // Update the used data
+            let prevPath = path.join(this.dir, media.name);
+            Api.Data.delete(`used-${prevPath}`);
+
+            let relativePath = dialog.filePath.replace(this.base, "").slice(1);
+            Api.Data.save(`used-${relativePath}`, media.lastUsed);
+
+            success(`Successfully renamed to ${path.basename(dialog.filePath)}`, false);
+        } catch(e) {
+            Api.Logger.error(e);
+            error("Failed to rename media");
+        }
     }
 
     static readWhole(media: Media) {
@@ -301,7 +335,7 @@ export default class Manager {
             filters: [
                 {
                     name: "Media",
-                    extensions: Object.keys(types).map(k => "." + k)
+                    extensions: Object.keys(types)
                 }
             ],
             title: "Save media"
@@ -326,12 +360,12 @@ export default class Manager {
             Api.Data.save(`used-${relativePath}`, Date.now());
         }
         
-        BdApi.UI.showToast(`Downloaded ${basename}`, { type: "success" });
+        success(`Downloaded ${basename}`, false);
     }
 
     static async readToFile(path: string, reader: ReadableStreamDefaultReader<Uint8Array>) {
         const writeStream = fs.createWriteStream(path);
-        await new Promise((res) => writeStream.once("ready", res));
+        await new Promise<void>((res) => writeStream.once("ready", res));
         
         while(true) {
             const { done, value } = await reader.read();

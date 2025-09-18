@@ -89,11 +89,18 @@ export default function MediaDisplay({ media }: { media: Media }) {
     }
 
     const openContextMenu = (e: React.MouseEvent) => {
-        const setup: ContextMenuSetup = [{
-            type: "text",
-            label: "Delete",
-            onClick: deleteMedia
-        }];
+        const setup: ContextMenuSetup = [
+            {
+                type: "text",
+                label: "Rename",
+                onClick: () => Manager.renameMedia(media)
+            },
+            {
+                type: "text",
+                label: "Delete",
+                onClick: deleteMedia
+            }
+        ];
 
         if(media.type === "image") {
             setup.push({

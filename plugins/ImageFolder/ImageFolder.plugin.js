@@ -1,7 +1,7 @@
 /**
  * @name ImageFolder
  * @description A BetterDiscord plugin that allows you to save and send images from a folder for easy access
- * @version 1.2.2
+ * @version 1.3.0
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -151,6 +151,10 @@ var expressionPicker = demangle(expressionPickerMangled, {
 });
 
 // shared/api/toast.ts
+function success(message, showName = true) {
+  if (showName) BdApi.UI.showToast(`${pluginName}: ${message}`, { type: "success" });
+  else BdApi.UI.showToast(message, { type: "success" });
+}
 function error(message, showName = true) {
   if (showName) BdApi.UI.showToast(`${pluginName}: ${message}`, { type: "error" });
   else BdApi.UI.showToast(message, { type: "error" });
@@ -331,6 +335,32 @@ var Manager = class {
     this.contents.media = this.contents.media.filter((m) => m !== media);
     this.update?.({ ...this.contents });
   }
+  static async renameMedia(media) {
+    const mediaPath = path.join(this.saveDir, this.dir, media.name);
+    let dialog = await BdApi.UI.openDialog({
+      mode: "save",
+      defaultPath: mediaPath,
+      filters: [
+        {
+          name: "Media",
+          extensions: Object.keys(types)
+        }
+      ],
+      title: "Rename media"
+    });
+    if (dialog.canceled) return;
+    try {
+      fs.renameSync(mediaPath, dialog.filePath);
+      let prevPath = path.join(this.dir, media.name);
+      Api.Data.delete(`used-${prevPath}`);
+      let relativePath = dialog.filePath.replace(this.base, "").slice(1);
+      Api.Data.save(`used-${relativePath}`, media.lastUsed);
+      success(`Successfully renamed to ${path.basename(dialog.filePath)}`, false);
+    } catch (e) {
+      Api.Logger.error(e);
+      error("Failed to rename media");
+    }
+  }
   static readWhole(media) {
     const fullPath = path.join(this.base, this.dir, media.name);
     return new Promise((res) => {
@@ -469,7 +499,7 @@ var Manager = class {
       filters: [
         {
           name: "Media",
-          extensions: Object.keys(types).map((k) => "." + k)
+          extensions: Object.keys(types)
         }
       ],
       title: "Save media"
@@ -487,7 +517,7 @@ var Manager = class {
       let relativePath = dialog.filePath.replace(this.base, "").slice(1);
       Api.Data.save(`used-${relativePath}`, Date.now());
     }
-    BdApi.UI.showToast(`Downloaded ${basename}`, { type: "success" });
+    success(`Downloaded ${basename}`, false);
   }
   static async readToFile(path2, reader) {
     const writeStream = fs.createWriteStream(path2);
@@ -691,11 +721,18 @@ function MediaDisplay({ media }) {
     );
   };
   const openContextMenu = (e) => {
-    const setup = [{
-      type: "text",
-      label: "Delete",
-      onClick: deleteMedia
-    }];
+    const setup = [
+      {
+        type: "text",
+        label: "Rename",
+        onClick: () => Manager.renameMedia(media)
+      },
+      {
+        type: "text",
+        label: "Delete",
+        onClick: deleteMedia
+      }
+    ];
     if (media.type === "image") {
       setup.push({
         type: "text",
