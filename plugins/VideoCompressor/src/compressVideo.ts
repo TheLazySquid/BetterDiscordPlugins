@@ -86,19 +86,19 @@ async function renderVideo(file: File, maxSize: number, values: CompressValues, 
         Api.Logger.info("Final size:", size);
 
         if(output.target.buffer.byteLength > maxSize) {
-            warning(`Compressed video is still too large (${size})`, false);
+            warning(`Compressed video is still too large (${size})`);
             showPopup(file, maxSize, attach, values);
             return;
         }
 
-        success(`Video compressed successfully (now ${size})`, false);
+        success(`Video compressed successfully (now ${size})`);
 
         const newName = file.name.slice(0, file.name.lastIndexOf(".")) + `-compressed.mp4`;
         const newFile = new File([ output.target.buffer ], newName);
         attach(newFile);
     } catch (err) {
         Api.Logger.error("Error compressing video", err);
-        error("An error occured while compressing the video.", false);
+        error("An error occured while compressing the video.");
     } finally {
         progress.close();
         next();

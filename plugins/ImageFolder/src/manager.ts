@@ -157,10 +157,10 @@ export default class Manager {
             let relativePath = dialog.filePath.replace(this.base, "").slice(1);
             Api.Data.save(`used-${relativePath}`, media.lastUsed);
 
-            success(`Successfully renamed to ${path.basename(dialog.filePath)}`, false);
+            success(`Successfully renamed to ${path.basename(dialog.filePath)}`);
         } catch(e) {
             Api.Logger.error(e);
-            error("Failed to rename media");
+            error(`Failed to rename ${media.name}`);
         }
     }
 
@@ -360,7 +360,7 @@ export default class Manager {
             Api.Data.save(`used-${relativePath}`, Date.now());
         }
         
-        success(`Downloaded ${basename}`, false);
+        success(`Downloaded ${basename}`);
     }
 
     static async readToFile(path: string, reader: ReadableStreamDefaultReader<Uint8Array>) {

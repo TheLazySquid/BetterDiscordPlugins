@@ -47,7 +47,7 @@ export default class GifRenderer {
 
 		if(!worker.url) {
 			progress.close();
-			error("Attempted to encode gif while plugin is disabled");
+			error("Attempted to encode gif while GifCaptioner is disabled");
 			throw new Error("Worker url missing");
 		}
 
