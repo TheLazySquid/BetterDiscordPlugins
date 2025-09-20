@@ -1,35 +1,28 @@
 import type { ModuleDefinition, Modules } from "../types";
 
+// Module ids are now stable, so we can use them directly
 export const modules: Record<keyof Modules, ModuleDefinition> = {
-    imgAdder: { filter: `Filters.byKeys("addFile")` },
-    chatKeyHandlers: { filter: `Filters.byStrings("selectNextCommandOption")`, defaultExport: false },
-    fileModule: { filter: `(m) => m.Z?.toString().includes("filenameLinkWrapper")` },
-    CloudUploader: { filter: `Filters.byStrings('uploadFileToCloud')`, searchExports: true },
-    expressionModule: { filter: `(m) => m.type?.toString?.().includes("onSelectGIF")` },
-    buttonsModule: { filter: `(m) => m.type?.toString?.().includes(".isSubmitButtonEnabled")` },
-    uploadClasses: { filter: `Filters.byKeys("uploadArea", "chat")` },
-    gifDisplay: { filter: `Filters.byStrings("renderGIF()", "imagePool")`, searchExports: true },
-    premiumPermissions: { filter: `Filters.byKeys("getUserMaxFileSize")` },
-    highlightModule: { filter: `Filters.byKeys("highlight", "hasLanguage")` },
-    createSlate: { filter: `Filters.byStrings("insertText=", "onChange=")`, defaultExport: false },
-    attachFiles: { filter: `Filters.byStrings("filesMetadata:", "requireConfirm:")`, getWithKey: true },
-    chatbox: {
-        filter: `(m) => {
-            let str = m?.type?.render?.toString?.();
-            if(!str) return false;
-            return str.includes("pendingScheduledMessage") && str.includes(".CHANNEL_TEXT_AREA");
-        }`,
-        searchExports: true
-    },
+    chatKeyHandlers: { id: 780748 },
+    fileModule: { id: 40330 },
+    CloudUploader: { id: 141795, getExport: `(e) => e.fromJson` },
+    expressionModule: { id: 805680, getExport: true },
+    buttonsModule: { id: 258696, getExport: true },
+    uploadClasses: { id: 97009 },
+    gifDisplay: { id: 215016, getExport: `(e) => e.prototype?.renderGIF` },
+    premiumPermissions: { id: 74538, getExport: `(e) => e.getUserMaxFileSize` },
+    highlightModule: { id: 364964, getExport: true },
+    createSlate: { id: 196483 },
+    attachFiles: { id: 127654, getExport: `(e) => !e.name`, getWithKey: true },
+    chatbox: { id: 893718, getExport: `(e) => e.type` },
     ModalSystem: {
-        filter: `Filters.bySource(".modalKey?")`,
+        id: 952265,
         demangler: {
             open: `Filters.byStrings(",instant:")`,
             close: `Filters.byStrings(".onCloseCallback()")`
         }
     },
     expressionPicker: {
-        filter: `Filters.bySource("lastActiveView")`,
+        id: 28546,
         demangler: {
             toggle: `(f) => f.toString().includes("activeView===")`,
             close: `(f) => f.toString().includes("activeView:null")`,
@@ -37,7 +30,7 @@ export const modules: Record<keyof Modules, ModuleDefinition> = {
         }
     },
     Modal: {
-        filter: `Filters.bySource(".MODAL_ROOT_LEGACY,properties")`,
+        id: 466377,
         demangler: {
             Root: `Filters.byStrings(".ImpressionNames.MODAL_ROOT_LEGACY")`,
             Content: `Filters.byStrings("scrollerRef", "scrollbarType")`,
@@ -46,13 +39,13 @@ export const modules: Record<keyof Modules, ModuleDefinition> = {
             Footer: `Filters.byStrings(".footerSeparator]:")`
         }
     },
-    AttachmentButtons: { filter: `Filters.byStrings("draftType:", "keyboardModeEnabled:", "currentColor")`, defaultExport: false },
-    AttachmentButton: { filter: `Filters.byStrings("actionBarIcon", "hideOnClick")` },
-    AttachmentSystem: { filter: `(m) => m.setUploads?.name === "setUploads"`, searchExports: true }
+    AttachmentButtons: { id: 898463 },
+    AttachmentButton: { id: 273031, getExport: true },
+    AttachmentSystem: { id: 166459, getExport: true },
+    messagePopover: { id: 773176, getExport: true }
 }
 
 // Needed for typescript
-export let imgAdder: Modules['imgAdder'];
 export let chatKeyHandlers: Modules['chatKeyHandlers'];
 export let fileModule: Modules['fileModule'];
 export let CloudUploader: Modules['CloudUploader'];
@@ -71,3 +64,4 @@ export let Modal: Modules['Modal'];
 export let AttachmentButtons: Modules['AttachmentButtons'];
 export let AttachmentButton: Modules['AttachmentButton'];
 export let AttachmentSystem: Modules['AttachmentSystem'];
+export let messagePopover: Modules['messagePopover'];

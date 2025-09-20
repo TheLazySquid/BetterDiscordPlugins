@@ -21,41 +21,19 @@ export function modulesPlugin(ids: (keyof Modules)[]): Plugin {
 }
 
 function createModulesFile(ids: (keyof Modules)[]): string {
-    const normalModules = ids.filter(id => !modules[id].getWithKey);
-    const moduleIds = normalModules.map(id => modules[id].demangler ? `${id}Mangled` : id);
+    const moduleIds = ids.map(id => modules[id].demangler ? `${id}Mangled` : modules[id].getExport ? `${id}Module` : id);
 
-    let contents = `import demangle from "$shared/util/demangle";\n\n` +
-    `const Filters = BdApi.Webpack.Filters;\n`;
+    let contents = `import { demangle, findExport, findExportWithKey } from "$shared/util/modules";\n\n`;
 
-    // Do getWithKey modules first
-    for(let i = 0; i < ids.length; i++) {
-        let module = modules[ids[i]];
-        if(!module.getWithKey) continue;
-
-        contents += `const ${ids[i]} = [...BdApi.Webpack.getWithKey(${module.filter})];\n`
-    }
-
-    if(normalModules.length === 1) {
-        let module = modules[normalModules[0]];
-        contents += `const ${moduleIds[0]} = BdApi.Webpack.getModule(${module.filter}`;
-        if(module.defaultExport !== undefined || module.searchExports !== undefined) {
-            contents += `, {\n`;
-            if(module.defaultExport !== undefined) contents += `  defaultExport: ${module.defaultExport},\n`;
-            if(module.searchExports !== undefined) contents += `  searchExports: ${module.searchExports},\n`;
-            contents += `}`;
-        }
-        contents += `);\n\n`;
-    } else if(normalModules.length > 1) {
+    if(ids.length === 1) {
+        let module = modules[ids[0]];
+        contents += `const ${moduleIds[0]} = BdApi.Webpack.getModule((_, __, id) => id == ${module.id})\n\n`;
+    } else if(ids.length > 1) {
         contents += `const [${moduleIds}] = BdApi.Webpack.getBulk(\n`;
         for(let i = 0; i < ids.length; i++) {
             let module = modules[ids[i]];
-            if(module.getWithKey) continue;
     
-            let entry = `{ filter: ${module.filter}`
-            if(module.defaultExport !== undefined) entry += `, defaultExport: ${module.defaultExport}`;
-            if(module.searchExports !== undefined) entry += `, searchExports: ${module.searchExports}`;
-            entry += ` }`;
-    
+            let entry = `{ filter: (_, __, id) => id == ${module.id} }`
             contents += "  " + entry + ",\n";
         }
     
@@ -63,14 +41,19 @@ function createModulesFile(ids: (keyof Modules)[]): string {
     }
 
     for(let i = 0; i < ids.length; i++) {
-        let demangler = modules[ids[i]].demangler;
-        if(!demangler) continue;
-
-        contents += `const ${ids[i]} = demangle(${ids[i]}Mangled, {\n`;
-        for(let id in demangler) {
-            contents += `  ${id}: ${demangler[id]},\n`;
+        let module = modules[ids[i]];
+        if(module.demangler) {
+            // Add demanglers
+            contents += `const ${ids[i]} = demangle(${ids[i]}Mangled, {\n`;
+            for(let id in module.demangler) {
+                contents += `  ${id}: ${module.demangler[id]},\n`;
+            }
+            contents += `});\n`
+        } else if(module.getExport) {
+            // Add getExport calls
+            const finder = module.getWithKey ? "findExportWithKey" : "findExport";
+            contents += `const ${ids[i]} = ${finder}(${ids[i]}Module, ${module.getExport});\n`;
         }
-        contents += `});\n`
     }
 
     contents += `\nexport {${ids.join(",")}}`;

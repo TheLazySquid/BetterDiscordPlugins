@@ -1,7 +1,6 @@
 export interface ModuleDefinition {
-    filter: string;
-    defaultExport?: boolean;
-    searchExports?: boolean;
+    id: number;
+    getExport?: string | true;
     demangler?: Record<string, string>;
     getWithKey?: boolean;
 }
@@ -42,7 +41,6 @@ interface AttachmentSystem {
 }
 
 export interface Modules {
-    imgAdder: any;
     chatKeyHandlers: any;
     fileModule: any;
     CloudUploader: any;
@@ -61,6 +59,7 @@ export interface Modules {
     AttachmentButtons: any;
     AttachmentButton: any;
     AttachmentSystem: AttachmentSystem;
+    messagePopover: ReactElementModule;
 }
 
 export interface PluginConfig {
