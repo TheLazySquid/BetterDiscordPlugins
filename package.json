@@ -24,6 +24,7 @@
     "ZipPreview": "bun run bundler/index.ts --plugin ZipPreview",
     "UnicodeEmojis": "bun run bundler/index.ts --plugin UnicodeEmojis",
     "VideoCompressor": "bun run bundler/index.ts --plugin VideoCompressor",
+    "MoreQuickReacts": "bun run bundler/index.ts --plugin MoreQuickReacts",
     "EditAttachments": "bun run bundler/index.ts --plugin EditAttachments"
   },
   "type": "module",

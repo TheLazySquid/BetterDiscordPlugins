@@ -59,7 +59,7 @@ export interface Modules {
     AttachmentButtons: any;
     AttachmentButton: any;
     AttachmentSystem: AttachmentSystem;
-    messagePopover: ReactElementModule;
+    frequentlyUsedEmojis: [any, string];
 }
 
 export interface PluginConfig {

@@ -42,7 +42,11 @@ export const modules: Record<keyof Modules, ModuleDefinition> = {
     AttachmentButtons: { id: 898463 },
     AttachmentButton: { id: 273031, getExport: true },
     AttachmentSystem: { id: 166459, getExport: true },
-    messagePopover: { id: 773176, getExport: true }
+    frequentlyUsedEmojis: {
+        id: 543241,
+        getExport: `(e) => e.toString().includes("getFrequentlyUsedReactionEmojisWithoutFetchingLatest")`,
+        getWithKey: true
+    }
 }
 
 // Needed for typescript
@@ -64,4 +68,4 @@ export let Modal: Modules['Modal'];
 export let AttachmentButtons: Modules['AttachmentButtons'];
 export let AttachmentButton: Modules['AttachmentButton'];
 export let AttachmentSystem: Modules['AttachmentSystem'];
-export let messagePopover: Modules['messagePopover'];
+export let frequentlyUsedEmojis: Modules['frequentlyUsedEmojis'];

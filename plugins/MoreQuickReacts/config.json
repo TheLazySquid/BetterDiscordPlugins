@@ -1,0 +1,7 @@
+{
+    "description": "Increases the number of quick reactions available when hovering over a message",
+    "version": "1.0.0",
+    "modules": [
+        "frequentlyUsedEmojis"
+    ]
+}
