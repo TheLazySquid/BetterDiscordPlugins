@@ -2,7 +2,7 @@
 
 This plugin will open up a menu that allows you to easily compress videos that would otherwise be too large to upload before you send them.
 
-![Preview](./images/preview.png)
+![Preview](https://raw.githubusercontent.com/TheLazySquid/BetterDiscordPlugins/refs/heads/main/plugins/VideoCompressor/images/preview.png)
 
 ## Usage
 

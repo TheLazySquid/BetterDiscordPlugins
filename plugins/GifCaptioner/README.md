@@ -2,11 +2,11 @@
 
 This plugin adds a way to add a custom caption to gifs in your gif picker directly within discord. Gifs inside the gif picker will have a new button at the top left that will open a dialog to create a custom caption.
 
-![Caption Dialog](./images/addCaption.png)
+![Caption Dialog](https://raw.githubusercontent.com/TheLazySquid/BetterDiscordPlugins/refs/heads/main/plugins/GifCaptioner/images/addCaption.png)
 
 After completing this the gif will be rendered with the caption and sent to the channel you are currently in. You also have the option to add a speechbubble to the gif instead. Clicking on the gif will move where the tip of the speechbubble is.
 
-![Speech Bubble Dialog](./images/addSpeechbubble.png)
+![Speech Bubble Dialog](https://raw.githubusercontent.com/TheLazySquid/BetterDiscordPlugins/refs/heads/main/plugins/GifCaptioner/images/addSpeechbubble.png)
 
 ## Installation
 

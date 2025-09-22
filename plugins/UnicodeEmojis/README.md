@@ -4,11 +4,11 @@ This plugin automatically escapes emojis that you type in chat, turning them int
 
 ### No plugin:
 
-![Without plugin](./images/normalEmoji.png)
+![Without plugin](https://raw.githubusercontent.com/TheLazySquid/BetterDiscordPlugins/refs/heads/main/plugins/UnicodeEmojis/images/normalEmoji.png)
 
 ### With plugin:
 
-![With plugin](./images/unicodeEmoji.png)
+![With plugin](https://raw.githubusercontent.com/TheLazySquid/BetterDiscordPlugins/refs/heads/main/plugins/UnicodeEmojis/images/unicodeEmoji.png)
 
 ## Performance
 

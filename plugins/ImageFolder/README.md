@@ -2,7 +2,7 @@
 
 This plugin adds a new tab to the expression picker window that makes it easy to store and send images, audio, and video.
 
-![Preview](./images/preview.png)
+![Preview](https://raw.githubusercontent.com/TheLazySquid/BetterDiscordPlugins/refs/heads/main/plugins/ImageFolder/images/preview.png)
 
 ## Usage
 

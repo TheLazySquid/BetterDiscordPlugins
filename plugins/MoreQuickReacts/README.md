@@ -2,7 +2,7 @@
 
 This plugin expands the popover when hovering messages to allow for more quick reactions with emojis.
 
-![Preview](./images/preview.png)
+![Preview](https://raw.githubusercontent.com/TheLazySquid/BetterDiscordPlugins/refs/heads/main/plugins/MoreQuickReacts/images/preview.png)
 
 ## Usage
 

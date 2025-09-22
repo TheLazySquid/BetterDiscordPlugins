@@ -2,7 +2,7 @@
 
 This plugin allows you to look inside of zip files without having to download and extract them.
 
-![Preview](./images/preview.png)
+![Preview](https://raw.githubusercontent.com/TheLazySquid/BetterDiscordPlugins/refs/heads/main/plugins/ZipPreview/images/preview.png)
 
 ## Usage
 
