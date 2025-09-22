@@ -21,3 +21,7 @@ Replaces discord emojis that you send with their unicode equivalent.
 ## VideoCompressor [Source](/plugins/VideoCompressor/)
 
 Easily compress videos that would otherwise be too large to send.
+
+## MoreQuickReacts [Source](/plugins/MoreQuickReacts/)
+
+Adds more quick reacts to the message hover popover.
