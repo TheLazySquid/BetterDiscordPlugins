@@ -1,7 +1,7 @@
 /**
  * @name ImageFolder
  * @description A BetterDiscord plugin that allows you to save and send images from a folder for easy access
- * @version 1.3.0
+ * @version 1.4.0
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -115,7 +115,7 @@ onStop(() => {
   Api.Patcher.unpatchAll();
 });
 
-// shared/util/demangle.ts
+// shared/util/modules.ts
 function demangle(module, demangler) {
   let returned = {};
   let values = Object.values(module);
@@ -129,21 +129,25 @@ function demangle(module, demangler) {
   }
   return returned;
 }
+function findExport(module, filter) {
+  for (let value of Object.values(module)) {
+    if (filter === true || filter(value)) return value;
+  }
+}
 
 // modules-ns:$shared/modules
-var Filters = BdApi.Webpack.Filters;
-var [chatbox, CloudUploader, buttonsModule, expressionModule, expressionPickerMangled, uploadClasses] = BdApi.Webpack.getBulk(
-  { filter: (m) => {
-    let str = m?.type?.render?.toString?.();
-    if (!str) return false;
-    return str.includes("pendingScheduledMessage") && str.includes(".CHANNEL_TEXT_AREA");
-  }, searchExports: true },
-  { filter: Filters.byStrings("uploadFileToCloud"), searchExports: true },
-  { filter: (m) => m.type?.toString?.().includes(".isSubmitButtonEnabled") },
-  { filter: (m) => m.type?.toString?.().includes("onSelectGIF") },
-  { filter: Filters.bySource("lastActiveView") },
-  { filter: Filters.byKeys("uploadArea", "chat") }
+var [chatboxModule, CloudUploaderModule, buttonsModuleModule, expressionModuleModule, expressionPickerMangled, uploadClasses] = BdApi.Webpack.getBulk(
+  { filter: (_, __, id) => id == 893718 },
+  { filter: (_, __, id) => id == 141795 },
+  { filter: (_, __, id) => id == 258696 },
+  { filter: (_, __, id) => id == 805680 },
+  { filter: (_, __, id) => id == 28546 },
+  { filter: (_, __, id) => id == 97009 }
 );
+var chatbox = findExport(chatboxModule, (e) => e.type);
+var CloudUploader = findExport(CloudUploaderModule, (e) => e.fromJson);
+var buttonsModule = findExport(buttonsModuleModule, true);
+var expressionModule = findExport(expressionModuleModule, true);
 var expressionPicker = demangle(expressionPickerMangled, {
   toggle: (f) => f.toString().includes("activeView==="),
   close: (f) => f.toString().includes("activeView:null"),
@@ -151,13 +155,11 @@ var expressionPicker = demangle(expressionPickerMangled, {
 });
 
 // shared/api/toast.ts
-function success(message, showName = true) {
-  if (showName) BdApi.UI.showToast(`${pluginName}: ${message}`, { type: "success" });
-  else BdApi.UI.showToast(message, { type: "success" });
+function success(message) {
+  BdApi.UI.showToast(message, { type: "success" });
 }
-function error(message, showName = true) {
-  if (showName) BdApi.UI.showToast(`${pluginName}: ${message}`, { type: "error" });
-  else BdApi.UI.showToast(message, { type: "error" });
+function error(message) {
+  BdApi.UI.showToast(message, { type: "error" });
 }
 
 // shared/api/styles.ts
@@ -355,10 +357,10 @@ var Manager = class {
       Api.Data.delete(`used-${prevPath}`);
       let relativePath = dialog.filePath.replace(this.base, "").slice(1);
       Api.Data.save(`used-${relativePath}`, media.lastUsed);
-      success(`Successfully renamed to ${path.basename(dialog.filePath)}`, false);
+      success(`Successfully renamed to ${path.basename(dialog.filePath)}`);
     } catch (e) {
       Api.Logger.error(e);
-      error("Failed to rename media");
+      error(`Failed to rename ${media.name}`);
     }
   }
   static readWhole(media) {
@@ -517,7 +519,7 @@ var Manager = class {
       let relativePath = dialog.filePath.replace(this.base, "").slice(1);
       Api.Data.save(`used-${relativePath}`, Date.now());
     }
-    success(`Downloaded ${basename}`, false);
+    success(`Downloaded ${basename}`);
   }
   static async readToFile(path2, reader) {
     const writeStream = fs.createWriteStream(path2);
@@ -619,36 +621,49 @@ function Captioner({ media, onCanvas }) {
   )), /* @__PURE__ */ BdApi.React.createElement("canvas", { ref: canvas }));
 }
 
-// plugins/ImageFolder/src/settings.ts
-var settings = {
-  // 12MB, slightly more than the nitroless max upload size
-  maxPreviewSize: Api.Data.load("maxPreviewSize") ?? 12,
-  showButton: Api.Data.load("showButton") ?? true
-};
-setSettingsPanel(() => BdApi.UI.buildSettingsPanel({
-  settings: [
-    {
-      type: "number",
-      min: 1,
-      max: 550,
-      name: "Max Preview Size (Megabytes)",
-      note: "The entire item needs to be loaded into memory to be previewed, so very large previews can cause performance issues",
-      value: settings.maxPreviewSize,
-      id: "maxPreviewSize",
-      step: 1
-    },
-    {
-      type: "switch",
-      name: "Show Image Folder Button",
-      note: "The image folder tab is still accessible inside of the expression picker menu",
-      value: settings.showButton,
-      id: "showButton"
-    }
-  ],
-  onChange: (_, id, value) => {
-    settings[id] = value;
+// shared/util/settings.ts
+function createSettings(panelSettings, defaults) {
+  const settings2 = {};
+  for (let setting of panelSettings) {
+    if (!setting.id) continue;
+    settings2[setting.id] = Api.Data.load(setting.id) ?? defaults[setting.id];
   }
-}));
+  setSettingsPanel(() => {
+    for (let setting of panelSettings) {
+      setting.value = settings2[setting.id];
+    }
+    return BdApi.UI.buildSettingsPanel({
+      settings: panelSettings,
+      onChange: (_, id, value) => {
+        settings2[id] = value;
+        Api.Data.save(id, value);
+      }
+    });
+  });
+  return settings2;
+}
+
+// plugins/ImageFolder/src/settings.ts
+var settings = createSettings([
+  {
+    type: "number",
+    min: 1,
+    max: 550,
+    name: "Max Preview Size (Megabytes)",
+    note: "The entire item needs to be loaded into memory to be previewed, so very large previews can cause performance issues",
+    id: "maxPreviewSize",
+    step: 1
+  },
+  {
+    type: "switch",
+    name: "Show Image Folder Button",
+    note: "The image folder tab is still accessible inside of the expression picker menu",
+    id: "showButton"
+  }
+], {
+  maxPreviewSize: 12,
+  showButton: true
+});
 
 // plugins/ImageFolder/src/ui/mediaDisplay.tsx
 function MediaDisplay({ media }) {
@@ -823,6 +838,9 @@ var folder_plus_outline_default = '<svg xmlns="http://www.w3.org/2000/svg" width
 // assets/file-plus.svg
 var file_plus_default = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-plus-icon lucide-file-plus"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M9 15h6"/><path d="M12 18v-6"/></svg>';
 
+// assets/search.svg
+var search_default = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>';
+
 // plugins/ImageFolder/src/ui/view.tsx
 function View() {
   const React = BdApi.React;
@@ -865,10 +883,58 @@ function View() {
     if (!e.dataTransfer.files) return;
     Manager.addFileList(e.dataTransfer.files);
   };
-  return /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-view" }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-controls" }, /* @__PURE__ */ BdApi.React.createElement("button", { title: "Upload media", onClick: () => Manager.uploadMedia() }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-svg-wrap", dangerouslySetInnerHTML: { __html: file_plus_default } })), /* @__PURE__ */ BdApi.React.createElement("button", { title: "Create folder", onClick: () => Manager.createFolder() }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-svg-wrap", dangerouslySetInnerHTML: { __html: folder_plus_outline_default } })), /* @__PURE__ */ BdApi.React.createElement("div", { style: { flexGrow: 1 } }), /* @__PURE__ */ BdApi.React.createElement("button", { title: "Reveal in file manager", onClick: () => Manager.showFolder() }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-svg-wrap", dangerouslySetInnerHTML: { __html: folder_tree_default } }))), dir !== "" ? /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-path" }, /* @__PURE__ */ BdApi.React.createElement("button", { className: "if-back", onClick: () => moveBack() }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-svg-wrap", dangerouslySetInnerHTML: { __html: folder_back_default } })), /* @__PURE__ */ BdApi.React.createElement("button", { onClick: () => {
+  const [searching, setSearching] = React.useState(false);
+  const [searchText, setSearchText] = React.useState("");
+  const [showContents, setShowContents] = React.useState({ folders: [], media: [] });
+  React.useEffect(() => {
+    if (searching) {
+      const searched = searchText.trim().toLowerCase();
+      setShowContents({
+        folders: contents.folders.filter((f) => f.name.toLowerCase().includes(searched)),
+        media: contents.media.filter((m) => m.name.toLowerCase().includes(searched))
+      });
+    } else {
+      setShowContents({ folders: contents.folders, media: contents.media });
+    }
+  }, [searching, searchText, contents]);
+  React.useEffect(() => {
+    setSearching(false);
+    setSearchText("");
+  }, [dir]);
+  const searchKeyDown = (e) => {
+    e.stopPropagation();
+    if (e.code === "Escape") {
+      setSearching(false);
+      setSearchText("");
+    }
+  };
+  React.useEffect(() => {
+    const onClick = () => setSearching(false);
+    window.addEventListener("click", onClick);
+    return () => window.removeEventListener("click", onClick);
+  }, []);
+  const startSearch = (e) => {
+    e.stopPropagation();
+    setSearching(true);
+  };
+  const searchInput = React.useCallback((node) => {
+    if (node) node.focus();
+  }, []);
+  return /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-view" }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-controls" }, /* @__PURE__ */ BdApi.React.createElement("button", { title: "Upload media", onClick: () => Manager.uploadMedia() }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-svg-wrap", dangerouslySetInnerHTML: { __html: file_plus_default } })), /* @__PURE__ */ BdApi.React.createElement("button", { title: "Create folder", onClick: () => Manager.createFolder() }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-svg-wrap", dangerouslySetInnerHTML: { __html: folder_plus_outline_default } })), /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-search" }, /* @__PURE__ */ BdApi.React.createElement("button", { className: "if-search-icon", onClick: startSearch }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-svg-wrap", dangerouslySetInnerHTML: { __html: search_default } })), searching ? /* @__PURE__ */ BdApi.React.createElement(
+    "input",
+    {
+      type: "text",
+      value: searchText,
+      ref: searchInput,
+      onChange: (e) => setSearchText(e.target.value),
+      onKeyDown: searchKeyDown,
+      spellCheck: false,
+      placeholder: "Search by filename"
+    }
+  ) : null), /* @__PURE__ */ BdApi.React.createElement("button", { title: "Reveal in file manager", onClick: () => Manager.showFolder() }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-svg-wrap", dangerouslySetInnerHTML: { __html: folder_tree_default } }))), dir !== "" ? /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-path" }, /* @__PURE__ */ BdApi.React.createElement("button", { className: "if-back", onClick: () => moveBack() }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-svg-wrap", dangerouslySetInnerHTML: { __html: folder_back_default } })), /* @__PURE__ */ BdApi.React.createElement("button", { onClick: () => {
     clear();
     setDir("");
-  } }, "/"), dir.split("/").map((subdir, i, arr) => /* @__PURE__ */ BdApi.React.createElement(React.Fragment, null, /* @__PURE__ */ BdApi.React.createElement("button", { onClick: () => setDepth(i) }, subdir), i !== arr.length - 1 ? /* @__PURE__ */ BdApi.React.createElement("button", { onClick: () => setDepth(i) }, "/") : null))) : null, /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-content" }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-folder-list" }, contents.folders.map((folder) => /* @__PURE__ */ BdApi.React.createElement(
+  } }, "/"), dir.split("/").map((subdir, i, arr) => /* @__PURE__ */ BdApi.React.createElement(React.Fragment, null, /* @__PURE__ */ BdApi.React.createElement("button", { onClick: () => setDepth(i) }, subdir), i !== arr.length - 1 ? /* @__PURE__ */ BdApi.React.createElement("button", { onClick: () => setDepth(i) }, "/") : null))) : null, /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-content" }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-folder-list" }, showContents.folders.map((folder) => /* @__PURE__ */ BdApi.React.createElement(
     FolderDisplay,
     {
       folder,
@@ -884,8 +950,9 @@ function View() {
       onDragEnter,
       onDragLeave
     },
-    contents.media.length === 0 ? /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-no-media" }, "There isn't any media in this folder! Use the button at the top left or drag and drop to upload some.") : null,
-    contents.media.map((media) => /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-media", key: dir + "/" + media.name }, /* @__PURE__ */ BdApi.React.createElement(MediaDisplay, { media })))
+    showContents.media.length === 0 && searchText === "" ? /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-no-media" }, "There isn't any media in this folder! Use the button at the top left or drag and drop to upload some.") : null,
+    showContents.media.length === 0 && showContents.folders.length === 0 && searchText !== "" ? /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-no-media" }, 'No results found for "', searchText, '"') : null,
+    showContents.media.map((media) => /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-media", key: dir + "/" + media.name }, /* @__PURE__ */ BdApi.React.createElement(MediaDisplay, { media })))
   )));
 }
 
@@ -1098,6 +1165,20 @@ addStyle(`.if-button {
   border-radius: 5px;
   align-content: center;
   height: 130px;
+}
+
+.if-search {
+  flex-grow: 1;
+  display: flex;
+}
+
+.if-search input {
+  flex-grow: 1;
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid #aaa;
+  color: white;
+  font-size: 16px;
 }`);
 
 // shared/api/contextmenu.ts

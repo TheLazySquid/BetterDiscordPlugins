@@ -190,3 +190,17 @@
     align-content: center;
     height: 130px;
 }
+
+.if-search {
+    flex-grow: 1;
+    display: flex;
+}
+
+.if-search input {
+    flex-grow: 1;
+    background-color: transparent;
+    border: none;
+    border-bottom: 1px solid #aaa;
+    color: white;
+    font-size: 16px;
+}

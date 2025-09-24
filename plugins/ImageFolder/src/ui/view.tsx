@@ -6,6 +6,7 @@ import FolderBack from "$assets/folder-back.svg";
 import FolderTree from "$assets/folder-tree.svg";
 import FolderPlus from "$assets/folder-plus-outline.svg";
 import FilePlus from "$assets/file-plus.svg";
+import Search from "$assets/search.svg";
 
 export default function View() {
 	const React = BdApi.React;
@@ -60,6 +61,55 @@ export default function View() {
 		Manager.addFileList(e.dataTransfer.files);
 	}
 
+	const [searching, setSearching] = React.useState(false);
+	const [searchText, setSearchText] = React.useState("");
+	const [showContents, setShowContents] = React.useState<DirContents>({ folders: [], media: [] });
+
+	React.useEffect(() => {
+		if(searching) {
+			const searched = searchText.trim().toLowerCase();
+	
+			setShowContents({
+				folders: contents.folders.filter(f => f.name.toLowerCase().includes(searched)),
+				media: contents.media.filter(m => m.name.toLowerCase().includes(searched))
+			});
+		} else {
+			setShowContents({ folders: contents.folders, media: contents.media });
+		}
+	}, [searching, searchText, contents]);
+
+	// Clear search when the folder changes
+	React.useEffect(() => {
+		setSearching(false);
+		setSearchText("");
+	}, [dir]);
+
+	// Clear search when pressing escape
+	const searchKeyDown = (e: React.KeyboardEvent) => {
+		e.stopPropagation();
+		if(e.code === "Escape") {
+			setSearching(false);
+			setSearchText("");
+		}
+	}
+
+	// Close search when clicking outside
+	React.useEffect(() => {
+		const onClick = () => setSearching(false);
+
+		window.addEventListener("click", onClick);
+		return () => window.removeEventListener("click", onClick);
+	}, []);
+
+	const startSearch = (e: React.MouseEvent) => {
+		e.stopPropagation();
+		setSearching(true);
+	}
+
+	const searchInput = React.useCallback((node: HTMLInputElement) => {
+		if(node) node.focus()
+	}, []);
+
 	return (<div className="if-view">
 		<div className="if-controls">
 			<button title="Upload media" onClick={() => Manager.uploadMedia()}>
@@ -68,7 +118,19 @@ export default function View() {
 			<button title="Create folder" onClick={() => Manager.createFolder()}>
 				<div className="if-svg-wrap" dangerouslySetInnerHTML={{ __html: FolderPlus }}></div>
 			</button>
-			<div style={{ flexGrow: 1 }}></div>
+			<div className="if-search">
+				<button className="if-search-icon" onClick={startSearch}>
+					<div className="if-svg-wrap" dangerouslySetInnerHTML={{ __html: Search }}></div>
+				</button>
+				{searching ?
+					<input type="text"
+						value={searchText} ref={searchInput}
+						onChange={e => setSearchText(e.target.value)}
+						onKeyDown={searchKeyDown}
+						spellCheck={false} placeholder="Search by filename"
+					/>
+				: null}
+			</div>
 			<button title="Reveal in file manager" onClick={() => Manager.showFolder()}>
 				<div className="if-svg-wrap" dangerouslySetInnerHTML={{ __html: FolderTree }}></div>
 			</button>
@@ -89,15 +151,18 @@ export default function View() {
 		</div> : null}
 		<div className="if-content">
 			<div className="if-folder-list">
-				{contents.folders.map((folder) => (<FolderDisplay folder={folder}
+				{showContents.folders.map((folder) => (<FolderDisplay folder={folder}
 					onClick={() => navigate(folder.name)} key={dir + "/" + folder.name} />))}
 			</div>
 			<div className={`if-media-list ${canDrop ? "highlighted" : ""}`} onDrop={onDrop}
 			onDragOver={onDragOver} onDragEnter={onDragEnter} onDragLeave={onDragLeave}>
-				{contents.media.length === 0 ? <div className="if-no-media">
+				{showContents.media.length === 0 && searchText === "" ? <div className="if-no-media">
 					There isn't any media in this folder! Use the button at the top left or drag and drop to upload some.
 				</div> : null}
-				{contents.media.map((media) => (<div className="if-media" key={dir + "/" + media.name}>
+				{showContents.media.length === 0 && showContents.folders.length === 0 && searchText !== "" ? <div className="if-no-media">
+					No results found for "{searchText}"
+				</div> : null}
+				{showContents.media.map((media) => (<div className="if-media" key={dir + "/" + media.name}>
 					<MediaDisplay media={media} />
 				</div>))}
 			</div>
