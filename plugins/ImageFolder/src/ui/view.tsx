@@ -93,12 +93,23 @@ export default function View() {
 		}
 	}
 
-	// Close search when clicking outside
 	React.useEffect(() => {
+		// Close search when clicking outside, and open with ctrl+f
 		const onClick = () => setSearching(false);
+		const onKeyDown = (e: KeyboardEvent) => {
+			if(e.ctrlKey && e.key === "f") {
+				e.preventDefault();
+				e.stopPropagation();
+				setSearching(true);
+			}
+		}
 
 		window.addEventListener("click", onClick);
-		return () => window.removeEventListener("click", onClick);
+		window.addEventListener("keydown", onKeyDown, true);
+		return () => {
+			window.removeEventListener("click", onClick);
+			window.removeEventListener("keydown", onKeyDown, true);
+		}
 	}, []);
 
 	const startSearch = (e: React.MouseEvent) => {
