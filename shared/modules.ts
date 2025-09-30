@@ -13,7 +13,7 @@ export const modules: Record<keyof Modules, ModuleDefinition> = {
     // (m) => m.type?.toString?.().includes(".isSubmitButtonEnabled")
     buttonsModule: { id: 258696, getExport: true },
     // Filters.byKeys("uploadArea", "chat")
-    uploadClasses: { id: 97009 },
+    uploadClasses: { id: 161655 },
     // Filters.byStrings("renderGIF()", "imagePool") searchExports: true
     gifDisplay: { id: 215016, getExport: `(e) => e.prototype?.renderGIF` },
     // Filters.byKeys("getUserMaxFileSize")

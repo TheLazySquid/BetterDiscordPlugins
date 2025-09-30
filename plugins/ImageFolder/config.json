@@ -1,6 +1,6 @@
 {
     "description": "A BetterDiscord plugin that allows you to save and send images from a folder for easy access",
-    "version": "1.4.1",
+    "version": "1.4.2",
     "modules": [
         "chatbox",
         "CloudUploader",
