@@ -3,6 +3,10 @@ export interface ModuleDefinition {
     getExport?: string | true;
     demangler?: Record<string, string>;
     getWithKey?: boolean;
+
+    // Fallback
+    filter: string;
+    defaultExport?: boolean;
 }
 
 interface ReactElementModule {
@@ -41,7 +45,6 @@ interface AttachmentSystem {
 }
 
 export interface Modules {
-    chatKeyHandlers: any;
     fileModule: any;
     CloudUploader: any;
     expressionModule: ReactElementModule;

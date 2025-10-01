@@ -21,24 +21,30 @@ export function modulesPlugin(ids: (keyof Modules)[]): Plugin {
 }
 
 function createModulesFile(ids: (keyof Modules)[]): string {
-    const moduleIds = ids.map(id => modules[id].demangler ? `${id}Mangled` : modules[id].getExport ? `${id}Module` : id);
+    if(ids.length === 0) return "";
 
-    let contents = `import { demangle, findExport, findExportWithKey } from "$shared/util/modules";\n\n`;
-
-    if(ids.length === 1) {
-        let module = modules[ids[0]];
-        contents += `const ${moduleIds[0]} = BdApi.Webpack.getModule((_, __, id) => id == ${module.id})\n\n`;
-    } else if(ids.length > 1) {
-        contents += `const [${moduleIds}] = BdApi.Webpack.getBulk(\n`;
-        for(let i = 0; i < ids.length; i++) {
-            let module = modules[ids[i]];
+    let contents = `import { demangle, findExport, findExportWithKey, fallbackMissing } from "$shared/util/modules";\n\n`
     
-            let entry = `{ filter: (_, __, id) => id == ${module.id} }`
-            contents += "  " + entry + ",\n";
-        }
-    
-        contents += `);\n\n`;
+    // Get all the modules
+    contents += `const modules = BdApi.Webpack.getBulk(\n`;
+    for(let i = 0; i < ids.length; i++) {
+        let module = modules[ids[i]];
+        contents += `    { filter: (_, __, id) => id == ${module.id} },\n`
     }
+    contents += `);\n\n`;
+
+    // Add fallbacks for the missing modules
+    contents += `fallbackMissing(modules, [\n`;
+    for(let i = 0; i < ids.length; i++) {
+        let module = modules[ids[i]];
+        const defaultExport = module.defaultExport ? ", defaultExport: true" : "";
+        contents += `    {filter: ${module.filter}${defaultExport}},`;
+    }
+    contents += `\n]);\n\n`;
+
+    // Get the modules into their final form
+    const moduleIds = ids.map(id => modules[id].demangler ? `${id}Mangled` : modules[id].getExport ? `${id}Module` : id);
+    contents += `const [${moduleIds.join(",")}] = modules;\n\n`;
 
     for(let i = 0; i < ids.length; i++) {
         let module = modules[ids[i]];
