@@ -9,7 +9,7 @@ declare module "*.svg" {
 }
 
 declare module "*.otf" {
-    const content: Uint8Array;
+    const content: Uint8Array<ArrayBuffer>;
     export default content;
 }
 

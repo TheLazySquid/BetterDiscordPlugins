@@ -1,6 +1,6 @@
 import { onStart, onStop } from "../bd";
 
-export function addFont(data: Uint8Array, family: string) {
+export function addFont(data: Uint8Array<ArrayBuffer>, family: string) {
     onStart(() => {
         for(let font of document.fonts) {
             if(font.family === family) return;

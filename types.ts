@@ -28,7 +28,7 @@ interface ModalOptions {
 }
 
 interface ModalSystem {
-    open: (render: (props: any) => React.ReactNode, options: ModalOptions) => string;
+    open: (render: (props: any) => React.ReactNode, options?: ModalOptions) => string;
     close: (id: string) => void;
 }
 
