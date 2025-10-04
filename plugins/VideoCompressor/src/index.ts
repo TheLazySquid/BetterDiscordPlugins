@@ -3,6 +3,7 @@ import { before } from "$shared/api/patching";
 import { addFile } from "./compressVideo";
 import './styles.css';
 
+console.log(attachFiles);
 const attach = attachFiles[0][attachFiles[1]];
 before(...attachFiles, ({ args }) => {
     const maxSize = premiumPermissions.getUserMaxFileSize();

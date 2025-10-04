@@ -11,7 +11,31 @@ module.exports = class {
   constructor() {
     let plugin = this;
 
-// shared/util/demangle.ts
+// meta-ns:meta
+var pluginName = "VideoCompressor";
+
+// shared/bd.ts
+var Api = new BdApi(pluginName);
+var createCallbackHandler = (callbackName) => {
+  let callbacks = [];
+  plugin[callbackName] = () => {
+    for (let i = 0; i < callbacks.length; i++) {
+      callbacks[i].callback();
+      if (callbacks[i].once) {
+        callbacks.splice(i, 1);
+        i--;
+      }
+    }
+  };
+  return (callback, once) => {
+    callbacks.push({ callback, once });
+  };
+};
+var onStart = createCallbackHandler("start");
+var onStop = createCallbackHandler("stop");
+var onSwitch = createCallbackHandler("onSwitch");
+
+// shared/util/modules.ts
 function demangle(module, demangler) {
   let returned = {};
   let values = Object.values(module);
@@ -25,15 +49,50 @@ function demangle(module, demangler) {
   }
   return returned;
 }
+function findExport(module, filter) {
+  for (let value of Object.values(module)) {
+    if (filter === true || filter(value)) return value;
+  }
+}
+function findExportWithKey(module, filter) {
+  for (let key in module) {
+    if (filter !== true && !filter(module[key])) continue;
+    return [module, key];
+  }
+}
+function fallbackMissing(modules2, filters) {
+  let missingIndexes = [];
+  let queries = [];
+  for (let i = 0; i < modules2.length; i++) {
+    if (modules2[i]) continue;
+    missingIndexes.push(i);
+    queries.push(filters[i]);
+  }
+  if (missingIndexes.length === 0) return;
+  Api.Logger.warn("Some modules not found by id:", missingIndexes.join(", "));
+  const found = BdApi.Webpack.getBulk(...queries);
+  for (let i = 0; i < missingIndexes.length; i++) {
+    modules2[missingIndexes[i]] = found[i];
+    if (!found[i]) Api.Logger.warn("Fallback filter failed for module", missingIndexes[i]);
+  }
+}
 
 // modules-ns:$shared/modules
-var Filters = BdApi.Webpack.Filters;
-var attachFiles = [...BdApi.Webpack.getWithKey(Filters.byStrings("filesMetadata:", "requireConfirm:"))];
-var [premiumPermissions, ModalSystemMangled, ModalMangled] = BdApi.Webpack.getBulk(
+var modules = BdApi.Webpack.getBulk(
+  { filter: (_, __, id) => id == 127654 },
+  { filter: (_, __, id) => id == 74538 },
+  { filter: (_, __, id) => id == 952265 },
+  { filter: (_, __, id) => id == 466377 }
+);
+fallbackMissing(modules, [
+  { filter: (m) => Object.values(m).some(Filters.byStrings("filesMetadata:", "requireConfirm:")) },
   { filter: Filters.byKeys("getUserMaxFileSize") },
   { filter: Filters.bySource(".modalKey?") },
   { filter: Filters.bySource(".MODAL_ROOT_LEGACY,properties") }
-);
+]);
+var [attachFilesModule, premiumPermissionsModule, ModalSystemMangled, ModalMangled] = modules;
+var attachFiles = findExportWithKey(attachFilesModule, (e) => e.toString().includes("filesMetadata"));
+var premiumPermissions = findExport(premiumPermissionsModule, (e) => e.getUserMaxFileSize);
 var ModalSystem = demangle(ModalSystemMangled, {
   open: Filters.byStrings(",instant:"),
   close: Filters.byStrings(".onCloseCallback()")
@@ -45,47 +104,6 @@ var Modal = demangle(ModalMangled, {
   Close: Filters.byStrings(".closeWithCircleBackground]:"),
   Footer: Filters.byStrings(".footerSeparator]:")
 });
-
-// meta-ns:meta
-var pluginName = "VideoCompressor";
-
-// shared/bd.ts
-var Api = new BdApi(pluginName);
-var createCallbackHandler = (callbackName) => {
-  const fullName = callbackName + "Callbacks";
-  plugin[fullName] = [];
-  plugin[callbackName] = () => {
-    for (let i = 0; i < plugin[fullName].length; i++) {
-      plugin[fullName][i].callback();
-    }
-  };
-  return (callback, once, id) => {
-    let object = { callback };
-    const delCallback = () => {
-      plugin[fullName].splice(plugin[fullName].indexOf(object), 1);
-    };
-    if (once === true) {
-      object.callback = () => {
-        callback();
-        delCallback();
-      };
-    }
-    if (id) {
-      object.id = id;
-      for (let i = 0; i < plugin[fullName].length; i++) {
-        if (plugin[fullName][i].id === id) {
-          plugin[fullName][i] = object;
-          return delCallback;
-        }
-      }
-    }
-    plugin[fullName].push(object);
-    return delCallback;
-  };
-};
-var onStart = createCallbackHandler("start");
-var onStop = createCallbackHandler("stop");
-var onSwitch = createCallbackHandler("onSwitch");
 
 // shared/api/patching.ts
 function check(module, key) {
@@ -154,6 +172,18 @@ var Bitstream = class _Bitstream {
     }
     return result;
   }
+  writeBits(n, value) {
+    const end = this.pos + n;
+    for (let i = this.pos; i < end; i++) {
+      const byteIndex = Math.floor(i / 8);
+      let byte = this.bytes[byteIndex];
+      const bitIndex = 7 - (i & 7);
+      byte &= ~(1 << bitIndex);
+      byte |= (value & 1 << end - i - 1) >> end - i - 1 << bitIndex;
+      this.bytes[byteIndex] = byte;
+    }
+    this.pos = end;
+  }
   readAlignedByte() {
     if (this.pos % 8 !== 0) {
       throw new Error("Bitstream is not byte-aligned.");
@@ -208,6 +238,7 @@ var toDataView = (source) => {
     return new DataView(source.buffer, source.byteOffset, source.byteLength);
   }
 };
+var textDecoder = new TextDecoder();
 var textEncoder = new TextEncoder();
 var invertObject = (object) => {
   return Object.fromEntries(Object.entries(object).map(([key, value]) => [value, key]));
@@ -494,12 +525,6 @@ var isSafari = () => {
   isSafariCache = result;
   return result;
 };
-
-// node_modules/mediabunny/dist/modules/src/custom-coder.js
-var customVideoDecoders = [];
-var customAudioDecoders = [];
-var customVideoEncoders = [];
-var customAudioEncoders = [];
 
 // node_modules/mediabunny/dist/modules/src/codec.js
 var VIDEO_CODECS = [
@@ -934,6 +959,22 @@ var extractAudioCodecString = (trackInfo) => {
   }
   throw new TypeError(`Unhandled codec '${codec}'.`);
 };
+var aacFrequencyTable = [
+  96e3,
+  88200,
+  64e3,
+  48e3,
+  44100,
+  32e3,
+  24e3,
+  22050,
+  16e3,
+  12e3,
+  11025,
+  8e3,
+  7350
+];
+var aacChannelMap = [-1, 1, 2, 3, 4, 5, 6, 8];
 var parseAacAudioSpecificConfig = (bytes2) => {
   if (!bytes2 || bytes2.byteLength < 2) {
     throw new TypeError("AAC description must be at least 2 bytes long.");
@@ -948,38 +989,14 @@ var parseAacAudioSpecificConfig = (bytes2) => {
   if (frequencyIndex === 15) {
     sampleRate = bitstream.readBits(24);
   } else {
-    const freqTable = [
-      96e3,
-      88200,
-      64e3,
-      48e3,
-      44100,
-      32e3,
-      24e3,
-      22050,
-      16e3,
-      12e3,
-      11025,
-      8e3,
-      7350
-    ];
-    if (frequencyIndex < freqTable.length) {
-      sampleRate = freqTable[frequencyIndex];
+    if (frequencyIndex < aacFrequencyTable.length) {
+      sampleRate = aacFrequencyTable[frequencyIndex];
     }
   }
   const channelConfiguration = bitstream.readBits(4);
   let numberOfChannels = null;
   if (channelConfiguration >= 1 && channelConfiguration <= 7) {
-    const channelMap = {
-      1: 1,
-      2: 2,
-      3: 3,
-      4: 4,
-      5: 5,
-      6: 6,
-      7: 8
-    };
-    numberOfChannels = channelMap[channelConfiguration];
+    numberOfChannels = aacChannelMap[channelConfiguration];
   }
   return {
     objectType,
@@ -1330,96 +1347,43 @@ var validateSubtitleMetadata = (metadata) => {
     throw new TypeError("Subtitle metadata config description must be a string.");
   }
 };
-var canEncodeVideo = async (codec, { width = 1280, height = 720, bitrate = 1e6 } = {}) => {
-  if (!VIDEO_CODECS.includes(codec)) {
-    return false;
+
+// node_modules/mediabunny/dist/modules/src/muxer.js
+var Muxer = class {
+  constructor(output) {
+    this.mutex = new AsyncMutex();
+    this.firstMediaStreamTimestamp = null;
+    this.trackTimestampInfo = /* @__PURE__ */ new WeakMap();
+    this.output = output;
   }
-  if (!Number.isInteger(width) || width <= 0) {
-    throw new TypeError("width must be a positive integer.");
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  onTrackClose(track) {
   }
-  if (!Number.isInteger(height) || height <= 0) {
-    throw new TypeError("height must be a positive integer.");
-  }
-  if (!(bitrate instanceof Quality) && (!Number.isInteger(bitrate) || bitrate <= 0)) {
-    throw new TypeError("bitrate must be a positive integer or a quality.");
-  }
-  const resolvedBitrate = bitrate instanceof Quality ? bitrate._toVideoBitrate(codec, width, height) : bitrate;
-  if (customVideoEncoders.length > 0) {
-    const encoderConfig = {
-      codec: buildVideoCodecString(codec, width, height, resolvedBitrate),
-      width,
-      height,
-      bitrate: resolvedBitrate,
-      ...getVideoEncoderConfigExtension(codec)
-    };
-    if (customVideoEncoders.some((x) => x.supports(codec, encoderConfig))) {
-      return true;
+  validateAndNormalizeTimestamp(track, timestampInSeconds, isKeyFrame) {
+    timestampInSeconds += track.source._timestampOffset;
+    let timestampInfo = this.trackTimestampInfo.get(track);
+    if (!timestampInfo) {
+      if (!isKeyFrame) {
+        throw new Error("First frame must be a key frame.");
+      }
+      timestampInfo = {
+        maxTimestamp: timestampInSeconds,
+        maxTimestampBeforeLastKeyFrame: timestampInSeconds
+      };
+      this.trackTimestampInfo.set(track, timestampInfo);
     }
-  }
-  if (typeof VideoEncoder === "undefined") {
-    return false;
-  }
-  const support = await VideoEncoder.isConfigSupported({
-    codec: buildVideoCodecString(codec, width, height, resolvedBitrate),
-    width,
-    height,
-    bitrate: resolvedBitrate,
-    ...getVideoEncoderConfigExtension(codec)
-  });
-  return support.supported === true;
-};
-var canEncodeAudio = async (codec, { numberOfChannels = 2, sampleRate = 48e3, bitrate = 128e3 } = {}) => {
-  if (!AUDIO_CODECS.includes(codec)) {
-    return false;
-  }
-  if (!Number.isInteger(numberOfChannels) || numberOfChannels <= 0) {
-    throw new TypeError("numberOfChannels must be a positive integer.");
-  }
-  if (!Number.isInteger(sampleRate) || sampleRate <= 0) {
-    throw new TypeError("sampleRate must be a positive integer.");
-  }
-  if (!(bitrate instanceof Quality) && (!Number.isInteger(bitrate) || bitrate <= 0)) {
-    throw new TypeError("bitrate must be a positive integer.");
-  }
-  const resolvedBitrate = bitrate instanceof Quality ? bitrate._toAudioBitrate(codec) : bitrate;
-  if (customAudioEncoders.length > 0) {
-    const encoderConfig = {
-      codec: buildAudioCodecString(codec, numberOfChannels, sampleRate),
-      numberOfChannels,
-      sampleRate,
-      bitrate: resolvedBitrate,
-      ...getAudioEncoderConfigExtension(codec)
-    };
-    if (customAudioEncoders.some((x) => x.supports(codec, encoderConfig))) {
-      return true;
+    if (timestampInSeconds < 0) {
+      throw new Error(`Timestamps must be non-negative (got ${timestampInSeconds}s).`);
     }
-  }
-  if (PCM_AUDIO_CODECS.includes(codec)) {
-    return true;
-  }
-  if (typeof AudioEncoder === "undefined") {
-    return false;
-  }
-  const support = await AudioEncoder.isConfigSupported({
-    codec: buildAudioCodecString(codec, numberOfChannels, sampleRate),
-    numberOfChannels,
-    sampleRate,
-    bitrate: resolvedBitrate,
-    ...getAudioEncoderConfigExtension(codec)
-  });
-  return support.supported === true;
-};
-var getEncodableAudioCodecs = async (checkedCodecs = AUDIO_CODECS, options) => {
-  const bools = await Promise.all(checkedCodecs.map((codec) => canEncodeAudio(codec, options)));
-  return checkedCodecs.filter((_, i) => bools[i]);
-};
-var getFirstEncodableVideoCodec = async (checkedCodecs, options) => {
-  for (const codec of checkedCodecs) {
-    if (await canEncodeVideo(codec, options)) {
-      return codec;
+    if (isKeyFrame) {
+      timestampInfo.maxTimestampBeforeLastKeyFrame = timestampInfo.maxTimestamp;
     }
+    if (timestampInSeconds < timestampInfo.maxTimestampBeforeLastKeyFrame) {
+      throw new Error(`Timestamps cannot be smaller than the highest timestamp of the previous run (a run begins with a key frame and ends right before the next key frame). Got ${timestampInSeconds}s, but highest timestamp is ${timestampInfo.maxTimestampBeforeLastKeyFrame}s.`);
+    }
+    timestampInfo.maxTimestamp = Math.max(timestampInfo.maxTimestamp, timestampInSeconds);
+    return timestampInSeconds;
   }
-  return null;
 };
 
 // node_modules/mediabunny/dist/modules/src/subtitles.js
@@ -2778,10 +2742,18 @@ var mvhd = (creationTime, trackDatas) => {
     // Next track ID
   ]);
 };
-var trak = (trackData, creationTime) => box("trak", void 0, [
-  tkhd(trackData, creationTime),
-  mdia(trackData, creationTime)
-]);
+var trak = (trackData, creationTime) => {
+  const trackMetadata = getTrackMetadata(trackData);
+  return box("trak", void 0, [
+    tkhd(trackData, creationTime),
+    mdia(trackData, creationTime),
+    trackMetadata.name !== void 0 ? box("udta", void 0, [
+      box("\xA9nam", [
+        ...textEncoder.encode(trackMetadata.name)
+      ])
+    ]) : null
+  ]);
+};
 var tkhd = (trackData, creationTime) => {
   const lastSample = lastPresentedSample(trackData.samples);
   const durationInGlobalTimescale = intoTimescale(lastSample ? lastSample.timestamp + lastSample.duration : 0, GLOBAL_TIMESCALE);
@@ -2825,7 +2797,7 @@ var tkhd = (trackData, creationTime) => {
 };
 var mdia = (trackData, creationTime) => box("mdia", void 0, [
   mdhd(trackData, creationTime),
-  hdlr(trackData),
+  hdlr(true, TRACK_TYPE_TO_COMPONENT_SUBTYPE[trackData.type], TRACK_TYPE_TO_HANDLER_NAME[trackData.type]),
   minf(trackData)
 ]);
 var mdhd = (trackData, creationTime) => {
@@ -2863,10 +2835,10 @@ var TRACK_TYPE_TO_HANDLER_NAME = {
   audio: "MediabunnySoundHandler",
   subtitle: "MediabunnyTextHandler"
 };
-var hdlr = (trackData) => fullBox("hdlr", 0, 0, [
-  ascii("mhlr"),
+var hdlr = (hasComponentType, handlerType, name) => fullBox("hdlr", 0, 0, [
+  hasComponentType ? ascii("mhlr") : u32(0),
   // Component type
-  ascii(TRACK_TYPE_TO_COMPONENT_SUBTYPE[trackData.type]),
+  ascii(handlerType),
   // Component subtype
   u32(0),
   // Component manufacturer
@@ -2874,7 +2846,7 @@ var hdlr = (trackData) => fullBox("hdlr", 0, 0, [
   // Component flags
   u32(0),
   // Component flags mask
-  ascii(TRACK_TYPE_TO_HANDLER_NAME[trackData.type], true)
+  ascii(name, true)
   // Component name
 ]);
 var minf = (trackData) => box("minf", void 0, [
@@ -3694,44 +3666,6 @@ var SUBTITLE_CODEC_TO_CONFIGURATION_BOX = {
   webvtt: vttC
 };
 
-// node_modules/mediabunny/dist/modules/src/muxer.js
-var Muxer = class {
-  constructor(output) {
-    this.mutex = new AsyncMutex();
-    this.firstMediaStreamTimestamp = null;
-    this.trackTimestampInfo = /* @__PURE__ */ new WeakMap();
-    this.output = output;
-  }
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  onTrackClose(track) {
-  }
-  validateAndNormalizeTimestamp(track, timestampInSeconds, isKeyFrame) {
-    timestampInSeconds += track.source._timestampOffset;
-    let timestampInfo = this.trackTimestampInfo.get(track);
-    if (!timestampInfo) {
-      if (!isKeyFrame) {
-        throw new Error("First frame must be a key frame.");
-      }
-      timestampInfo = {
-        maxTimestamp: timestampInSeconds,
-        maxTimestampBeforeLastKeyFrame: timestampInSeconds
-      };
-      this.trackTimestampInfo.set(track, timestampInfo);
-    }
-    if (timestampInSeconds < 0) {
-      throw new Error(`Timestamps must be non-negative (got ${timestampInSeconds}s).`);
-    }
-    if (isKeyFrame) {
-      timestampInfo.maxTimestampBeforeLastKeyFrame = timestampInfo.maxTimestamp;
-    }
-    if (timestampInSeconds < timestampInfo.maxTimestampBeforeLastKeyFrame) {
-      throw new Error(`Timestamps cannot be smaller than the highest timestamp of the previous run (a run begins with a key frame and ends right before the next key frame). Got ${timestampInSeconds}s, but highest timestamp is ${timestampInfo.maxTimestampBeforeLastKeyFrame}s.`);
-    }
-    timestampInfo.maxTimestamp = Math.max(timestampInfo.maxTimestamp, timestampInSeconds);
-    return timestampInSeconds;
-  }
-};
-
 // node_modules/mediabunny/dist/modules/src/writer.js
 var Writer = class {
   constructor() {
@@ -3977,13 +3911,25 @@ var IsobmffReader = class {
       totalSize = this.readU64();
       headerSize = 16;
     }
-    return { name, totalSize, headerSize, contentSize: totalSize - headerSize };
+    const contentSize = totalSize - headerSize;
+    if (contentSize < 0) {
+      return null;
+    }
+    return { name, totalSize, headerSize, contentSize };
   }
 };
 
 // node_modules/mediabunny/dist/modules/src/isobmff/isobmff-muxer.js
 var GLOBAL_TIMESCALE = 1e3;
 var TIMESTAMP_OFFSET = 2082844800;
+var getTrackMetadata = (trackData) => {
+  const metadata = {};
+  const track = trackData.track;
+  if (track.metadata.name !== void 0) {
+    metadata.name = track.metadata.name;
+  }
+  return metadata;
+};
 var intoTimescale = (timeInSeconds, timescale, round = true) => {
   const value = timeInSeconds * timescale;
   return round ? Math.round(value) : value;
@@ -4764,7 +4710,9 @@ var EBMLId;
   EBMLId2[EBMLId2["FlagDefault"] = 136] = "FlagDefault";
   EBMLId2[EBMLId2["FlagForced"] = 21930] = "FlagForced";
   EBMLId2[EBMLId2["FlagLacing"] = 156] = "FlagLacing";
+  EBMLId2[EBMLId2["Name"] = 21358] = "Name";
   EBMLId2[EBMLId2["Language"] = 2274716] = "Language";
+  EBMLId2[EBMLId2["LanguageBCP47"] = 2274717] = "LanguageBCP47";
   EBMLId2[EBMLId2["CodecID"] = 134] = "CodecID";
   EBMLId2[EBMLId2["CodecPrivate"] = 25506] = "CodecPrivate";
   EBMLId2[EBMLId2["CodecDelay"] = 22186] = "CodecDelay";
@@ -4812,8 +4760,6 @@ var LEVEL_0_EBML_IDS = [
   EBMLId.Segment
 ];
 var LEVEL_1_EBML_IDS = [
-  EBMLId.EBMLMaxIDLength,
-  EBMLId.EBMLMaxSizeLength,
   EBMLId.SeekHead,
   EBMLId.Info,
   EBMLId.Cluster,
@@ -4926,6 +4872,15 @@ var EBMLReader = class {
     }
     return String.fromCharCode(...new Uint8Array(view2.buffer, offset, strLength));
   }
+  readUnicodeString(length) {
+    const { view: view2, offset } = this.reader.getViewAndOffset(this.pos, this.pos + length);
+    this.pos += length;
+    let strLength = 0;
+    while (strLength < length && view2.getUint8(offset + strLength) !== 0) {
+      strLength += 1;
+    }
+    return textDecoder.decode(new Uint8Array(view2.buffer, offset, strLength));
+  }
   readElementId() {
     const size = this.readVarIntSize();
     if (size === null) {
@@ -4973,6 +4928,23 @@ var EBMLReader = class {
       }
       assertDefinedSize(elementHeader.size);
       this.pos += elementHeader.size;
+    }
+    return null;
+  }
+  /** Searches for the next occurrence of an element ID using a naive byte-wise search. */
+  async resync(ids, until) {
+    const loadChunkSize = 2 ** 20;
+    const idsSet = new Set(ids);
+    while (this.pos <= until - MIN_HEADER_SIZE) {
+      if (!this.reader.rangeIsLoaded(this.pos, Math.min(this.pos + MAX_HEADER_SIZE, until))) {
+        await this.reader.loadRange(this.pos, Math.min(this.pos + loadChunkSize, until));
+      }
+      const elementStartPos = this.pos;
+      const elementId = this.readElementId();
+      if (elementId !== null && idsSet.has(elementId)) {
+        return elementStartPos;
+      }
+      this.pos = elementStartPos + 1;
     }
     return null;
   }
@@ -5311,6 +5283,12 @@ var Demuxer = class {
     this.input = input;
   }
 };
+
+// node_modules/mediabunny/dist/modules/src/custom-coder.js
+var customVideoDecoders = [];
+var customAudioDecoders = [];
+var customVideoEncoders = [];
+var customAudioEncoders = [];
 
 // node_modules/mediabunny/dist/modules/src/packet.js
 var PLACEHOLDER_DATA = new Uint8Array(0);
@@ -5823,6 +5801,37 @@ var VideoSample = class _VideoSample {
     context.scale(1 / aspectRatioChange, aspectRatioChange);
     context.drawImage(source, sx, sy, sWidth, sHeight, -dWidth / 2, -dHeight / 2, dWidth, dHeight);
     context.restore();
+  }
+  /**
+   * Draws the sample in the middle of the canvas corresponding to the context with the specified fit behavior.
+   */
+  drawWithFit(context, options) {
+    const canvasWidth = context.canvas.width;
+    const canvasHeight = context.canvas.height;
+    const rotation = options.rotation ?? this.rotation;
+    let dx;
+    let dy;
+    let newWidth;
+    let newHeight;
+    if (options.fit === "fill") {
+      dx = 0;
+      dy = 0;
+      newWidth = canvasWidth;
+      newHeight = canvasHeight;
+    } else {
+      const [sampleWidth, sampleHeight] = rotation % 180 === 0 ? [this.codedWidth, this.codedHeight] : [this.codedHeight, this.codedWidth];
+      const scale = options.fit === "contain" ? Math.min(canvasWidth / sampleWidth, canvasHeight / sampleHeight) : Math.max(canvasWidth / sampleWidth, canvasHeight / sampleHeight);
+      newWidth = sampleWidth * scale;
+      newHeight = sampleHeight * scale;
+      dx = (canvasWidth - newWidth) / 2;
+      dy = (canvasHeight - newHeight) / 2;
+    }
+    const aspectRatioChange = rotation % 180 === 0 ? 1 : newWidth / newHeight;
+    context.translate(canvasWidth / 2, canvasHeight / 2);
+    context.rotate(rotation * Math.PI / 180);
+    context.scale(1 / aspectRatioChange, aspectRatioChange);
+    context.translate(-canvasWidth / 2, -canvasHeight / 2);
+    context.drawImage(this.toCanvasImageSource(), dx, dy, newWidth, newHeight);
   }
   /**
    * Converts this video sample to a CanvasImageSource for drawing to a canvas.
@@ -7058,6 +7067,7 @@ var CanvasSink = class {
   /** @internal */
   _videoSampleToWrappedCanvas(sample) {
     let canvas = this._canvasPool[this._nextCanvasIndex];
+    let canvasIsNew = false;
     if (!canvas) {
       if (typeof document !== "undefined") {
         canvas = document.createElement("canvas");
@@ -7069,6 +7079,7 @@ var CanvasSink = class {
       if (this._canvasPool.length > 0) {
         this._canvasPool[this._nextCanvasIndex] = canvas;
       }
+      canvasIsNew = true;
     }
     if (this._canvasPool.length > 0) {
       this._nextCanvasIndex = (this._nextCanvasIndex + 1) % this._canvasPool.length;
@@ -7076,29 +7087,13 @@ var CanvasSink = class {
     const context = canvas.getContext("2d", { alpha: false });
     assert(context);
     context.resetTransform();
-    let dx;
-    let dy;
-    let newWidth;
-    let newHeight;
-    if (this._fit === "fill") {
-      dx = 0;
-      dy = 0;
-      newWidth = this._width;
-      newHeight = this._height;
-    } else {
-      const [sampleWidth, sampleHeight] = this._rotation % 180 === 0 ? [sample.codedWidth, sample.codedHeight] : [sample.codedHeight, sample.codedWidth];
-      const scale = this._fit === "contain" ? Math.min(this._width / sampleWidth, this._height / sampleHeight) : Math.max(this._width / sampleWidth, this._height / sampleHeight);
-      newWidth = sampleWidth * scale;
-      newHeight = sampleHeight * scale;
-      dx = (this._width - newWidth) / 2;
-      dy = (this._height - newHeight) / 2;
+    if (!canvasIsNew) {
+      context.clearRect(0, 0, this._width, this._height);
     }
-    const aspectRatioChange = this._rotation % 180 === 0 ? 1 : newWidth / newHeight;
-    context.translate(this._width / 2, this._height / 2);
-    context.rotate(this._rotation * Math.PI / 180);
-    context.scale(1 / aspectRatioChange, aspectRatioChange);
-    context.translate(-this._width / 2, -this._height / 2);
-    context.drawImage(sample.toCanvasImageSource(), dx, dy, newWidth, newHeight);
+    sample.drawWithFit(context, {
+      fit: this._fit,
+      rotation: this._rotation
+    });
     const result = {
       canvas,
       timestamp: sample.timestamp,
@@ -7470,9 +7465,28 @@ var InputTrack = class {
   get id() {
     return this._backing.getId();
   }
+  /**
+   * The identifier of the codec used internally by the container. It is not homogenized by Mediabunny
+   * and depends entirely on the container format.
+   *
+   * This field can be used to determine the codec of a track in case Mediabunny doesn't know that codec.
+   *
+   * - For ISOBMFF files, this field returns the name of the Sample Description Box (e.g. 'avc1').
+   * - For Matroska files, this field returns the value of the CodecID element.
+   * - For WAVE files, this field returns the value of the format tag in the 'fmt ' chunk.
+   * - For ADTS files, this field contains the MPEG-4 Audio Object Type.
+   * - In all other cases, this field is `null`.
+   */
+  get internalCodecId() {
+    return this._backing.getInternalCodecId();
+  }
   /** The ISO 639-2/T language code for this track. If the language is unknown, this field is 'und' (undetermined). */
   get languageCode() {
     return this._backing.getLanguageCode();
+  }
+  /** A user-defined name for this track. */
+  get name() {
+    return this._backing.getName();
   }
   /**
    * A positive number x such that all timestamps and durations of all packets of this track are
@@ -8018,6 +8032,10 @@ var WaveAudioTrackBacking = class {
   getCodec() {
     return this.demuxer.getCodec();
   }
+  getInternalCodecId() {
+    assert(this.demuxer.audioInfo);
+    return this.demuxer.audioInfo.format;
+  }
   async getDecoderConfig() {
     const codec = this.demuxer.getCodec();
     if (!codec) {
@@ -8044,6 +8062,9 @@ var WaveAudioTrackBacking = class {
   getTimeResolution() {
     assert(this.demuxer.audioInfo);
     return this.demuxer.audioInfo.sampleRate;
+  }
+  getName() {
+    return null;
   }
   getLanguageCode() {
     return UNDETERMINED_LANGUAGE;
@@ -8221,6 +8242,215 @@ var MovOutputFormat = class extends IsobmffOutputFormat {
   }
 };
 
+// node_modules/mediabunny/dist/modules/src/encode.js
+var validateVideoEncodingConfig = (config) => {
+  if (!config || typeof config !== "object") {
+    throw new TypeError("Encoding config must be an object.");
+  }
+  if (!VIDEO_CODECS.includes(config.codec)) {
+    throw new TypeError(`Invalid video codec '${config.codec}'. Must be one of: ${VIDEO_CODECS.join(", ")}.`);
+  }
+  if (!(config.bitrate instanceof Quality) && (!Number.isInteger(config.bitrate) || config.bitrate <= 0)) {
+    throw new TypeError("config.bitrate must be a positive integer or a quality.");
+  }
+  if (config.keyFrameInterval !== void 0 && (!Number.isFinite(config.keyFrameInterval) || config.keyFrameInterval < 0)) {
+    throw new TypeError("config.keyFrameInterval, when provided, must be a non-negative number.");
+  }
+  if (config.onEncodedPacket !== void 0 && typeof config.onEncodedPacket !== "function") {
+    throw new TypeError("config.onEncodedChunk, when provided, must be a function.");
+  }
+  if (config.onEncoderConfig !== void 0 && typeof config.onEncoderConfig !== "function") {
+    throw new TypeError("config.onEncoderConfig, when provided, must be a function.");
+  }
+  validateVideoEncodingAdditionalOptions(config.codec, config);
+};
+var validateVideoEncodingAdditionalOptions = (codec, options) => {
+  if (!options || typeof options !== "object") {
+    throw new TypeError("Encoding options must be an object.");
+  }
+  if (options.bitrateMode !== void 0 && !["constant", "variable"].includes(options.bitrateMode)) {
+    throw new TypeError("bitrateMode, when provided, must be 'constant' or 'variable'.");
+  }
+  if (options.latencyMode !== void 0 && !["quality", "realtime"].includes(options.latencyMode)) {
+    throw new TypeError("latencyMode, when provided, must be 'quality' or 'realtime'.");
+  }
+  if (options.fullCodecString !== void 0 && typeof options.fullCodecString !== "string") {
+    throw new TypeError("fullCodecString, when provided, must be a string.");
+  }
+  if (options.fullCodecString !== void 0 && inferCodecFromCodecString(options.fullCodecString) !== codec) {
+    throw new TypeError(`fullCodecString, when provided, must be a string that matches the specified codec (${codec}).`);
+  }
+  if (options.hardwareAcceleration !== void 0 && !["no-preference", "prefer-hardware", "prefer-software"].includes(options.hardwareAcceleration)) {
+    throw new TypeError("hardwareAcceleration, when provided, must be 'no-preference', 'prefer-hardware' or 'prefer-software'.");
+  }
+  if (options.scalabilityMode !== void 0 && typeof options.scalabilityMode !== "string") {
+    throw new TypeError("scalabilityMode, when provided, must be a string.");
+  }
+  if (options.contentHint !== void 0 && typeof options.contentHint !== "string") {
+    throw new TypeError("contentHint, when provided, must be a string.");
+  }
+};
+var buildVideoEncoderConfig = (options) => {
+  const resolvedBitrate = options.bitrate instanceof Quality ? options.bitrate._toVideoBitrate(options.codec, options.width, options.height) : options.bitrate;
+  return {
+    codec: options.fullCodecString ?? buildVideoCodecString(options.codec, options.width, options.height, resolvedBitrate),
+    width: options.width,
+    height: options.height,
+    bitrate: resolvedBitrate,
+    bitrateMode: options.bitrateMode,
+    framerate: options.framerate,
+    // this.source._connectedTrack?.metadata.frameRate,
+    latencyMode: options.latencyMode,
+    hardwareAcceleration: options.hardwareAcceleration,
+    scalabilityMode: options.scalabilityMode,
+    contentHint: options.contentHint,
+    ...getVideoEncoderConfigExtension(options.codec)
+  };
+};
+var validateAudioEncodingConfig = (config) => {
+  if (!config || typeof config !== "object") {
+    throw new TypeError("Encoding config must be an object.");
+  }
+  if (!AUDIO_CODECS.includes(config.codec)) {
+    throw new TypeError(`Invalid audio codec '${config.codec}'. Must be one of: ${AUDIO_CODECS.join(", ")}.`);
+  }
+  if (config.bitrate === void 0 && (!PCM_AUDIO_CODECS.includes(config.codec) || config.codec === "flac")) {
+    throw new TypeError("config.bitrate must be provided for compressed audio codecs.");
+  }
+  if (config.bitrate !== void 0 && !(config.bitrate instanceof Quality) && (!Number.isInteger(config.bitrate) || config.bitrate <= 0)) {
+    throw new TypeError("config.bitrate, when provided, must be a positive integer or a quality.");
+  }
+  if (config.onEncodedPacket !== void 0 && typeof config.onEncodedPacket !== "function") {
+    throw new TypeError("config.onEncodedChunk, when provided, must be a function.");
+  }
+  if (config.onEncoderConfig !== void 0 && typeof config.onEncoderConfig !== "function") {
+    throw new TypeError("config.onEncoderConfig, when provided, must be a function.");
+  }
+  validateAudioEncodingAdditionalOptions(config.codec, config);
+};
+var validateAudioEncodingAdditionalOptions = (codec, options) => {
+  if (!options || typeof options !== "object") {
+    throw new TypeError("Encoding options must be an object.");
+  }
+  if (options.bitrateMode !== void 0 && !["constant", "variable"].includes(options.bitrateMode)) {
+    throw new TypeError("bitrateMode, when provided, must be 'constant' or 'variable'.");
+  }
+  if (options.fullCodecString !== void 0 && typeof options.fullCodecString !== "string") {
+    throw new TypeError("fullCodecString, when provided, must be a string.");
+  }
+  if (options.fullCodecString !== void 0 && inferCodecFromCodecString(options.fullCodecString) !== codec) {
+    throw new TypeError(`fullCodecString, when provided, must be a string that matches the specified codec (${codec}).`);
+  }
+};
+var buildAudioEncoderConfig = (options) => {
+  const resolvedBitrate = options.bitrate instanceof Quality ? options.bitrate._toAudioBitrate(options.codec) : options.bitrate;
+  return {
+    codec: options.fullCodecString ?? buildAudioCodecString(options.codec, options.numberOfChannels, options.sampleRate),
+    numberOfChannels: options.numberOfChannels,
+    sampleRate: options.sampleRate,
+    bitrate: resolvedBitrate,
+    bitrateMode: options.bitrateMode,
+    ...getAudioEncoderConfigExtension(options.codec)
+  };
+};
+var canEncodeVideo = async (codec, { width = 1280, height = 720, bitrate = 1e6, ...restOptions } = {}) => {
+  if (!VIDEO_CODECS.includes(codec)) {
+    return false;
+  }
+  if (!Number.isInteger(width) || width <= 0) {
+    throw new TypeError("width must be a positive integer.");
+  }
+  if (!Number.isInteger(height) || height <= 0) {
+    throw new TypeError("height must be a positive integer.");
+  }
+  if (!(bitrate instanceof Quality) && (!Number.isInteger(bitrate) || bitrate <= 0)) {
+    throw new TypeError("bitrate must be a positive integer or a quality.");
+  }
+  validateVideoEncodingAdditionalOptions(codec, restOptions);
+  let encoderConfig = null;
+  if (customVideoEncoders.length > 0) {
+    encoderConfig ??= buildVideoEncoderConfig({
+      codec,
+      width,
+      height,
+      bitrate,
+      framerate: void 0,
+      ...restOptions
+    });
+    if (customVideoEncoders.some((x) => x.supports(codec, encoderConfig))) {
+      return true;
+    }
+  }
+  if (typeof VideoEncoder === "undefined") {
+    return false;
+  }
+  encoderConfig ??= buildVideoEncoderConfig({
+    codec,
+    width,
+    height,
+    bitrate,
+    framerate: void 0,
+    ...restOptions
+  });
+  const support = await VideoEncoder.isConfigSupported(encoderConfig);
+  return support.supported === true;
+};
+var canEncodeAudio = async (codec, { numberOfChannels = 2, sampleRate = 48e3, bitrate = 128e3, ...restOptions } = {}) => {
+  if (!AUDIO_CODECS.includes(codec)) {
+    return false;
+  }
+  if (!Number.isInteger(numberOfChannels) || numberOfChannels <= 0) {
+    throw new TypeError("numberOfChannels must be a positive integer.");
+  }
+  if (!Number.isInteger(sampleRate) || sampleRate <= 0) {
+    throw new TypeError("sampleRate must be a positive integer.");
+  }
+  if (!(bitrate instanceof Quality) && (!Number.isInteger(bitrate) || bitrate <= 0)) {
+    throw new TypeError("bitrate must be a positive integer.");
+  }
+  validateAudioEncodingAdditionalOptions(codec, restOptions);
+  let encoderConfig = null;
+  if (customAudioEncoders.length > 0) {
+    encoderConfig ??= buildAudioEncoderConfig({
+      codec,
+      numberOfChannels,
+      sampleRate,
+      bitrate,
+      ...restOptions
+    });
+    if (customAudioEncoders.some((x) => x.supports(codec, encoderConfig))) {
+      return true;
+    }
+  }
+  if (PCM_AUDIO_CODECS.includes(codec)) {
+    return true;
+  }
+  if (typeof AudioEncoder === "undefined") {
+    return false;
+  }
+  encoderConfig ??= buildAudioEncoderConfig({
+    codec,
+    numberOfChannels,
+    sampleRate,
+    bitrate,
+    ...restOptions
+  });
+  const support = await AudioEncoder.isConfigSupported(encoderConfig);
+  return support.supported === true;
+};
+var getEncodableAudioCodecs = async (checkedCodecs = AUDIO_CODECS, options) => {
+  const bools = await Promise.all(checkedCodecs.map((codec) => canEncodeAudio(codec, options)));
+  return checkedCodecs.filter((_, i) => bools[i]);
+};
+var getFirstEncodableVideoCodec = async (checkedCodecs, options) => {
+  for (const codec of checkedCodecs) {
+    if (await canEncodeVideo(codec, options)) {
+      return codec;
+    }
+  }
+  return null;
+};
+
 // node_modules/mediabunny/dist/modules/src/media-source.js
 var MediaSource = class {
   constructor() {
@@ -8326,35 +8556,6 @@ var EncodedVideoPacketSource = class extends VideoSource {
     return this._connectedTrack.output._muxer.addEncodedVideoPacket(this._connectedTrack, packet, meta);
   }
 };
-var validateVideoEncodingConfig = (config) => {
-  if (!config || typeof config !== "object") {
-    throw new TypeError("Encoding config must be an object.");
-  }
-  if (!VIDEO_CODECS.includes(config.codec)) {
-    throw new TypeError(`Invalid video codec '${config.codec}'. Must be one of: ${VIDEO_CODECS.join(", ")}.`);
-  }
-  if (!(config.bitrate instanceof Quality) && (!Number.isInteger(config.bitrate) || config.bitrate <= 0)) {
-    throw new TypeError("config.bitrate must be a positive integer or a quality.");
-  }
-  if (config.latencyMode !== void 0 && !["quality", "realtime"].includes(config.latencyMode)) {
-    throw new TypeError("config.latencyMode, when provided, must be 'quality' or 'realtime'.");
-  }
-  if (config.keyFrameInterval !== void 0 && (!Number.isFinite(config.keyFrameInterval) || config.keyFrameInterval < 0)) {
-    throw new TypeError("config.keyFrameInterval, when provided, must be a non-negative number.");
-  }
-  if (config.fullCodecString !== void 0 && typeof config.fullCodecString !== "string") {
-    throw new TypeError("config.fullCodecString, when provided, must be a string.");
-  }
-  if (config.fullCodecString !== void 0 && inferCodecFromCodecString(config.fullCodecString) !== config.codec) {
-    throw new TypeError(`config.fullCodecString, when provided, must be a string that matches the specified codec (${config.codec}).`);
-  }
-  if (config.onEncodedPacket !== void 0 && typeof config.onEncodedPacket !== "function") {
-    throw new TypeError("config.onEncodedChunk, when provided, must be a function.");
-  }
-  if (config.onEncoderConfig !== void 0 && typeof config.onEncoderConfig !== "function") {
-    throw new TypeError("config.onEncoderConfig, when provided, must be a function.");
-  }
-};
 var VideoEncoderWrapper = class {
   constructor(source, encodingConfig) {
     this.source = source;
@@ -8364,8 +8565,9 @@ var VideoEncoderWrapper = class {
     this.encoder = null;
     this.muxer = null;
     this.lastMultipleOfKeyFrameInterval = -1;
-    this.lastWidth = null;
-    this.lastHeight = null;
+    this.codedWidth = null;
+    this.codedHeight = null;
+    this.resizeCanvas = null;
     this.customEncoder = null;
     this.customEncoderCallSerializer = new CallSerializer();
     this.customEncoderQueueSize = 0;
@@ -8375,13 +8577,44 @@ var VideoEncoderWrapper = class {
     try {
       this.checkForEncoderError();
       this.source._ensureValidAdd();
-      if (this.lastWidth !== null && this.lastHeight !== null) {
-        if (videoSample.codedWidth !== this.lastWidth || videoSample.codedHeight !== this.lastHeight) {
-          throw new Error(`Video sample size must remain constant. Expected ${this.lastWidth}x${this.lastHeight}, got ${videoSample.codedWidth}x${videoSample.codedHeight}.`);
+      if (this.codedWidth !== null && this.codedHeight !== null) {
+        if (videoSample.codedWidth !== this.codedWidth || videoSample.codedHeight !== this.codedHeight) {
+          const sizeChangeBehavior = this.encodingConfig.sizeChangeBehavior ?? "deny";
+          if (sizeChangeBehavior === "passThrough") {
+          } else if (sizeChangeBehavior === "deny") {
+            throw new Error(`Video sample size must remain constant. Expected ${this.codedWidth}x${this.codedHeight}, got ${videoSample.codedWidth}x${videoSample.codedHeight}. To allow the sample size to change over time, set \`sizeChangeBehavior\` to a value other than 'strict' in the encoding options.`);
+          } else {
+            let canvasIsNew = false;
+            if (!this.resizeCanvas) {
+              if (typeof document !== "undefined") {
+                this.resizeCanvas = document.createElement("canvas");
+                this.resizeCanvas.width = this.codedWidth;
+                this.resizeCanvas.height = this.codedHeight;
+              } else {
+                this.resizeCanvas = new OffscreenCanvas(this.codedWidth, this.codedHeight);
+              }
+              canvasIsNew = true;
+            }
+            const context = this.resizeCanvas.getContext("2d", { alpha: false });
+            assert(context);
+            if (!canvasIsNew) {
+              context.clearRect(0, 0, this.codedWidth, this.codedHeight);
+            }
+            videoSample.drawWithFit(context, { fit: sizeChangeBehavior });
+            if (shouldClose) {
+              videoSample.close();
+            }
+            videoSample = new VideoSample(this.resizeCanvas, {
+              timestamp: videoSample.timestamp,
+              duration: videoSample.duration,
+              rotation: videoSample.rotation
+            });
+            shouldClose = true;
+          }
         }
       } else {
-        this.lastWidth = videoSample.codedWidth;
-        this.lastHeight = videoSample.codedHeight;
+        this.codedWidth = videoSample.codedWidth;
+        this.codedHeight = videoSample.codedHeight;
       }
       if (!this.encoderInitialized) {
         if (!this.ensureEncoderPromise) {
@@ -8432,18 +8665,12 @@ var VideoEncoderWrapper = class {
       return;
     }
     return this.ensureEncoderPromise = (async () => {
-      const width = videoSample.codedWidth;
-      const height = videoSample.codedHeight;
-      const bitrate = this.encodingConfig.bitrate instanceof Quality ? this.encodingConfig.bitrate._toVideoBitrate(this.encodingConfig.codec, width, height) : this.encodingConfig.bitrate;
-      const encoderConfig = {
-        codec: this.encodingConfig.fullCodecString ?? buildVideoCodecString(this.encodingConfig.codec, width, height, bitrate),
-        width,
-        height,
-        bitrate,
-        framerate: this.source._connectedTrack?.metadata.frameRate,
-        latencyMode: this.encodingConfig.latencyMode,
-        ...getVideoEncoderConfigExtension(this.encodingConfig.codec)
-      };
+      const encoderConfig = buildVideoEncoderConfig({
+        width: videoSample.codedWidth,
+        height: videoSample.codedHeight,
+        ...this.encodingConfig,
+        framerate: this.source._connectedTrack?.metadata.frameRate
+      });
       this.encodingConfig.onEncoderConfig?.(encoderConfig);
       const MatchingCustomEncoder = customVideoEncoders.find((x) => x.supports(this.encodingConfig.codec, encoderConfig));
       if (MatchingCustomEncoder) {
@@ -8467,7 +8694,7 @@ var VideoEncoderWrapper = class {
         }
         const support = await VideoEncoder.isConfigSupported(encoderConfig);
         if (!support.supported) {
-          throw new Error(`This specific encoder configuration (${encoderConfig.codec}, ${encoderConfig.bitrate} bps, ${encoderConfig.width}x${encoderConfig.height}) is not supported by this browser. Consider using another codec or changing your video parameters.`);
+          throw new Error(`This specific encoder configuration (${encoderConfig.codec}, ${encoderConfig.bitrate} bps, ${encoderConfig.width}x${encoderConfig.height}, hardware acceleration: ${encoderConfig.hardwareAcceleration ?? "no-preference"}) is not supported by this browser. Consider using another codec or changing your video parameters.`);
         }
         this.encoder = new VideoEncoder({
           output: (chunk, meta) => {
@@ -8573,32 +8800,6 @@ var EncodedAudioPacketSource = class extends AudioSource {
     }
     this._ensureValidAdd();
     return this._connectedTrack.output._muxer.addEncodedAudioPacket(this._connectedTrack, packet, meta);
-  }
-};
-var validateAudioEncodingConfig = (config) => {
-  if (!config || typeof config !== "object") {
-    throw new TypeError("Encoding config must be an object.");
-  }
-  if (!AUDIO_CODECS.includes(config.codec)) {
-    throw new TypeError(`Invalid audio codec '${config.codec}'. Must be one of: ${AUDIO_CODECS.join(", ")}.`);
-  }
-  if (config.bitrate === void 0 && (!PCM_AUDIO_CODECS.includes(config.codec) || config.codec === "flac")) {
-    throw new TypeError("config.bitrate must be provided for compressed audio codecs.");
-  }
-  if (config.bitrate !== void 0 && !(config.bitrate instanceof Quality) && (!Number.isInteger(config.bitrate) || config.bitrate <= 0)) {
-    throw new TypeError("config.bitrate, when provided, must be a positive integer or a quality.");
-  }
-  if (config.fullCodecString !== void 0 && typeof config.fullCodecString !== "string") {
-    throw new TypeError("config.fullCodecString, when provided, must be a string.");
-  }
-  if (config.fullCodecString !== void 0 && inferCodecFromCodecString(config.fullCodecString) !== config.codec) {
-    throw new TypeError(`config.fullCodecString, when provided, must be a string that matches the specified codec (${config.codec}).`);
-  }
-  if (config.onEncodedPacket !== void 0 && typeof config.onEncodedPacket !== "function") {
-    throw new TypeError("config.onEncodedChunk, when provided, must be a function.");
-  }
-  if (config.onEncoderConfig !== void 0 && typeof config.onEncoderConfig !== "function") {
-    throw new TypeError("config.onEncoderConfig, when provided, must be a function.");
   }
 };
 var AudioEncoderWrapper = class {
@@ -8720,14 +8921,11 @@ var AudioEncoderWrapper = class {
     }
     return this.ensureEncoderPromise = (async () => {
       const { numberOfChannels, sampleRate } = audioSample;
-      const bitrate = this.encodingConfig.bitrate instanceof Quality ? this.encodingConfig.bitrate._toAudioBitrate(this.encodingConfig.codec) : this.encodingConfig.bitrate;
-      const encoderConfig = {
-        codec: this.encodingConfig.fullCodecString ?? buildAudioCodecString(this.encodingConfig.codec, numberOfChannels, sampleRate),
+      const encoderConfig = buildAudioEncoderConfig({
         numberOfChannels,
         sampleRate,
-        bitrate,
-        ...getAudioEncoderConfigExtension(this.encodingConfig.codec)
-      };
+        ...this.encodingConfig
+      });
       this.encodingConfig.onEncoderConfig?.(encoderConfig);
       const MatchingCustomEncoder = customAudioEncoders.find((x) => x.supports(this.encodingConfig.codec, encoderConfig));
       if (MatchingCustomEncoder) {
@@ -8930,7 +9128,10 @@ var validateBaseTrackMetadata = (metadata) => {
     throw new TypeError("metadata must be an object.");
   }
   if (metadata.languageCode !== void 0 && !isIso639Dash2LanguageCode(metadata.languageCode)) {
-    throw new TypeError("metadata.languageCode must be a three-letter, ISO 639-2/T language code.");
+    throw new TypeError("metadata.languageCode, when provided, must be a three-letter, ISO 639-2/T language code.");
+  }
+  if (metadata.name !== void 0 && typeof metadata.name !== "string") {
+    throw new TypeError("metadata.name, when provided, must be a string.");
   }
 };
 var Output = class {
@@ -9216,6 +9417,9 @@ var IsobmffDemuxer = class extends Demuxer {
         await this.metadataReader.reader.loadRange(this.metadataReader.pos, this.metadataReader.pos + MAX_BOX_HEADER_SIZE);
         const startPos = this.metadataReader.pos;
         const boxInfo = this.metadataReader.readBoxHeader();
+        if (!boxInfo) {
+          break;
+        }
         if (boxInfo.name === "ftyp") {
           const majorBrand = this.metadataReader.readAscii(4);
           this.isQuickTime = majorBrand === "qt  ";
@@ -9235,11 +9439,12 @@ var IsobmffDemuxer = class extends Demuxer {
         this.metadataReader.pos = sourceSize - 4;
         const lastWord = this.metadataReader.readU32();
         const potentialMfraPos = sourceSize - lastWord;
-        if (potentialMfraPos >= 0 && potentialMfraPos < sourceSize) {
-          await this.metadataReader.reader.loadRange(potentialMfraPos, sourceSize);
+        if (potentialMfraPos >= 0 && potentialMfraPos <= sourceSize - MAX_BOX_HEADER_SIZE) {
+          await this.metadataReader.reader.loadRange(potentialMfraPos, potentialMfraPos + 2 ** 16);
           this.metadataReader.pos = potentialMfraPos;
           const boxInfo = this.metadataReader.readBoxHeader();
-          if (boxInfo.name === "mfra") {
+          if (boxInfo && boxInfo.name === "mfra") {
+            await this.metadataReader.reader.loadRange(potentialMfraPos, potentialMfraPos + boxInfo.totalSize);
             this.readContiguousBoxes(boxInfo.contentSize);
           }
         }
@@ -9338,7 +9543,7 @@ var IsobmffDemuxer = class extends Demuxer {
     const startPos = this.metadataReader.pos;
     await this.metadataReader.reader.loadRange(this.metadataReader.pos, this.metadataReader.pos + MAX_BOX_HEADER_SIZE);
     const moofBoxInfo = this.metadataReader.readBoxHeader();
-    assert(moofBoxInfo.name === "moof");
+    assert(moofBoxInfo?.name === "moof");
     const contentStart = this.metadataReader.pos;
     await this.metadataReader.reader.loadRange(contentStart, contentStart + moofBoxInfo.contentSize);
     this.metadataReader.pos = startPos;
@@ -9363,7 +9568,7 @@ var IsobmffDemuxer = class extends Demuxer {
         this.metadataReader.pos = currentFragment.moofOffset + currentFragment.moofSize;
       }
       let nextFragmentIsFirstFragment = this.metadataReader.pos === 0;
-      while (this.metadataReader.pos < startPos) {
+      while (this.metadataReader.pos <= startPos - MIN_BOX_HEADER_SIZE) {
         if (currentFragment?.nextFragment) {
           currentFragment = currentFragment.nextFragment;
           this.metadataReader.pos = currentFragment.moofOffset + currentFragment.moofSize;
@@ -9371,6 +9576,9 @@ var IsobmffDemuxer = class extends Demuxer {
           await this.metadataReader.reader.loadRange(this.metadataReader.pos, this.metadataReader.pos + MAX_BOX_HEADER_SIZE);
           const startPos2 = this.metadataReader.pos;
           const boxInfo = this.metadataReader.readBoxHeader();
+          if (!boxInfo) {
+            break;
+          }
           if (boxInfo.name === "moof") {
             const index3 = binarySearchExact(this.fragments, startPos2, (x) => x.moofOffset);
             let fragment2;
@@ -9406,12 +9614,18 @@ var IsobmffDemuxer = class extends Demuxer {
   readContiguousBoxes(totalSize) {
     const startIndex = this.metadataReader.pos;
     while (this.metadataReader.pos - startIndex <= totalSize - MIN_BOX_HEADER_SIZE) {
-      this.traverseBox();
+      const foundBox = this.traverseBox();
+      if (!foundBox) {
+        break;
+      }
     }
   }
   traverseBox() {
     const startPos = this.metadataReader.pos;
     const boxInfo = this.metadataReader.readBoxHeader();
+    if (!boxInfo) {
+      return false;
+    }
     const boxEndPos = startPos + boxInfo.totalSize;
     switch (boxInfo.name) {
       case "mdia":
@@ -9419,6 +9633,7 @@ var IsobmffDemuxer = class extends Demuxer {
       case "dinf":
       case "mfra":
       case "edts":
+      case "udta":
         {
           this.readContiguousBoxes(boxInfo.contentSize);
         }
@@ -9451,6 +9666,8 @@ var IsobmffDemuxer = class extends Demuxer {
             durationInMovieTimescale: -1,
             durationInMediaTimescale: -1,
             rotation: 0,
+            internalCodecId: null,
+            name: null,
             languageCode: UNDETERMINED_LANGUAGE,
             sampleTableByteOffset: -1,
             sampleTable: null,
@@ -9637,6 +9854,10 @@ var IsobmffDemuxer = class extends Demuxer {
           for (let i = 0; i < entries; i++) {
             const startPos2 = this.metadataReader.pos;
             const sampleBoxInfo = this.metadataReader.readBoxHeader();
+            if (!sampleBoxInfo) {
+              break;
+            }
+            track.internalCodecId = sampleBoxInfo.name;
             const lowercaseBoxName = sampleBoxInfo.name.toLowerCase();
             if (track.info.type === "video") {
               if (lowercaseBoxName === "avc1") {
@@ -9825,7 +10046,7 @@ var IsobmffDemuxer = class extends Demuxer {
           const chromaSubsamplingX = thirdByte >> 3 & 1;
           const chromaSubsamplingY = thirdByte >> 2 & 1;
           const chromaSamplePosition = thirdByte & 3;
-          const bitDepth = profile == 2 && highBitDepth ? twelveBit ? 12 : 10 : highBitDepth ? 10 : 8;
+          const bitDepth = profile === 2 && highBitDepth ? twelveBit ? 12 : 10 : highBitDepth ? 10 : 8;
           track.info.av1CodecInfo = {
             profile,
             level,
@@ -10534,8 +10755,20 @@ var IsobmffDemuxer = class extends Demuxer {
         }
         ;
         break;
+      // These appear in udta:
+      case "\xA9nam":
+      case "name":
+        {
+          if (!this.currentTrack) {
+            break;
+          }
+          this.currentTrack.name = textDecoder.decode(this.metadataReader.readBytes(boxInfo.contentSize));
+        }
+        ;
+        break;
     }
     this.metadataReader.pos = boxEndPos;
+    return true;
   }
 };
 var IsobmffTrackBacking = class {
@@ -10549,6 +10782,12 @@ var IsobmffTrackBacking = class {
   }
   getCodec() {
     throw new Error("Not implemented on base class.");
+  }
+  getInternalCodecId() {
+    return this.internalTrack.internalCodecId;
+  }
+  getName() {
+    return this.internalTrack.name;
   }
   getLanguageCode() {
     return this.internalTrack.languageCode;
@@ -10857,6 +11096,9 @@ var IsobmffTrackBacking = class {
         await metadataReader.reader.loadRange(metadataReader.pos, metadataReader.pos + MAX_BOX_HEADER_SIZE);
         const startPos = metadataReader.pos;
         const boxInfo = metadataReader.readBoxHeader();
+        if (!boxInfo) {
+          break;
+        }
         if (boxInfo.name === "moof") {
           const index = binarySearchExact(demuxer.fragments, startPos, (x) => x.moofOffset);
           let fragment;
@@ -10885,17 +11127,16 @@ var IsobmffTrackBacking = class {
         }
         metadataReader.pos = startPos + boxInfo.totalSize;
       }
-      let result = null;
       const bestFragment = bestFragmentIndex !== -1 ? this.internalTrack.fragments[bestFragmentIndex] : null;
-      if (bestFragment) {
-        result = await this.fetchPacketInFragment(bestFragment, bestSampleIndex, options);
-      }
-      if (!result && lookupEntry && (!bestFragment || bestFragment.moofOffset < lookupEntry.moofOffset)) {
+      if (lookupEntry && (!bestFragment || bestFragment.moofOffset < lookupEntry.moofOffset)) {
         const previousLookupEntry = this.internalTrack.fragmentLookupTable[lookupEntryIndex - 1];
         const newSearchTimestamp = previousLookupEntry?.timestamp ?? -Infinity;
         return this.performFragmentedLookup(getBestMatch, newSearchTimestamp, latestTimestamp, options);
       }
-      return result;
+      if (bestFragment) {
+        return this.fetchPacketInFragment(bestFragment, bestSampleIndex, options);
+      }
+      return null;
     } finally {
       release();
     }
@@ -11075,7 +11316,11 @@ var extractRotationFromMatrix = (matrix) => {
   const scaleX = Math.hypot(m11, m21);
   const cosTheta = m11 / scaleX;
   const sinTheta = m21 / scaleX;
-  return -Math.atan2(sinTheta, cosTheta) * (180 / Math.PI);
+  const result = -Math.atan2(sinTheta, cosTheta) * (180 / Math.PI);
+  if (!Number.isFinite(result)) {
+    return 0;
+  }
+  return result;
 };
 var sampleTableIsEmpty = (sampleTable) => {
   return sampleTable.sampleSizes.length === 0;
@@ -11095,6 +11340,7 @@ var METADATA_ELEMENTS = [
   { id: EBMLId.Tracks, flag: "tracksSeen" },
   { id: EBMLId.Cues, flag: "cuesSeen" }
 ];
+var MAX_RESYNC_LENGTH = 10 * 2 ** 20;
 var MatroskaDemuxer = class extends Demuxer {
   constructor(input) {
     super(input);
@@ -11192,8 +11438,15 @@ var MatroskaDemuxer = class extends Demuxer {
       await this.metadataReader.reader.loadRange(this.metadataReader.pos, this.metadataReader.pos + MAX_HEADER_SIZE);
       const elementStartPos = this.metadataReader.pos;
       const header = this.metadataReader.readElementHeader();
-      if (!header) {
-        break;
+      if (!header || !LEVEL_1_EBML_IDS.includes(header.id)) {
+        this.metadataReader.pos = elementStartPos;
+        const nextPos = await this.metadataReader.resync(LEVEL_1_EBML_IDS, Math.min(this.currentSegment.elementEndPos, this.metadataReader.pos + MAX_RESYNC_LENGTH));
+        if (nextPos) {
+          this.metadataReader.pos = nextPos;
+          continue;
+        } else {
+          break;
+        }
       }
       const { id, size } = header;
       const dataStartPos = this.metadataReader.pos;
@@ -11209,6 +11462,9 @@ var MatroskaDemuxer = class extends Demuxer {
           clusterEncountered = true;
           this.currentSegment.clusterSeekStartPos = elementStartPos;
         }
+      }
+      if (size !== null) {
+        this.metadataReader.pos = dataStartPos + size;
       }
       if (this.currentSegment.infoSeen && this.currentSegment.tracksSeen && this.currentSegment.cuesSeen) {
         break;
@@ -11233,8 +11489,12 @@ var MatroskaDemuxer = class extends Demuxer {
       if (size === null) {
         break;
       }
-      this.metadataReader.pos = dataStartPos + size;
-      if (!clusterEncountered) {
+    }
+    if (!clusterEncountered) {
+      const seekEntry = this.currentSegment.seekEntries.find((entry) => entry.id === EBMLId.Cluster);
+      if (seekEntry) {
+        this.currentSegment.clusterSeekStartPos = segmentDataStart + seekEntry.segmentPosition;
+      } else {
         this.currentSegment.clusterSeekStartPos = this.metadataReader.pos;
       }
     }
@@ -11568,6 +11828,7 @@ var MatroskaDemuxer = class extends Demuxer {
             codecId: null,
             codecPrivate: null,
             defaultDuration: null,
+            name: null,
             languageCode: UNDETERMINED_LANGUAGE,
             info: null
           };
@@ -11729,12 +11990,37 @@ var MatroskaDemuxer = class extends Demuxer {
         }
         ;
         break;
+      case EBMLId.Name:
+        {
+          if (!this.currentTrack)
+            break;
+          this.currentTrack.name = reader.readUnicodeString(size);
+        }
+        ;
+        break;
       case EBMLId.Language:
         {
           if (!this.currentTrack)
             break;
+          if (this.currentTrack.languageCode !== UNDETERMINED_LANGUAGE) {
+            break;
+          }
           this.currentTrack.languageCode = reader.readAsciiString(size);
           if (!isIso639Dash2LanguageCode(this.currentTrack.languageCode)) {
+            this.currentTrack.languageCode = UNDETERMINED_LANGUAGE;
+          }
+        }
+        ;
+        break;
+      case EBMLId.LanguageBCP47:
+        {
+          if (!this.currentTrack)
+            break;
+          const bcp47 = reader.readAsciiString(size);
+          const languageSubtag = bcp47.split("-")[0];
+          if (languageSubtag) {
+            this.currentTrack.languageCode = languageSubtag;
+          } else {
             this.currentTrack.languageCode = UNDETERMINED_LANGUAGE;
           }
         }
@@ -12018,9 +12304,15 @@ var MatroskaTrackBacking = class {
   getCodec() {
     throw new Error("Not implemented on base class.");
   }
+  getInternalCodecId() {
+    return this.internalTrack.codecId;
+  }
   async computeDuration() {
     const lastPacket = await this.getPacket(Infinity, { metadataOnly: true });
     return (lastPacket?.timestamp ?? 0) + (lastPacket?.duration ?? 0);
+  }
+  getName() {
+    return this.internalTrack.name;
   }
   getLanguageCode() {
     return this.internalTrack.languageCode;
@@ -12268,8 +12560,15 @@ var MatroskaTrackBacking = class {
         await metadataReader.reader.loadRange(metadataReader.pos, metadataReader.pos + MAX_HEADER_SIZE);
         const elementStartPos = metadataReader.pos;
         const elementHeader = metadataReader.readElementHeader();
-        if (!elementHeader) {
-          break;
+        if (!elementHeader || !LEVEL_1_EBML_IDS.includes(elementHeader.id)) {
+          metadataReader.pos = elementStartPos;
+          const nextPos = await metadataReader.resync(LEVEL_1_EBML_IDS, Math.min(segment.elementEndPos, metadataReader.pos + MAX_RESYNC_LENGTH));
+          if (nextPos) {
+            metadataReader.pos = nextPos;
+            continue;
+          } else {
+            break;
+          }
         }
         const id = elementHeader.id;
         let size = elementHeader.size;
@@ -12323,17 +12622,16 @@ var MatroskaTrackBacking = class {
         }
         metadataReader.pos = dataStartPos + size;
       }
-      let result = null;
       const bestCluster = bestClusterIndex !== -1 ? this.internalTrack.clusters[bestClusterIndex] : null;
-      if (bestCluster) {
-        result = await this.fetchPacketInCluster(bestCluster, bestBlockIndex, options);
-      }
-      if (!result && cuePoint && (!bestCluster || bestCluster.elementStartPos < cuePoint.clusterPosition)) {
+      if (cuePoint && (!bestCluster || bestCluster.elementStartPos < cuePoint.clusterPosition)) {
         const previousCuePoint = this.internalTrack.cuePoints[cuePointIndex - 1];
         const newSearchTimestamp = previousCuePoint?.time ?? -Infinity;
         return this.performClusterLookup(getBestMatch, newSearchTimestamp, latestTimestamp, options);
       }
-      return result;
+      if (bestCluster) {
+        return this.fetchPacketInCluster(bestCluster, bestBlockIndex, options);
+      }
+      return null;
     } finally {
       release();
     }
@@ -12529,7 +12827,7 @@ var Mp3Demuxer = class extends Demuxer {
     this.firstFrameHeader = null;
     this.loadedSamples = [];
     this.tracks = [];
-    this.loadingMutex = new AsyncMutex();
+    this.readingMutex = new AsyncMutex();
     this.lastLoadedPos = 0;
     this.fileSize = 0;
     this.nextTimestampInSamples = 0;
@@ -12542,32 +12840,25 @@ var Mp3Demuxer = class extends Demuxer {
       while (!this.firstFrameHeader && this.lastLoadedPos < this.fileSize) {
         await this.loadNextChunk();
       }
-      if (!this.firstFrameHeader) {
-        throw new Error("No MP3 frames found.");
-      }
+      assert(this.firstFrameHeader);
       this.tracks = [new InputAudioTrack(new Mp3AudioTrackBacking(this))];
     })();
   }
   /** Loads the next 0.5 MiB of frames. */
   async loadNextChunk() {
-    const release = await this.loadingMutex.acquire();
-    try {
-      assert(this.lastLoadedPos < this.fileSize);
-      const chunkSize = 0.5 * 1024 * 1024;
-      const endPos = Math.min(this.lastLoadedPos + chunkSize, this.fileSize);
-      await this.reader.reader.loadRange(this.lastLoadedPos, endPos);
-      this.lastLoadedPos = endPos;
-      assert(this.lastLoadedPos <= this.fileSize);
-      if (this.reader.pos === 0) {
-        const id3Tag = this.reader.readId3();
-        if (id3Tag) {
-          this.reader.pos += id3Tag.size;
-        }
+    assert(this.lastLoadedPos < this.fileSize);
+    const chunkSize = 0.5 * 1024 * 1024;
+    const endPos = Math.min(this.lastLoadedPos + chunkSize, this.fileSize);
+    await this.reader.reader.loadRange(this.lastLoadedPos, endPos);
+    this.lastLoadedPos = endPos;
+    assert(this.lastLoadedPos <= this.fileSize);
+    if (this.reader.pos === 0) {
+      const id3Tag = this.reader.readId3();
+      if (id3Tag) {
+        this.reader.pos += id3Tag.size;
       }
-      this.parseFramesFromLoadedData();
-    } finally {
-      release();
     }
+    this.parseFramesFromLoadedData();
   }
   parseFramesFromLoadedData() {
     while (true) {
@@ -12635,11 +12926,17 @@ var Mp3AudioTrackBacking = class {
     const lastPacket = await this.getPacket(Infinity, { metadataOnly: true });
     return (lastPacket?.timestamp ?? 0) + (lastPacket?.duration ?? 0);
   }
+  getName() {
+    return null;
+  }
   getLanguageCode() {
     return UNDETERMINED_LANGUAGE;
   }
   getCodec() {
     return "mp3";
+  }
+  getInternalCodecId() {
+    return null;
   }
   getNumberOfChannels() {
     assert(this.demuxer.firstFrameHeader);
@@ -12675,35 +12972,42 @@ var Mp3AudioTrackBacking = class {
     return new EncodedPacket(data, "key", rawSample.timestamp, rawSample.duration, sampleIndex, rawSample.dataSize);
   }
   async getFirstPacket(options) {
-    while (this.demuxer.loadedSamples.length === 0 && this.demuxer.lastLoadedPos < this.demuxer.fileSize) {
-      await this.demuxer.loadNextChunk();
-    }
     return this.getPacketAtIndex(0, options);
   }
   async getNextPacket(packet, options) {
-    const sampleIndex = binarySearchExact(this.demuxer.loadedSamples, packet.timestamp, (x) => x.timestamp);
-    if (sampleIndex === -1) {
-      throw new Error("Packet was not created from this track.");
+    const release = await this.demuxer.readingMutex.acquire();
+    try {
+      const sampleIndex = binarySearchExact(this.demuxer.loadedSamples, packet.timestamp, (x) => x.timestamp);
+      if (sampleIndex === -1) {
+        throw new Error("Packet was not created from this track.");
+      }
+      const nextIndex = sampleIndex + 1;
+      while (nextIndex >= this.demuxer.loadedSamples.length && this.demuxer.lastLoadedPos < this.demuxer.fileSize) {
+        await this.demuxer.loadNextChunk();
+      }
+      return this.getPacketAtIndex(nextIndex, options);
+    } finally {
+      release();
     }
-    const nextIndex = sampleIndex + 1;
-    while (nextIndex >= this.demuxer.loadedSamples.length && this.demuxer.lastLoadedPos < this.demuxer.fileSize) {
-      await this.demuxer.loadNextChunk();
-    }
-    return this.getPacketAtIndex(nextIndex, options);
   }
   async getPacket(timestamp, options) {
-    while (true) {
-      const index = binarySearchLessOrEqual(this.demuxer.loadedSamples, timestamp, (x) => x.timestamp);
-      if (index === -1 && this.demuxer.loadedSamples.length > 0) {
-        return null;
+    const release = await this.demuxer.readingMutex.acquire();
+    try {
+      while (true) {
+        const index = binarySearchLessOrEqual(this.demuxer.loadedSamples, timestamp, (x) => x.timestamp);
+        if (index === -1 && this.demuxer.loadedSamples.length > 0) {
+          return null;
+        }
+        if (this.demuxer.lastLoadedPos === this.demuxer.fileSize) {
+          return this.getPacketAtIndex(index, options);
+        }
+        if (index >= 0 && index + 1 < this.demuxer.loadedSamples.length) {
+          return this.getPacketAtIndex(index, options);
+        }
+        await this.demuxer.loadNextChunk();
       }
-      if (this.demuxer.lastLoadedPos === this.demuxer.fileSize) {
-        return this.getPacketAtIndex(index, options);
-      }
-      if (index >= 0 && index + 1 < this.demuxer.loadedSamples.length) {
-        return this.getPacketAtIndex(index, options);
-      }
-      await this.demuxer.loadNextChunk();
+    } finally {
+      release();
     }
   }
   getKeyPacket(timestamp, options) {
@@ -12972,6 +13276,9 @@ var OggAudioTrackBacking = class {
   getCodec() {
     return this.bitstream.codecInfo.codec;
   }
+  getInternalCodecId() {
+    return null;
+  }
   async getDecoderConfig() {
     assert(this.bitstream.codecInfo.codec);
     return {
@@ -12980,6 +13287,9 @@ var OggAudioTrackBacking = class {
       sampleRate: this.bitstream.sampleRate,
       description: this.bitstream.description ?? void 0
     };
+  }
+  getName() {
+    return null;
   }
   getLanguageCode() {
     return UNDETERMINED_LANGUAGE;
@@ -13306,6 +13616,273 @@ var findPreviousPacketEndPosition = (pageList, startPage, startSegmentIndex) => 
   return { page: previousPage, segmentIndex: previousPage.lacingValues.length - 1 };
 };
 
+// node_modules/mediabunny/dist/modules/src/adts/adts-reader.js
+var MAX_FRAME_HEADER_SIZE = 9;
+var AdtsReader = class {
+  constructor(reader) {
+    this.reader = reader;
+    this.pos = 0;
+  }
+  readBytes(length) {
+    const { view: view2, offset } = this.reader.getViewAndOffset(this.pos, this.pos + length);
+    this.pos += length;
+    return new Uint8Array(view2.buffer, offset, length);
+  }
+  readFrameHeader() {
+    const startPos = this.pos;
+    const bytes2 = this.readBytes(9);
+    const bitstream = new Bitstream(bytes2);
+    const syncword = bitstream.readBits(12);
+    if (syncword !== 4095) {
+      return null;
+    }
+    bitstream.skipBits(1);
+    const layer = bitstream.readBits(2);
+    if (layer !== 0) {
+      return null;
+    }
+    const protectionAbsence = bitstream.readBits(1);
+    const objectType = bitstream.readBits(2) + 1;
+    const samplingFrequencyIndex = bitstream.readBits(4);
+    if (samplingFrequencyIndex === 15) {
+      return null;
+    }
+    bitstream.skipBits(1);
+    const channelConfiguration = bitstream.readBits(3);
+    if (channelConfiguration === 0) {
+      throw new Error("ADTS frames with channel configuration 0 are not supported.");
+    }
+    bitstream.skipBits(1);
+    bitstream.skipBits(1);
+    bitstream.skipBits(1);
+    bitstream.skipBits(1);
+    const frameLength = bitstream.readBits(13);
+    bitstream.skipBits(11);
+    const numberOfAacFrames = bitstream.readBits(2) + 1;
+    if (numberOfAacFrames !== 1) {
+      throw new Error("ADTS frames with more than one AAC frame are not supported.");
+    }
+    let crcCheck = null;
+    if (protectionAbsence === 1) {
+      this.pos -= 2;
+    } else {
+      crcCheck = bitstream.readBits(16);
+    }
+    return {
+      objectType,
+      samplingFrequencyIndex,
+      channelConfiguration,
+      frameLength,
+      numberOfAacFrames,
+      crcCheck,
+      startPos
+    };
+  }
+};
+
+// node_modules/mediabunny/dist/modules/src/adts/adts-demuxer.js
+var SAMPLES_PER_AAC_FRAME = 1024;
+var AdtsDemuxer = class extends Demuxer {
+  constructor(input) {
+    super(input);
+    this.metadataPromise = null;
+    this.firstFrameHeader = null;
+    this.loadedSamples = [];
+    this.tracks = [];
+    this.readingMutex = new AsyncMutex();
+    this.lastLoadedPos = 0;
+    this.fileSize = 0;
+    this.nextTimestampInSamples = 0;
+    this.reader = new AdtsReader(input._mainReader);
+  }
+  async readMetadata() {
+    return this.metadataPromise ??= (async () => {
+      this.fileSize = await this.input.source.getSize();
+      await this.loadNextChunk();
+      assert(this.firstFrameHeader);
+      this.tracks = [new InputAudioTrack(new AdtsAudioTrackBacking(this))];
+    })();
+  }
+  async loadNextChunk() {
+    assert(this.lastLoadedPos < this.fileSize);
+    const chunkSize = 0.5 * 1024 * 1024;
+    const endPos = Math.min(this.lastLoadedPos + chunkSize, this.fileSize);
+    await this.reader.reader.loadRange(this.lastLoadedPos, endPos);
+    this.lastLoadedPos = endPos;
+    assert(this.lastLoadedPos <= this.fileSize);
+    this.parseFramesFromLoadedData();
+  }
+  parseFramesFromLoadedData() {
+    while (this.reader.pos <= this.fileSize - MAX_FRAME_HEADER_SIZE) {
+      const startPos = this.reader.pos;
+      const header = this.reader.readFrameHeader();
+      if (!header) {
+        break;
+      }
+      if (startPos + header.frameLength > this.lastLoadedPos) {
+        this.reader.pos = startPos;
+        this.lastLoadedPos = startPos;
+        break;
+      }
+      if (!this.firstFrameHeader) {
+        this.firstFrameHeader = header;
+      }
+      const sampleRate = aacFrequencyTable[header.samplingFrequencyIndex];
+      assert(sampleRate !== void 0);
+      const sampleDuration = SAMPLES_PER_AAC_FRAME / sampleRate;
+      const headerSize = header.crcCheck ? MAX_FRAME_HEADER_SIZE : MAX_FRAME_HEADER_SIZE - 2;
+      const sample = {
+        timestamp: this.nextTimestampInSamples / sampleRate,
+        duration: sampleDuration,
+        dataStart: startPos + headerSize,
+        dataSize: header.frameLength - headerSize
+      };
+      this.loadedSamples.push(sample);
+      this.nextTimestampInSamples += SAMPLES_PER_AAC_FRAME;
+      this.reader.pos = startPos + header.frameLength;
+    }
+  }
+  async getMimeType() {
+    return "audio/aac";
+  }
+  async getTracks() {
+    await this.readMetadata();
+    return this.tracks;
+  }
+  async computeDuration() {
+    await this.readMetadata();
+    const track = this.tracks[0];
+    assert(track);
+    return track.computeDuration();
+  }
+};
+var AdtsAudioTrackBacking = class {
+  constructor(demuxer) {
+    this.demuxer = demuxer;
+  }
+  getId() {
+    return 1;
+  }
+  async getFirstTimestamp() {
+    return 0;
+  }
+  getTimeResolution() {
+    const sampleRate = this.getSampleRate();
+    return sampleRate / SAMPLES_PER_AAC_FRAME;
+  }
+  async computeDuration() {
+    const lastPacket = await this.getPacket(Infinity, { metadataOnly: true });
+    return (lastPacket?.timestamp ?? 0) + (lastPacket?.duration ?? 0);
+  }
+  getName() {
+    return null;
+  }
+  getLanguageCode() {
+    return UNDETERMINED_LANGUAGE;
+  }
+  getCodec() {
+    return "aac";
+  }
+  getInternalCodecId() {
+    assert(this.demuxer.firstFrameHeader);
+    return this.demuxer.firstFrameHeader.objectType;
+  }
+  getNumberOfChannels() {
+    assert(this.demuxer.firstFrameHeader);
+    const numberOfChannels = aacChannelMap[this.demuxer.firstFrameHeader.channelConfiguration];
+    assert(numberOfChannels !== void 0);
+    return numberOfChannels;
+  }
+  getSampleRate() {
+    assert(this.demuxer.firstFrameHeader);
+    const sampleRate = aacFrequencyTable[this.demuxer.firstFrameHeader.samplingFrequencyIndex];
+    assert(sampleRate !== void 0);
+    return sampleRate;
+  }
+  async getDecoderConfig() {
+    assert(this.demuxer.firstFrameHeader);
+    const bytes2 = new Uint8Array(3);
+    const bitstream = new Bitstream(bytes2);
+    const { objectType, samplingFrequencyIndex, channelConfiguration } = this.demuxer.firstFrameHeader;
+    if (objectType > 31) {
+      bitstream.writeBits(5, 31);
+      bitstream.writeBits(6, objectType - 32);
+    } else {
+      bitstream.writeBits(5, objectType);
+    }
+    bitstream.writeBits(4, samplingFrequencyIndex);
+    bitstream.writeBits(4, channelConfiguration);
+    return {
+      codec: `mp4a.40.${this.demuxer.firstFrameHeader.objectType}`,
+      numberOfChannels: this.getNumberOfChannels(),
+      sampleRate: this.getSampleRate(),
+      description: bytes2.subarray(0, Math.ceil((bitstream.pos - 1) / 8))
+    };
+  }
+  getPacketAtIndex(sampleIndex, options) {
+    if (sampleIndex === -1) {
+      return null;
+    }
+    const rawSample = this.demuxer.loadedSamples[sampleIndex];
+    if (!rawSample) {
+      return null;
+    }
+    let data;
+    if (options.metadataOnly) {
+      data = PLACEHOLDER_DATA;
+    } else {
+      this.demuxer.reader.pos = rawSample.dataStart;
+      data = this.demuxer.reader.readBytes(rawSample.dataSize);
+    }
+    return new EncodedPacket(data, "key", rawSample.timestamp, rawSample.duration, sampleIndex, rawSample.dataSize);
+  }
+  async getFirstPacket(options) {
+    return this.getPacketAtIndex(0, options);
+  }
+  async getNextPacket(packet, options) {
+    const release = await this.demuxer.readingMutex.acquire();
+    try {
+      const sampleIndex = binarySearchExact(this.demuxer.loadedSamples, packet.timestamp, (x) => x.timestamp);
+      if (sampleIndex === -1) {
+        throw new Error("Packet was not created from this track.");
+      }
+      const nextIndex = sampleIndex + 1;
+      while (nextIndex >= this.demuxer.loadedSamples.length && this.demuxer.lastLoadedPos < this.demuxer.fileSize) {
+        await this.demuxer.loadNextChunk();
+      }
+      return this.getPacketAtIndex(nextIndex, options);
+    } finally {
+      release();
+    }
+  }
+  async getPacket(timestamp, options) {
+    const release = await this.demuxer.readingMutex.acquire();
+    try {
+      while (true) {
+        const index = binarySearchLessOrEqual(this.demuxer.loadedSamples, timestamp, (x) => x.timestamp);
+        if (index === -1 && this.demuxer.loadedSamples.length > 0) {
+          return null;
+        }
+        if (this.demuxer.lastLoadedPos === this.demuxer.fileSize) {
+          return this.getPacketAtIndex(index, options);
+        }
+        if (index >= 0 && index + 1 < this.demuxer.loadedSamples.length) {
+          return this.getPacketAtIndex(index, options);
+        }
+        await this.demuxer.loadNextChunk();
+      }
+    } finally {
+      release();
+    }
+  }
+  getKeyPacket(timestamp, options) {
+    return this.getPacket(timestamp, options);
+  }
+  getNextKeyPacket(packet, options) {
+    return this.getNextPacket(packet, options);
+  }
+};
+
 // node_modules/mediabunny/dist/modules/src/input-format.js
 var InputFormat = class {
 };
@@ -13552,6 +14129,40 @@ var OggInputFormat = class extends InputFormat {
     return "application/ogg";
   }
 };
+var AdtsInputFormat = class extends InputFormat {
+  /** @internal */
+  async _canReadInput(input) {
+    const sourceSize = await input._mainReader.source.getSize();
+    if (sourceSize < MAX_FRAME_HEADER_SIZE) {
+      return false;
+    }
+    const adtsReader = new AdtsReader(input._mainReader);
+    const firstHeader = adtsReader.readFrameHeader();
+    if (!firstHeader) {
+      return false;
+    }
+    if (sourceSize < firstHeader.frameLength + MAX_FRAME_HEADER_SIZE) {
+      return false;
+    }
+    adtsReader.pos = firstHeader.frameLength;
+    await adtsReader.reader.loadRange(adtsReader.pos, adtsReader.pos + MAX_FRAME_HEADER_SIZE);
+    const secondHeader = adtsReader.readFrameHeader();
+    if (!secondHeader) {
+      return false;
+    }
+    return firstHeader.objectType === secondHeader.objectType && firstHeader.samplingFrequencyIndex === secondHeader.samplingFrequencyIndex && firstHeader.channelConfiguration === secondHeader.channelConfiguration;
+  }
+  /** @internal */
+  _createDemuxer(input) {
+    return new AdtsDemuxer(input);
+  }
+  get name() {
+    return "ADTS";
+  }
+  get mimeType() {
+    return "audio/aac";
+  }
+};
 var MP4 = new Mp4InputFormat();
 var QTFF = new QuickTimeInputFormat();
 var MATROSKA = new MatroskaInputFormat();
@@ -13559,6 +14170,7 @@ var WEBM = new WebMInputFormat();
 var MP3 = new Mp3InputFormat();
 var WAVE = new WaveInputFormat();
 var OGG = new OggInputFormat();
+var ADTS = new AdtsInputFormat();
 
 // node_modules/mediabunny/dist/modules/src/input.js
 var Input = class {
@@ -13959,6 +14571,7 @@ var Conversion = class _Conversion {
       const encodingConfig = {
         codec: encodableCodec,
         bitrate,
+        sizeChangeBehavior: trackOptions.fit ?? "passThrough",
         onEncodedPacket: (sample) => this._reportProgress(track.id, sample.timestamp + sample.duration)
       };
       const source = new VideoSampleSource(encodingConfig);
@@ -14098,7 +14711,9 @@ var Conversion = class _Conversion {
     }
     this.output.addVideoTrack(videoSource, {
       frameRate: trackOptions.frameRate,
-      languageCode: track.languageCode,
+      // TEMP: This condition can be removed when all demuxers properly homogenize to BCP47 in v2
+      languageCode: isIso639Dash2LanguageCode(track.languageCode) ? track.languageCode : void 0,
+      name: track.name ?? void 0,
       rotation: needsRerender ? 0 : totalRotation
       // Rerendering will bake the rotation into the output
     });
@@ -14216,7 +14831,9 @@ var Conversion = class _Conversion {
       }
     }
     this.output.addAudioTrack(audioSource, {
-      languageCode: track.languageCode
+      // TEMP: This condition can be removed when all demuxers properly homogenize to BCP47 in v2
+      languageCode: isIso639Dash2LanguageCode(track.languageCode) ? track.languageCode : void 0,
+      name: track.name ?? void 0
     });
     this._addedCounts.audio++;
     this._totalTrackCount++;
@@ -14574,17 +15191,14 @@ var ProgressDisplay = class {
 };
 
 // shared/api/toast.ts
-function success(message, showName = true) {
-  if (showName) BdApi.UI.showToast(`${pluginName}: ${message}`, { type: "success" });
-  else BdApi.UI.showToast(message, { type: "success" });
+function success(message) {
+  BdApi.UI.showToast(message, { type: "success" });
 }
-function warning(message, showName = true) {
-  if (showName) BdApi.UI.showToast(`${pluginName}: ${message}`, { type: "warning" });
-  else BdApi.UI.showToast(message, { type: "warning" });
+function warning(message) {
+  BdApi.UI.showToast(message, { type: "warning" });
 }
-function error(message, showName = true) {
-  if (showName) BdApi.UI.showToast(`${pluginName}: ${message}`, { type: "error" });
-  else BdApi.UI.showToast(message, { type: "error" });
+function error(message) {
+  BdApi.UI.showToast(message, { type: "error" });
 }
 
 // plugins/VideoCompressor/src/compressVideo.ts
@@ -14649,17 +15263,17 @@ async function renderVideo(file, maxSize, values, attach2) {
     let size = `${(output.target.buffer.byteLength / 1024 / 1024).toFixed(2)} MB`;
     Api.Logger.info("Final size:", size);
     if (output.target.buffer.byteLength > maxSize) {
-      warning(`Compressed video is still too large (${size})`, false);
+      warning(`Compressed video is still too large (${size})`);
       showPopup(file, maxSize, attach2, values);
       return;
     }
-    success(`Video compressed successfully (now ${size})`, false);
+    success(`Video compressed successfully (now ${size})`);
     const newName = file.name.slice(0, file.name.lastIndexOf(".")) + `-compressed.mp4`;
     const newFile = new File([output.target.buffer], newName);
     attach2(newFile);
   } catch (err) {
     Api.Logger.error("Error compressing video", err);
-    error("An error occured while compressing the video.", false);
+    error("An error occured while compressing the video.");
   } finally {
     progress.close();
     next();
@@ -14688,7 +15302,11 @@ onStop(() => {
 });
 
 // plugins/VideoCompressor/src/styles.css
-addStyle(`.vc-options .estimate {
+addStyle(`.vc-options {
+  color: white;
+}
+
+.vc-options .estimate {
   border-bottom: 1px solid #ccc;
   margin-bottom: 15px;
 }
@@ -14710,6 +15328,7 @@ addStyle(`.vc-options .estimate {
 }`);
 
 // plugins/VideoCompressor/src/index.ts
+console.log(attachFiles);
 var attach = attachFiles[0][attachFiles[1]];
 before(...attachFiles, ({ args }) => {
   const maxSize = premiumPermissions.getUserMaxFileSize();
@@ -14729,358 +15348,5 @@ before(...attachFiles, ({ args }) => {
   }
   args[0] = files;
 });
-/*! Bundled license information:
-
-mediabunny/dist/modules/src/misc.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/custom-coder.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/codec.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/subtitles.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/codec-data.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/isobmff/isobmff-boxes.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/muxer.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/writer.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/target.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/isobmff/isobmff-misc.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/isobmff/isobmff-reader.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/isobmff/isobmff-muxer.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/matroska/ebml.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/matroska/matroska-misc.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/shared/mp3-misc.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/ogg/ogg-misc.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/ogg/ogg-reader.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/demuxer.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/packet.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/pcm.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/sample.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/media-sink.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/input-track.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/reader.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/wave/riff-reader.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/wave/wave-demuxer.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/output-format.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/media-source.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/output.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/source.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/isobmff/isobmff-demuxer.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/matroska/matroska-demuxer.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/mp3/mp3-reader.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/mp3/mp3-demuxer.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/ogg/ogg-demuxer.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/input-format.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/input.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/conversion.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-
-mediabunny/dist/modules/src/index.js:
-  (*!
-   * Copyright (c) 2025-present, Vanilagy and contributors
-   *
-   * This Source Code Form is subject to the terms of the Mozilla Public
-   * License, v. 2.0. If a copy of the MPL was not distributed with this
-   * file, You can obtain one at https://mozilla.org/MPL/2.0/.
-   *)
-*/
   }
 }

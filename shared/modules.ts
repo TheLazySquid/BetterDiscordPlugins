@@ -47,7 +47,7 @@ export const modules: Record<keyof Modules, ModuleDefinition> = {
     },
     attachFiles: {
         id: 127654,
-        getExport: `(e) => !e.name`,
+        getExport: `(e) => e.toString().includes("filesMetadata")`,
         getWithKey: true,
         filter: `(m) => Object.values(m).some(Filters.byStrings("filesMetadata:", "requireConfirm:"))`
     },
