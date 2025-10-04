@@ -23,7 +23,8 @@ export function modulesPlugin(ids: (keyof Modules)[]): Plugin {
 function createModulesFile(ids: (keyof Modules)[]): string {
     if(ids.length === 0) return "";
 
-    let contents = `import { demangle, findExport, findExportWithKey, fallbackMissing } from "$shared/util/modules";\n\n`
+    let contents = `import { demangle, findExport, findExportWithKey, fallbackMissing } from "$shared/util/modules";\n`
+        + "const Filters = BdApi.Webpack.Filters;\n\n";
     
     // Get all the modules
     contents += `const modules = BdApi.Webpack.getBulk(\n`;

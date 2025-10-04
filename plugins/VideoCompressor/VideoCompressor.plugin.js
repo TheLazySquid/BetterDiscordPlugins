@@ -78,6 +78,7 @@ function fallbackMissing(modules2, filters) {
 }
 
 // modules-ns:$shared/modules
+var Filters = BdApi.Webpack.Filters;
 var modules = BdApi.Webpack.getBulk(
   { filter: (_, __, id) => id == 127654 },
   { filter: (_, __, id) => id == 74538 },
