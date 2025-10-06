@@ -8,6 +8,8 @@ before(chatbox?.type, "render", ({ args }) => onSubmit = args[0].onSubmit);
 
 export async function uploadFile(file: File) {
 	const channelId = channelStore.getCurrentlySelectedChannelId();
+	if(!channelId) return;
+	
 	const upload = new CloudUploader({ file, platform: 1 }, channelId);
 
 	if(!onSubmit) {

@@ -1,1 +1,3 @@
-export const channelStore: any = BdApi.Webpack.getStore("SelectedChannelStore");
+import { SelectedChannelStore } from "@vencord/discord-types";
+
+export const channelStore = BdApi.Webpack.getStore<SelectedChannelStore>("SelectedChannelStore");

@@ -1,3 +1,5 @@
+import type { CloudUpload } from "@vencord/discord-types";
+
 export interface ModuleDefinition {
     id: number;
     getExport?: string | true;
@@ -46,7 +48,7 @@ interface AttachmentSystem {
 
 export interface Modules {
     fileModule: any;
-    CloudUploader: any;
+    CloudUploader: typeof CloudUpload;
     expressionModule: ReactElementModule;
     buttonsModule: ReactElementModule;
     uploadClasses: Record<string, string>;

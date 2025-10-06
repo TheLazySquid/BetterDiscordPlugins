@@ -7,6 +7,7 @@
     "@types/bun": "latest",
     "@types/gif.js": "^0.2.5",
     "@types/react": "19.0.0",
+    "@vencord/discord-types": "^1.0.0",
     "arraybuffer-isbinary": "^1.0.2",
     "esbuild": "^0.24.2",
     "events": "^3.3.0",
