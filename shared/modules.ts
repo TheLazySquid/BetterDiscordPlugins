@@ -25,6 +25,10 @@ export const modules: Record<keyof Modules, ModuleDefinition> = {
         id: 161655,
         filter: `Filters.byKeys("uploadArea", "chat")`
     },
+    chatClasses: {
+        id: 564355,
+        filter: `Filters.byKeys("buttons", "textAreaSlate")`
+    },
     gifDisplay: {
         id: 215016,
         getExport: `(e) => e.prototype?.renderGIF`,
@@ -118,6 +122,7 @@ export let CloudUploader: Modules['CloudUploader'];
 export let expressionModule: Modules['expressionModule'];
 export let buttonsModule: Modules['buttonsModule'];
 export let uploadClasses: Modules['uploadClasses'];
+export let chatClasses: Modules['chatClasses'];
 export let gifDisplay: Modules['gifDisplay'];
 export let premiumPermissions: Modules['premiumPermissions'];
 export let highlightModule: Modules['highlightModule'];

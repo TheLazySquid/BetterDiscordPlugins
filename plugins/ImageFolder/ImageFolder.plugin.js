@@ -1,7 +1,7 @@
 /**
  * @name ImageFolder
  * @description A BetterDiscord plugin that allows you to save and send images from a folder for easy access
- * @version 1.4.4
+ * @version 1.4.5
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -142,7 +142,8 @@ var modules = BdApi.Webpack.getBulk(
   { filter: (_, __, id) => id == 258696 },
   { filter: (_, __, id) => id == 805680 },
   { filter: (_, __, id) => id == 28546 },
-  { filter: (_, __, id) => id == 161655 }
+  { filter: (_, __, id) => id == 161655 },
+  { filter: (_, __, id) => id == 564355 }
 );
 fallbackMissing(modules, [
   { filter: (m) => Object.values(m).some((e) => {
@@ -154,9 +155,10 @@ fallbackMissing(modules, [
   { filter: (m) => m.type?.toString?.().includes(".isSubmitButtonEnabled") },
   { filter: (m) => m.type?.toString?.().includes("onSelectGIF") },
   { filter: Filters.bySource("lastActiveView") },
-  { filter: Filters.byKeys("uploadArea", "chat") }
+  { filter: Filters.byKeys("uploadArea", "chat") },
+  { filter: Filters.byKeys("buttons", "textAreaSlate") }
 ]);
-var [chatboxModule, CloudUploaderModule, buttonsModuleModule, expressionModuleModule, expressionPickerMangled, uploadClasses] = modules;
+var [chatboxModule, CloudUploaderModule, buttonsModuleModule, expressionModuleModule, expressionPickerMangled, uploadClasses, chatClasses] = modules;
 var chatbox = findExport(chatboxModule, (e) => e.type);
 var CloudUploader = findExport(CloudUploaderModule, (e) => e.fromJson);
 var buttonsModule = findExport(buttonsModuleModule, true);
@@ -237,6 +239,7 @@ var onSubmit = null;
 before(chatbox?.type, "render", ({ args }) => onSubmit = args[0].onSubmit);
 async function uploadFile(file) {
   const channelId = channelStore.getCurrentlySelectedChannelId();
+  if (!channelId) return;
   const upload = new CloudUploader({ file, platform: 1 }, channelId);
   if (!onSubmit) {
     error("Failed to send file, try switching channels");
@@ -1211,10 +1214,18 @@ function patchContextMenu(type, callback) {
   onStop(() => BdApi.ContextMenu.unpatch(type, callback));
 }
 
-// shared/util/findInTree.ts
+// shared/util/react.ts
 function findReactChild(element, filter) {
   if (!element) return null;
   return BdApi.Utils.findInTree(element, filter, { walkable: ["props", "children"] });
+}
+function forceUpdate(selector) {
+  const target = document.querySelector(selector)?.parentElement;
+  if (!target) return;
+  const instance = BdApi.ReactUtils.getOwnerInstance(target);
+  if (!instance) return;
+  const unpatch = Api.Patcher.instead(instance, "render", () => unpatch());
+  instance.forceUpdate(() => instance.forceUpdate());
 }
 
 // plugins/ImageFolder/src/index.ts
@@ -1234,6 +1245,9 @@ after(buttonsModule, "type", ({ returnVal }) => {
   });
   returnVal.props.children.splice(gifIndex, 0, div);
   return returnVal;
+});
+onStart(() => {
+  forceUpdate("." + chatClasses.inner);
 });
 after(expressionModule, "type", ({ returnVal }) => {
   if (!returnVal) return returnVal;

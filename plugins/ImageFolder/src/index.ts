@@ -1,6 +1,6 @@
 import imagePlusOutline from '$assets/image-plus-outline.svg';
 import { after, tempAfter } from '$shared/api/patching';
-import { buttonsModule, expressionModule, expressionPicker, uploadClasses } from "$shared/modules";
+import { buttonsModule, chatClasses, expressionModule, expressionPicker, uploadClasses } from "$shared/modules";
 import View from "./ui/view";
 import { addFont } from '$shared/api/fonts';
 import futura from "$assets/Futura Condensed Extra Bold.otf";
@@ -9,7 +9,7 @@ import { settings } from './settings';
 import { patchContextMenu } from '$shared/api/contextmenu';
 import Manager, { types } from './manager';
 import { onStart, onStop } from '$shared/bd';
-import { findReactChild } from '$shared/util/findInTree';
+import { findReactChild, forceUpdate } from '$shared/util/react';
 
 addFont(futura, "futuraBoldCondensed");
 
@@ -34,6 +34,11 @@ after(buttonsModule, "type", ({ returnVal }) => {
     returnVal.props.children.splice(gifIndex, 0, div);
     
     return returnVal;
+});
+
+// Add the button on startup
+onStart(() => {
+    forceUpdate("." + chatClasses.inner);
 });
 
 // Create the image folder tab in the expression picker

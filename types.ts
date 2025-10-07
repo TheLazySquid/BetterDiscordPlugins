@@ -52,6 +52,7 @@ export interface Modules {
     expressionModule: ReactElementModule;
     buttonsModule: ReactElementModule;
     uploadClasses: Record<string, string>;
+    chatClasses: Record<string, string>;
     gifDisplay: any;
     premiumPermissions: any;
     highlightModule: any;
