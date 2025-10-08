@@ -14,8 +14,8 @@ import { findReactChild, forceUpdate } from '$shared/util/react';
 addFont(futura, "futuraBoldCondensed");
 
 // Create the button to open the image folder
-after(buttonsModule, "type", ({ returnVal }) => {
-    if(!returnVal || !settings.showButton) return returnVal;
+after(buttonsModule, "type", ({ args, returnVal }) => {
+    if(!returnVal || !settings.showButton || args[0].disabled) return returnVal;
     let gifIndex = returnVal.props.children.findIndex((child: any) => child.key == 'gif');
     if(gifIndex === -1) return;
     
