@@ -1,7 +1,7 @@
 /**
  * @name ZipPreview
  * @description Lets you see inside zips and preview/download files without ever downloading/extracting the zip
- * @version 0.5.0
+ * @version 0.5.1
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -17,35 +17,18 @@ var pluginName = "ZipPreview";
 // shared/bd.ts
 var Api = new BdApi(pluginName);
 var createCallbackHandler = (callbackName) => {
-  const fullName = callbackName + "Callbacks";
-  plugin[fullName] = [];
+  let callbacks = [];
   plugin[callbackName] = () => {
-    for (let i = 0; i < plugin[fullName].length; i++) {
-      plugin[fullName][i].callback();
-    }
-  };
-  return (callback, once, id) => {
-    let object = { callback };
-    const delCallback = () => {
-      plugin[fullName].splice(plugin[fullName].indexOf(object), 1);
-    };
-    if (once === true) {
-      object.callback = () => {
-        callback();
-        delCallback();
-      };
-    }
-    if (id) {
-      object.id = id;
-      for (let i = 0; i < plugin[fullName].length; i++) {
-        if (plugin[fullName][i].id === id) {
-          plugin[fullName][i] = object;
-          return delCallback;
-        }
+    for (let i = 0; i < callbacks.length; i++) {
+      callbacks[i].callback();
+      if (callbacks[i].once) {
+        callbacks.splice(i, 1);
+        i--;
       }
     }
-    plugin[fullName].push(object);
-    return delCallback;
+  };
+  return (callback, once) => {
+    callbacks.push({ callback, once });
   };
 };
 var onStart = createCallbackHandler("start");
@@ -72,7 +55,7 @@ onStop(() => {
   Api.Patcher.unpatchAll();
 });
 
-// shared/util/demangle.ts
+// shared/util/modules.ts
 function demangle(module2, demangler) {
   let returned = {};
   let values = Object.values(module2);
@@ -86,15 +69,44 @@ function demangle(module2, demangler) {
   }
   return returned;
 }
+function findExport(module2, filter) {
+  for (let value of Object.values(module2)) {
+    if (filter === true || filter(value)) return value;
+  }
+}
+function fallbackMissing(modules2, filters) {
+  let missingIndexes = [];
+  let queries = [];
+  for (let i = 0; i < modules2.length; i++) {
+    if (modules2[i]) continue;
+    missingIndexes.push(i);
+    queries.push(filters[i]);
+  }
+  if (missingIndexes.length === 0) return;
+  Api.Logger.warn("Some modules not found by id:", missingIndexes.join(", "));
+  const found = BdApi.Webpack.getBulk(...queries);
+  for (let i = 0; i < missingIndexes.length; i++) {
+    modules2[missingIndexes[i]] = found[i];
+    if (!found[i]) Api.Logger.warn("Fallback filter failed for module", missingIndexes[i]);
+  }
+}
 
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var [fileModule, highlightModule, ModalMangled, ModalSystemMangled] = BdApi.Webpack.getBulk(
+var modules = BdApi.Webpack.getBulk(
+  { filter: (_, __, id) => id == 40330 },
+  { filter: (_, __, id) => id == 364964 },
+  { filter: (_, __, id) => id == 466377 },
+  { filter: (_, __, id) => id == 952265 }
+);
+fallbackMissing(modules, [
   { filter: (m) => m.Z?.toString().includes("filenameLinkWrapper") },
   { filter: Filters.byKeys("highlight", "hasLanguage") },
   { filter: Filters.bySource(".MODAL_ROOT_LEGACY,properties") },
   { filter: Filters.bySource(".modalKey?") }
-);
+]);
+var [fileModule, highlightModuleModule, ModalMangled, ModalSystemMangled] = modules;
+var highlightModule = findExport(highlightModuleModule, true);
 var Modal = demangle(ModalMangled, {
   Root: Filters.byStrings(".ImpressionNames.MODAL_ROOT_LEGACY"),
   Content: Filters.byStrings("scrollerRef", "scrollbarType"),
@@ -1323,15 +1335,12 @@ var content_copy_default = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0
 var React = BdApi.React;
 function FilePreview({ name, type: startType, blob, buff, onClose }) {
   const [type, setType] = React.useState(startType);
-  const url = URL.createObjectURL(blob);
-  function close() {
-    URL.revokeObjectURL(url);
-    onClose();
-  }
+  const url = React.useRef(URL.createObjectURL(blob));
+  React.useEffect(() => () => URL.revokeObjectURL(url.current), []);
   function downloadFile() {
     let a = document.createElement("a");
     document.body.appendChild(a);
-    a.href = url;
+    a.href = url.current;
     a.download = name;
     a.click();
     document.body.removeChild(a);
@@ -1352,7 +1361,7 @@ function FilePreview({ name, type: startType, blob, buff, onClose }) {
     "div",
     {
       className: "zp-preview-close",
-      onClick: close,
+      onClick: onClose,
       dangerouslySetInnerHTML: { __html: close_default }
     }
   )), /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview-content-wrap" }, type == "text" || type == "image" ? /* @__PURE__ */ BdApi.React.createElement(
@@ -1362,7 +1371,7 @@ function FilePreview({ name, type: startType, blob, buff, onClose }) {
       onClick: copyFile,
       dangerouslySetInnerHTML: { __html: content_copy_default }
     }
-  ) : null, /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview-content" }, type == "image" ? /* @__PURE__ */ BdApi.React.createElement("img", { src: url }) : null, type == "video" ? /* @__PURE__ */ BdApi.React.createElement("video", { autoPlay: true, controls: true, src: url }) : null, type == "audio" ? /* @__PURE__ */ BdApi.React.createElement("audio", { autoPlay: true, controls: true, src: url }) : null, type == "text" ? hasCode ? /* @__PURE__ */ BdApi.React.createElement("pre", { dangerouslySetInnerHTML: {
+  ) : null, /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview-content" }, type == "image" ? /* @__PURE__ */ BdApi.React.createElement("img", { src: url.current }) : null, type == "video" ? /* @__PURE__ */ BdApi.React.createElement("video", { controls: true, src: url.current }) : null, type == "audio" ? /* @__PURE__ */ BdApi.React.createElement("audio", { controls: true, src: url.current }) : null, type == "text" ? hasCode ? /* @__PURE__ */ BdApi.React.createElement("pre", { dangerouslySetInnerHTML: {
     __html: highlightModule.highlight(ext, new TextDecoder().decode(buff), true).value
   } }) : /* @__PURE__ */ BdApi.React.createElement("pre", null, new TextDecoder().decode(buff)) : null, type == "binary" ? /* @__PURE__ */ BdApi.React.createElement("div", null, "Can't preview this file :(", /* @__PURE__ */ BdApi.React.createElement("button", { className: "zp-preview-override", onClick: () => setType("text") }, "Do it anyways")) : null)), /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview-footer" }, type == "text" || type == "image" ? /* @__PURE__ */ BdApi.React.createElement(
     "button",
@@ -1381,7 +1390,7 @@ function FilePreview({ name, type: startType, blob, buff, onClose }) {
   ), /* @__PURE__ */ BdApi.React.createElement(
     "button",
     {
-      onClick: close,
+      onClick: onClose,
       className: "bd-button bd-button-filled bd-button-color-brand bd-button-medium"
     },
     "Close"
