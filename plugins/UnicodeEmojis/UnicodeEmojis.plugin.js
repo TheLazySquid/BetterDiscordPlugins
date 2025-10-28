@@ -1,11 +1,12 @@
 /**
  * @name UnicodeEmojis
  * @description Replaces discord emojis that you send with their unicode equivalent
- * @version 1.1.2
+ * @version 1.1.3
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
  * @source https://github.com/TheLazySquid/BetterDiscordPlugins/tree/main/plugins/UnicodeEmojis/UnicodeEmojis.plugin.js
+ * @invite https://discord.gg/fKdAaFYbD5
  */
 module.exports = class {
   constructor() {
@@ -17,35 +18,18 @@ var pluginName = "UnicodeEmojis";
 // shared/bd.ts
 var Api = new BdApi(pluginName);
 var createCallbackHandler = (callbackName) => {
-  const fullName = callbackName + "Callbacks";
-  plugin[fullName] = [];
+  let callbacks = [];
   plugin[callbackName] = () => {
-    for (let i = 0; i < plugin[fullName].length; i++) {
-      plugin[fullName][i].callback();
-    }
-  };
-  return (callback, once, id) => {
-    let object = { callback };
-    const delCallback = () => {
-      plugin[fullName].splice(plugin[fullName].indexOf(object), 1);
-    };
-    if (once === true) {
-      object.callback = () => {
-        callback();
-        delCallback();
-      };
-    }
-    if (id) {
-      object.id = id;
-      for (let i = 0; i < plugin[fullName].length; i++) {
-        if (plugin[fullName][i].id === id) {
-          plugin[fullName][i] = object;
-          return delCallback;
-        }
+    for (let i = 0; i < callbacks.length; i++) {
+      callbacks[i].callback();
+      if (callbacks[i].once) {
+        callbacks.splice(i, 1);
+        i--;
       }
     }
-    plugin[fullName].push(object);
-    return delCallback;
+  };
+  return (callback, once) => {
+    callbacks.push({ callback, once });
   };
 };
 var onStart = createCallbackHandler("start");
@@ -72,11 +56,33 @@ onStop(() => {
   Api.Patcher.unpatchAll();
 });
 
+// shared/util/modules.ts
+function fallbackMissing(modules2, filters) {
+  let missingIndexes = [];
+  let queries = [];
+  for (let i = 0; i < modules2.length; i++) {
+    if (modules2[i]) continue;
+    missingIndexes.push(i);
+    queries.push(filters[i]);
+  }
+  if (missingIndexes.length === 0) return;
+  Api.Logger.warn("Some modules not found by id:", missingIndexes.join(", "));
+  const found = BdApi.Webpack.getBulk(...queries);
+  for (let i = 0; i < missingIndexes.length; i++) {
+    modules2[missingIndexes[i]] = found[i];
+    if (!found[i]) Api.Logger.warn("Fallback filter failed for module", missingIndexes[i]);
+  }
+}
+
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var createSlate = BdApi.Webpack.getModule(Filters.byStrings("insertText=", "onChange="), {
-  defaultExport: false
-});
+var modules = BdApi.Webpack.getBulk(
+  { filter: (_, __, id) => id == 196483 }
+);
+fallbackMissing(modules, [
+  { filter: Filters.byStrings("insertText=", "onChange=") }
+]);
+var [createSlate] = modules;
 
 // plugins/UnicodeEmojis/src/index.ts
 after(createSlate, "Z", ({ returnVal: editor }) => {

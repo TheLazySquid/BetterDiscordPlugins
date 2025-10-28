@@ -1,11 +1,12 @@
 /**
  * @name ZipPreview
  * @description Lets you see inside zips and preview/download files without ever downloading/extracting the zip
- * @version 0.5.1
+ * @version 0.5.2
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
  * @source https://github.com/TheLazySquid/BetterDiscordPlugins/tree/main/plugins/ZipPreview/ZipPreview.plugin.js
+ * @invite https://discord.gg/fKdAaFYbD5
  */
 module.exports = class {
   constructor() {

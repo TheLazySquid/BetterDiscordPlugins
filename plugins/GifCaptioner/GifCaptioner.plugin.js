@@ -6,6 +6,7 @@
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
  * @source https://github.com/TheLazySquid/BetterDiscordPlugins/tree/main/plugins/GifCaptioner/GifCaptioner.plugin.js
+ * @invite https://discord.gg/fKdAaFYbD5
  */
 module.exports = class {
   constructor() {
@@ -1139,35 +1140,18 @@ var pluginName = "GifCaptioner";
 // shared/bd.ts
 var Api = new BdApi(pluginName);
 var createCallbackHandler = (callbackName) => {
-  const fullName = callbackName + "Callbacks";
-  plugin[fullName] = [];
+  let callbacks = [];
   plugin[callbackName] = () => {
-    for (let i = 0; i < plugin[fullName].length; i++) {
-      plugin[fullName][i].callback();
-    }
-  };
-  return (callback, once, id) => {
-    let object = { callback };
-    const delCallback = () => {
-      plugin[fullName].splice(plugin[fullName].indexOf(object), 1);
-    };
-    if (once === true) {
-      object.callback = () => {
-        callback();
-        delCallback();
-      };
-    }
-    if (id) {
-      object.id = id;
-      for (let i = 0; i < plugin[fullName].length; i++) {
-        if (plugin[fullName][i].id === id) {
-          plugin[fullName][i] = object;
-          return delCallback;
-        }
+    for (let i = 0; i < callbacks.length; i++) {
+      callbacks[i].callback();
+      if (callbacks[i].once) {
+        callbacks.splice(i, 1);
+        i--;
       }
     }
-    plugin[fullName].push(object);
-    return delCallback;
+  };
+  return (callback, once) => {
+    callbacks.push({ callback, once });
   };
 };
 var onStart = createCallbackHandler("start");
@@ -1221,10 +1205,10 @@ onStop(() => {
 
 // shared/api/toast.ts
 function error(message) {
-  BdApi.UI.showToast(`${pluginName}: ${message}`, { type: "error" });
+  BdApi.UI.showToast(message, { type: "error" });
 }
 
-// shared/util/demangle.ts
+// shared/util/modules.ts
 function demangle(module, demangler) {
   let returned = {};
   let values = Object.values(module);
@@ -1238,27 +1222,61 @@ function demangle(module, demangler) {
   }
   return returned;
 }
+function findExport(module, filter) {
+  for (let value of Object.values(module)) {
+    if (filter === true || filter(value)) return value;
+  }
+}
+function fallbackMissing(modules2, filters) {
+  let missingIndexes = [];
+  let queries = [];
+  for (let i = 0; i < modules2.length; i++) {
+    if (modules2[i]) continue;
+    missingIndexes.push(i);
+    queries.push(filters[i]);
+  }
+  if (missingIndexes.length === 0) return;
+  Api.Logger.warn("Some modules not found by id:", missingIndexes.join(", "));
+  const found = BdApi.Webpack.getBulk(...queries);
+  for (let i = 0; i < missingIndexes.length; i++) {
+    modules2[missingIndexes[i]] = found[i];
+    if (!found[i]) Api.Logger.warn("Fallback filter failed for module", missingIndexes[i]);
+  }
+}
 
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var [chatbox, CloudUploader, expressionPickerMangled, gifDisplay, ModalSystemMangled, ModalMangled, premiumPermissions] = BdApi.Webpack.getBulk(
-  { filter: (m) => {
-    let str = m?.type?.render?.toString?.();
+var modules = BdApi.Webpack.getBulk(
+  { filter: (_2, __, id) => id == 893718 },
+  { filter: (_2, __, id) => id == 141795 },
+  { filter: (_2, __, id) => id == 28546 },
+  { filter: (_2, __, id) => id == 215016 },
+  { filter: (_2, __, id) => id == 952265 },
+  { filter: (_2, __, id) => id == 466377 },
+  { filter: (_2, __, id) => id == 74538 }
+);
+fallbackMissing(modules, [
+  { filter: (m) => Object.values(m).some((e) => {
+    let str = e?.type?.render?.toString?.();
     if (!str) return false;
     return str.includes("pendingScheduledMessage") && str.includes(".CHANNEL_TEXT_AREA");
-  }, searchExports: true },
-  { filter: Filters.byStrings("uploadFileToCloud"), searchExports: true },
+  }) },
+  { filter: (m) => Object.values(m).some((e) => e?.UPLOADING === "UPLOADING") },
   { filter: Filters.bySource("lastActiveView") },
-  { filter: Filters.byStrings("renderGIF()", "imagePool"), searchExports: true },
+  { filter: (m) => Object.values(m).some(Filters.byStrings("renderGIF()", "imagePool")) },
   { filter: Filters.bySource(".modalKey?") },
   { filter: Filters.bySource(".MODAL_ROOT_LEGACY,properties") },
   { filter: Filters.byKeys("getUserMaxFileSize") }
-);
+]);
+var [chatboxModule, CloudUploaderModule, expressionPickerMangled, gifDisplayModule, ModalSystemMangled, ModalMangled, premiumPermissionsModule] = modules;
+var chatbox = findExport(chatboxModule, (e) => e.type);
+var CloudUploader = findExport(CloudUploaderModule, (e) => e.fromJson);
 var expressionPicker = demangle(expressionPickerMangled, {
   toggle: (f2) => f2.toString().includes("activeView==="),
   close: (f2) => f2.toString().includes("activeView:null"),
   store: (f2) => f2.getState
 });
+var gifDisplay = findExport(gifDisplayModule, (e) => e.prototype?.renderGIF);
 var ModalSystem = demangle(ModalSystemMangled, {
   open: Filters.byStrings(",instant:"),
   close: Filters.byStrings(".onCloseCallback()")
@@ -1270,6 +1288,7 @@ var Modal = demangle(ModalMangled, {
   Close: Filters.byStrings(".closeWithCircleBackground]:"),
   Footer: Filters.byStrings(".footerSeparator]:")
 });
+var premiumPermissions = findExport(premiumPermissionsModule, (e) => e.getUserMaxFileSize);
 
 // node_modules/mp4box/dist/mp4box.all.js
 var so = Object.defineProperty;
@@ -6873,6 +6892,7 @@ var onSubmit = null;
 before(chatbox?.type, "render", ({ args }) => onSubmit = args[0].onSubmit);
 async function uploadFile(file) {
   const channelId = channelStore.getCurrentlySelectedChannelId();
+  if (!channelId) return;
   const upload = new CloudUploader({ file, platform: 1 }, channelId);
   if (!onSubmit) {
     error("Failed to send file, try switching channels");
@@ -6955,7 +6975,7 @@ var GifRenderer = class {
     this.transform = transform;
     if (!worker.url) {
       progress.close();
-      error("Attempted to encode gif while plugin is disabled");
+      error("Attempted to encode gif while GifCaptioner is disabled");
       throw new Error("Worker url missing");
     }
     let fullHeight = height;
@@ -7069,8 +7089,8 @@ var GifRenderer = class {
   }
 };
 
-// plugins/GifCaptioner/src/ui/progress.tsx
-function Progress({ onUpdater, status: initialStatus }) {
+// shared/util/progress.tsx
+function Progress({ onUpdater, status: initialStatus, cancelable }) {
   const React = BdApi.React;
   const [status, setStatus] = React.useState(initialStatus);
   const [progress, setProgress] = React.useState();
@@ -7082,17 +7102,31 @@ function Progress({ onUpdater, status: initialStatus }) {
   }, []);
   return /* @__PURE__ */ BdApi.React.createElement("div", { className: "gc-progress" }, /* @__PURE__ */ BdApi.React.createElement("h2", { className: "gc-status" }, status), /* @__PURE__ */ BdApi.React.createElement("progress", { value: progress, max: 1 }));
 }
-
-// plugins/GifCaptioner/src/ui/createProgress.tsx
 var ProgressDisplay = class {
   updater;
   modalId;
-  constructor(status) {
+  onCancelCallback;
+  canceled = false;
+  constructor(status, cancelable = false) {
     this.modalId = ModalSystem.open((props) => {
-      return /* @__PURE__ */ BdApi.React.createElement(Modal.Root, { size: "dynamic", ...props }, /* @__PURE__ */ BdApi.React.createElement(Modal.Content, null, /* @__PURE__ */ BdApi.React.createElement(Progress, { status, onUpdater: (updater) => this.updater = updater })));
+      return /* @__PURE__ */ BdApi.React.createElement(Modal.Root, { size: "dynamic", ...props }, /* @__PURE__ */ BdApi.React.createElement(Modal.Content, null, cancelable ? /* @__PURE__ */ BdApi.React.createElement("div", { style: { position: "absolute", top: "10px", right: "10px" } }, /* @__PURE__ */ BdApi.React.createElement(Modal.Close, { onClick: () => {
+        this.close();
+        this.onCancelCallback?.();
+        this.canceled = true;
+      } })) : null, /* @__PURE__ */ BdApi.React.createElement(
+        Progress,
+        {
+          status,
+          onUpdater: (updater) => this.updater = updater,
+          cancelable
+        }
+      )));
     }, {
       onCloseRequest: () => false
     });
+  }
+  onCancel(callback) {
+    this.onCancelCallback = callback;
   }
   update(status, progress) {
     if (!this.updater) return;

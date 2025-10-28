@@ -1,11 +1,12 @@
 /**
  * @name MoreQuickReacts
  * @description Increases the number of quick reactions available when hovering over a message
- * @version 1.0.0
+ * @version 1.0.1
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
  * @source https://github.com/TheLazySquid/BetterDiscordPlugins/tree/main/plugins/MoreQuickReacts/MoreQuickReacts.plugin.js
+ * @invite https://discord.gg/fKdAaFYbD5
  */
 module.exports = class {
   constructor() {
@@ -17,35 +18,18 @@ var pluginName = "MoreQuickReacts";
 // shared/bd.ts
 var Api = new BdApi(pluginName);
 var createCallbackHandler = (callbackName) => {
-  const fullName = callbackName + "Callbacks";
-  plugin[fullName] = [];
+  let callbacks = [];
   plugin[callbackName] = () => {
-    for (let i = 0; i < plugin[fullName].length; i++) {
-      plugin[fullName][i].callback();
-    }
-  };
-  return (callback, once, id) => {
-    let object = { callback };
-    const delCallback = () => {
-      plugin[fullName].splice(plugin[fullName].indexOf(object), 1);
-    };
-    if (once === true) {
-      object.callback = () => {
-        callback();
-        delCallback();
-      };
-    }
-    if (id) {
-      object.id = id;
-      for (let i = 0; i < plugin[fullName].length; i++) {
-        if (plugin[fullName][i].id === id) {
-          plugin[fullName][i] = object;
-          return delCallback;
-        }
+    for (let i = 0; i < callbacks.length; i++) {
+      callbacks[i].callback();
+      if (callbacks[i].once) {
+        callbacks.splice(i, 1);
+        i--;
       }
     }
-    plugin[fullName].push(object);
-    return delCallback;
+  };
+  return (callback, once) => {
+    callbacks.push({ callback, once });
   };
 };
 var onStart = createCallbackHandler("start");
@@ -83,9 +67,32 @@ function findExportWithKey(module, filter) {
     return [module, key];
   }
 }
+function fallbackMissing(modules2, filters) {
+  let missingIndexes = [];
+  let queries = [];
+  for (let i = 0; i < modules2.length; i++) {
+    if (modules2[i]) continue;
+    missingIndexes.push(i);
+    queries.push(filters[i]);
+  }
+  if (missingIndexes.length === 0) return;
+  Api.Logger.warn("Some modules not found by id:", missingIndexes.join(", "));
+  const found = BdApi.Webpack.getBulk(...queries);
+  for (let i = 0; i < missingIndexes.length; i++) {
+    modules2[missingIndexes[i]] = found[i];
+    if (!found[i]) Api.Logger.warn("Fallback filter failed for module", missingIndexes[i]);
+  }
+}
 
 // modules-ns:$shared/modules
-var frequentlyUsedEmojisModule = BdApi.Webpack.getModule((_, __, id) => id == 543241);
+var Filters = BdApi.Webpack.Filters;
+var modules = BdApi.Webpack.getBulk(
+  { filter: (_, __, id) => id == 543241 }
+);
+fallbackMissing(modules, [
+  { filter: (m) => Object.values(m).some(Filters.byStrings("getFrequentlyUsedReactionEmojisWithoutFetchingLatest", "loadIfNecessary")) }
+]);
+var [frequentlyUsedEmojisModule] = modules;
 var frequentlyUsedEmojis = findExportWithKey(frequentlyUsedEmojisModule, (e) => e.toString().includes("getFrequentlyUsedReactionEmojisWithoutFetchingLatest"));
 
 // shared/util/settings.ts
