@@ -44,7 +44,7 @@ const meta = `/**
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
  * @source https://github.com/TheLazySquid/BetterDiscordPlugins/tree/main/plugins/${args.plugin}/${args.plugin}.plugin.js
- * @invite https://discord.gg/fKdAaFYbD5
+ * @invite fKdAaFYbD5
  */`
 
 const header = meta + '\n' +
