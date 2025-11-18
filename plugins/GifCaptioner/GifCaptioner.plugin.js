@@ -1,7 +1,7 @@
 /**
  * @name GifCaptioner
  * @description A BetterDiscord plugin that allows you to add a caption to discord gifs
- * @version 1.3.1
+ * @version 1.3.2
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -6886,6 +6886,7 @@ var import_gif = __toESM(require_gif(), 1);
 
 // shared/stores.ts
 var channelStore = BdApi.Webpack.getStore("SelectedChannelStore");
+var userStore = BdApi.Webpack.getStore("UserStore");
 
 // shared/util/upload.ts
 var onSubmit = null;
@@ -6956,6 +6957,12 @@ function renderSpeechbubble(ctx, width, height, tipX, tipY, tipBase) {
   ctx.stroke();
 }
 
+// shared/util/permissions.ts
+function getMaxFileSize() {
+  const user = userStore.getCurrentUser();
+  return premiumPermissions.getUserMaxFileSize(user);
+}
+
 // plugins/GifCaptioner/src/render/gifRenderer.ts
 var worker = getUrl(gif_worker_default);
 var GifRenderer = class {
@@ -6986,7 +6993,7 @@ var GifRenderer = class {
     }
     const fullSize = fullHeight * this.width;
     const sizeEstimate = fullSize * frames;
-    const maxSize = premiumPermissions.getUserMaxFileSize();
+    const maxSize = getMaxFileSize();
     let scaleFactor = Math.max(1, Math.sqrt(sizeEstimate / maxSize));
     Api.Logger.log("Scale factor set to", scaleFactor);
     const newWidth = Math.floor(this.width / scaleFactor);

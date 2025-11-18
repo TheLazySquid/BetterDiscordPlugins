@@ -1,12 +1,13 @@
-import { attachFiles, premiumPermissions } from "$shared/modules";
+import { attachFiles } from "$shared/modules";
 import { before } from "$shared/api/patching";
 import { addFile } from "./compressVideo";
 import './styles.css';
+import { getMaxFileSize } from "$shared/util/permissions";
 
 console.log(attachFiles);
 const attach = attachFiles[0][attachFiles[1]];
 before(...attachFiles, ({ args }) => {
-    const maxSize = premiumPermissions.getUserMaxFileSize();
+    const maxSize = getMaxFileSize();
     const files: File[] = [...args[0]];
     
     // Get any video files that will not fit and that we can parse

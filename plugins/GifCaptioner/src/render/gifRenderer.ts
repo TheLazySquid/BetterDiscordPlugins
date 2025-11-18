@@ -2,13 +2,13 @@ import GifWorker from "../gif.worker.txt";
 import { getUrl } from "$shared/util/blob";
 import { getLines } from "$shared/util/canvas";
 import GIF from "gif.js";
-import { premiumPermissions } from "$shared/modules";
 import { error } from "$shared/api/toast";
 import { uploadFile } from "$shared/util/upload";
 import type ProgressDisplay from "$shared/util/progress";
 import type { ParsedFrame, ParsedGif } from "gifuct-js";
 import { Api } from "$shared/bd";
 import { renderSpeechbubble } from "./speechbubble";
+import { getMaxFileSize } from "$shared/util/permissions";
 
 export interface CaptionTransform {
 	text: string;
@@ -62,7 +62,7 @@ export default class GifRenderer {
 		const fullSize = fullHeight * this.width;
 		// Gifs are compressed a bit so this is always going to overshoot
 		const sizeEstimate = fullSize * frames;
-		const maxSize: number = premiumPermissions.getUserMaxFileSize(); // in bytes
+		const maxSize = getMaxFileSize(); // in bytes
 		let scaleFactor = Math.max(1, Math.sqrt(sizeEstimate / maxSize));
 		Api.Logger.log("Scale factor set to", scaleFactor);
 
