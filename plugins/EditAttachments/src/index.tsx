@@ -15,7 +15,6 @@ after(AttachmentButtons, "Z", ({ args, returnVal }) => {
     const editButton = BdApi.React.createElement(AttachmentButton, {
         tooltip: "Edit Attachment",
         onClick: () => {
-
             const onConfirm = (blob: Blob | null) => {
                 ModalSystem.close(id);
 

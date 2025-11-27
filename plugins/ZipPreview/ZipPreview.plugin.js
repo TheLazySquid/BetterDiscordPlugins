@@ -1,7 +1,7 @@
 /**
  * @name ZipPreview
  * @description Lets you see inside zips and preview/download files without ever downloading/extracting the zip
- * @version 0.5.2
+ * @version 0.5.3
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -75,38 +75,53 @@ function findExport(module2, filter) {
     if (filter === true || filter(value)) return value;
   }
 }
-function fallbackMissing(modules2, filters) {
-  let missingIndexes = [];
-  let queries = [];
-  for (let i = 0; i < modules2.length; i++) {
-    if (modules2[i]) continue;
+function getModules(locators) {
+  const modules = [];
+  for (let i = 0; i < locators.length; i++) {
+    if (!locators[i].id) continue;
+    modules[i] = BdApi.Webpack.getById(locators[i].id);
+    if (!modules[i]) Api.Logger.warn(`Module with ID ${locators[i].id} not found`);
+  }
+  const missingIndexes = [];
+  const filters = [];
+  for (let i = 0; i < locators.length; i++) {
+    if (modules[i]) continue;
     missingIndexes.push(i);
-    queries.push(filters[i]);
+    filters.push({
+      filter: locators[i].filter,
+      defaultExport: locators[i].defaultExport
+    });
   }
-  if (missingIndexes.length === 0) return;
-  Api.Logger.warn("Some modules not found by id:", missingIndexes.join(", "));
-  const found = BdApi.Webpack.getBulk(...queries);
-  for (let i = 0; i < missingIndexes.length; i++) {
-    modules2[missingIndexes[i]] = found[i];
-    if (!found[i]) Api.Logger.warn("Fallback filter failed for module", missingIndexes[i]);
+  if (missingIndexes.length > 0) {
+    const found = BdApi.Webpack.getBulk(...filters);
+    for (let i = 0; i < missingIndexes.length; i++) {
+      modules[missingIndexes[i]] = found[i];
+      if (!found[i]) Api.Logger.error(`Module filter ${missingIndexes[i]} failed`);
+    }
   }
+  return modules;
 }
 
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var modules = BdApi.Webpack.getBulk(
-  { filter: (_, __, id) => id == 40330 },
-  { filter: (_, __, id) => id == 364964 },
-  { filter: (_, __, id) => id == 466377 },
-  { filter: (_, __, id) => id == 952265 }
-);
-fallbackMissing(modules, [
-  { filter: (m) => m.Z?.toString().includes("filenameLinkWrapper") },
-  { filter: Filters.byKeys("highlight", "hasLanguage") },
-  { filter: Filters.bySource(".MODAL_ROOT_LEGACY,properties") },
-  { filter: Filters.bySource(".modalKey?") }
+var [fileModule, highlightModuleModule, ModalMangled, ModalSystemMangled] = getModules([
+  {
+    id: 40330,
+    filter: (m) => m.Z?.toString().includes("filenameLinkWrapper")
+  },
+  {
+    id: 364964,
+    filter: Filters.byKeys("highlight", "hasLanguage")
+  },
+  {
+    id: 466377,
+    filter: Filters.bySource(".MODAL_ROOT_LEGACY,properties")
+  },
+  {
+    id: 952265,
+    filter: Filters.bySource(".modalKey?")
+  }
 ]);
-var [fileModule, highlightModuleModule, ModalMangled, ModalSystemMangled] = modules;
 var highlightModule = findExport(highlightModuleModule, true);
 var Modal = demangle(ModalMangled, {
   Root: Filters.byStrings(".ImpressionNames.MODAL_ROOT_LEGACY"),

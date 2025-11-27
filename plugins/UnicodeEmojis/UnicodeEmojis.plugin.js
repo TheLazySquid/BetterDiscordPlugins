@@ -1,7 +1,7 @@
 /**
  * @name UnicodeEmojis
  * @description Replaces discord emojis that you send with their unicode equivalent
- * @version 1.1.3
+ * @version 1.1.4
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -57,32 +57,41 @@ onStop(() => {
 });
 
 // shared/util/modules.ts
-function fallbackMissing(modules2, filters) {
-  let missingIndexes = [];
-  let queries = [];
-  for (let i = 0; i < modules2.length; i++) {
-    if (modules2[i]) continue;
+function getModules(locators) {
+  const modules = [];
+  for (let i = 0; i < locators.length; i++) {
+    if (!locators[i].id) continue;
+    modules[i] = BdApi.Webpack.getById(locators[i].id);
+    if (!modules[i]) Api.Logger.warn(`Module with ID ${locators[i].id} not found`);
+  }
+  const missingIndexes = [];
+  const filters = [];
+  for (let i = 0; i < locators.length; i++) {
+    if (modules[i]) continue;
     missingIndexes.push(i);
-    queries.push(filters[i]);
+    filters.push({
+      filter: locators[i].filter,
+      defaultExport: locators[i].defaultExport
+    });
   }
-  if (missingIndexes.length === 0) return;
-  Api.Logger.warn("Some modules not found by id:", missingIndexes.join(", "));
-  const found = BdApi.Webpack.getBulk(...queries);
-  for (let i = 0; i < missingIndexes.length; i++) {
-    modules2[missingIndexes[i]] = found[i];
-    if (!found[i]) Api.Logger.warn("Fallback filter failed for module", missingIndexes[i]);
+  if (missingIndexes.length > 0) {
+    const found = BdApi.Webpack.getBulk(...filters);
+    for (let i = 0; i < missingIndexes.length; i++) {
+      modules[missingIndexes[i]] = found[i];
+      if (!found[i]) Api.Logger.error(`Module filter ${missingIndexes[i]} failed`);
+    }
   }
+  return modules;
 }
 
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var modules = BdApi.Webpack.getBulk(
-  { filter: (_, __, id) => id == 196483 }
-);
-fallbackMissing(modules, [
-  { filter: Filters.byStrings("insertText=", "onChange=") }
+var [createSlate] = getModules([
+  {
+    id: 196483,
+    filter: Filters.byStrings("insertText=", "onChange=")
+  }
 ]);
-var [createSlate] = modules;
 
 // plugins/UnicodeEmojis/src/index.ts
 after(createSlate, "Z", ({ returnVal: editor }) => {

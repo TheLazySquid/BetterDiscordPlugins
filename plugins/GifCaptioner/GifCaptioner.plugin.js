@@ -1,7 +1,7 @@
 /**
  * @name GifCaptioner
  * @description A BetterDiscord plugin that allows you to add a caption to discord gifs
- * @version 1.3.2
+ * @version 1.3.3
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -1227,48 +1227,69 @@ function findExport(module, filter) {
     if (filter === true || filter(value)) return value;
   }
 }
-function fallbackMissing(modules2, filters) {
-  let missingIndexes = [];
-  let queries = [];
-  for (let i = 0; i < modules2.length; i++) {
-    if (modules2[i]) continue;
+function getModules(locators) {
+  const modules = [];
+  for (let i = 0; i < locators.length; i++) {
+    if (!locators[i].id) continue;
+    modules[i] = BdApi.Webpack.getById(locators[i].id);
+    if (!modules[i]) Api.Logger.warn(`Module with ID ${locators[i].id} not found`);
+  }
+  const missingIndexes = [];
+  const filters = [];
+  for (let i = 0; i < locators.length; i++) {
+    if (modules[i]) continue;
     missingIndexes.push(i);
-    queries.push(filters[i]);
+    filters.push({
+      filter: locators[i].filter,
+      defaultExport: locators[i].defaultExport
+    });
   }
-  if (missingIndexes.length === 0) return;
-  Api.Logger.warn("Some modules not found by id:", missingIndexes.join(", "));
-  const found = BdApi.Webpack.getBulk(...queries);
-  for (let i = 0; i < missingIndexes.length; i++) {
-    modules2[missingIndexes[i]] = found[i];
-    if (!found[i]) Api.Logger.warn("Fallback filter failed for module", missingIndexes[i]);
+  if (missingIndexes.length > 0) {
+    const found = BdApi.Webpack.getBulk(...filters);
+    for (let i = 0; i < missingIndexes.length; i++) {
+      modules[missingIndexes[i]] = found[i];
+      if (!found[i]) Api.Logger.error(`Module filter ${missingIndexes[i]} failed`);
+    }
   }
+  return modules;
 }
 
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var modules = BdApi.Webpack.getBulk(
-  { filter: (_2, __, id) => id == 893718 },
-  { filter: (_2, __, id) => id == 141795 },
-  { filter: (_2, __, id) => id == 28546 },
-  { filter: (_2, __, id) => id == 215016 },
-  { filter: (_2, __, id) => id == 952265 },
-  { filter: (_2, __, id) => id == 466377 },
-  { filter: (_2, __, id) => id == 74538 }
-);
-fallbackMissing(modules, [
-  { filter: (m) => Object.values(m).some((e) => {
-    let str = e?.type?.render?.toString?.();
-    if (!str) return false;
-    return str.includes("pendingScheduledMessage") && str.includes(".CHANNEL_TEXT_AREA");
-  }) },
-  { filter: (m) => Object.values(m).some((e) => e?.UPLOADING === "UPLOADING") },
-  { filter: Filters.bySource("lastActiveView") },
-  { filter: (m) => Object.values(m).some(Filters.byStrings("renderGIF()", "imagePool")) },
-  { filter: Filters.bySource(".modalKey?") },
-  { filter: Filters.bySource(".MODAL_ROOT_LEGACY,properties") },
-  { filter: Filters.byKeys("getUserMaxFileSize") }
+var [chatboxModule, CloudUploaderModule, expressionPickerMangled, gifDisplayModule, ModalSystemMangled, ModalMangled, premiumPermissionsModule] = getModules([
+  {
+    id: 893718,
+    filter: (m) => Object.values(m).some((e) => {
+      let str = e?.type?.render?.toString?.();
+      if (!str) return false;
+      return str.includes("pendingScheduledMessage") && str.includes(".CHANNEL_TEXT_AREA");
+    })
+  },
+  {
+    id: 141795,
+    filter: (m) => Object.values(m).some((e) => e?.UPLOADING === "UPLOADING")
+  },
+  {
+    id: 28546,
+    filter: Filters.bySource("lastActiveView")
+  },
+  {
+    id: 215016,
+    filter: (m) => Object.values(m).some(Filters.byStrings("renderGIF()", "imagePool"))
+  },
+  {
+    id: 952265,
+    filter: Filters.bySource(".modalKey?")
+  },
+  {
+    id: 466377,
+    filter: Filters.bySource(".MODAL_ROOT_LEGACY,properties")
+  },
+  {
+    id: 74538,
+    filter: Filters.byKeys("getUserMaxFileSize")
+  }
 ]);
-var [chatboxModule, CloudUploaderModule, expressionPickerMangled, gifDisplayModule, ModalSystemMangled, ModalMangled, premiumPermissionsModule] = modules;
 var chatbox = findExport(chatboxModule, (e) => e.type);
 var CloudUploader = findExport(CloudUploaderModule, (e) => e.fromJson);
 var expressionPicker = demangle(expressionPickerMangled, {

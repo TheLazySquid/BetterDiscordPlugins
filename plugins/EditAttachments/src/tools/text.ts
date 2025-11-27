@@ -16,12 +16,13 @@ export default class TextTool extends Tool<TextUse> {
         this.overlayCtx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
         this.overlayCtx.font = `${use.size}px sans-serif`;
         
-        const size = this.overlayCtx.measureText(use.text);
+        const size = this.overlayCtx.measureText(use.text).width * this.editor.scale;
         this.overlayCtx.strokeStyle = use.color;
-        this.overlayCtx.lineWidth = 0.1 / this.editor.scale * use.size;
+        this.overlayCtx.lineWidth = use.size / 10;
+        const padding = use.size / 4 * this.editor.scale;
 
-        const padding = 0.25 / this.editor.scale * use.size;
-        this.overlayCtx.strokeRect(use.position.x - padding, use.position.y - padding, size.width + padding * 2, use.size + padding * 2);
+        const pos = this.editor.getOverlayCoords(use.position);
+        this.overlayCtx.strokeRect(pos.x - padding, pos.y - padding, size + padding * 2, use.size * this.editor.scale + padding * 2);
     }
 
     onStart(x: number, y: number, color: string, thickness: number) {
@@ -45,5 +46,9 @@ export default class TextTool extends Tool<TextUse> {
 
         this.drawOutline(this.currentUse);
         this.applyUse(this.currentUse);
+    }
+
+    onCameraMove() {
+        this.drawOutline(this.currentUse);
     }
 }

@@ -1,7 +1,7 @@
 /**
  * @name ImageFolder
  * @description A BetterDiscord plugin that allows you to save and send images from a folder for easy access
- * @version 1.4.7
+ * @version 1.4.8
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -118,48 +118,67 @@ function findExport(module, filter) {
     if (filter === true || filter(value)) return value;
   }
 }
-function fallbackMissing(modules2, filters) {
-  let missingIndexes = [];
-  let queries = [];
-  for (let i = 0; i < modules2.length; i++) {
-    if (modules2[i]) continue;
+function getModules(locators) {
+  const modules = [];
+  for (let i = 0; i < locators.length; i++) {
+    if (!locators[i].id) continue;
+    modules[i] = BdApi.Webpack.getById(locators[i].id);
+    if (!modules[i]) Api.Logger.warn(`Module with ID ${locators[i].id} not found`);
+  }
+  const missingIndexes = [];
+  const filters = [];
+  for (let i = 0; i < locators.length; i++) {
+    if (modules[i]) continue;
     missingIndexes.push(i);
-    queries.push(filters[i]);
+    filters.push({
+      filter: locators[i].filter,
+      defaultExport: locators[i].defaultExport
+    });
   }
-  if (missingIndexes.length === 0) return;
-  Api.Logger.warn("Some modules not found by id:", missingIndexes.join(", "));
-  const found = BdApi.Webpack.getBulk(...queries);
-  for (let i = 0; i < missingIndexes.length; i++) {
-    modules2[missingIndexes[i]] = found[i];
-    if (!found[i]) Api.Logger.warn("Fallback filter failed for module", missingIndexes[i]);
+  if (missingIndexes.length > 0) {
+    const found = BdApi.Webpack.getBulk(...filters);
+    for (let i = 0; i < missingIndexes.length; i++) {
+      modules[missingIndexes[i]] = found[i];
+      if (!found[i]) Api.Logger.error(`Module filter ${missingIndexes[i]} failed`);
+    }
   }
+  return modules;
 }
 
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var modules = BdApi.Webpack.getBulk(
-  { filter: (_, __, id) => id == 893718 },
-  { filter: (_, __, id) => id == 141795 },
-  { filter: (_, __, id) => id == 258696 },
-  { filter: (_, __, id) => id == 805680 },
-  { filter: (_, __, id) => id == 28546 },
-  { filter: (_, __, id) => id == 161655 },
-  { filter: (_, __, id) => id == 564355 }
-);
-fallbackMissing(modules, [
-  { filter: (m) => Object.values(m).some((e) => {
-    let str = e?.type?.render?.toString?.();
-    if (!str) return false;
-    return str.includes("pendingScheduledMessage") && str.includes(".CHANNEL_TEXT_AREA");
-  }) },
-  { filter: (m) => Object.values(m).some((e) => e?.UPLOADING === "UPLOADING") },
-  { filter: (m) => m.type?.toString?.().includes(".isSubmitButtonEnabled") },
-  { filter: (m) => m.type?.toString?.().includes("onSelectGIF") },
-  { filter: Filters.bySource("lastActiveView") },
-  { filter: Filters.byKeys("uploadArea", "chat") },
-  { filter: Filters.byKeys("buttons", "textAreaSlate") }
+var [chatboxModule, CloudUploaderModule, buttonsModuleModule, expressionModuleModule, expressionPickerMangled, uploadClasses, chatClasses] = getModules([
+  {
+    id: 893718,
+    filter: (m) => Object.values(m).some((e) => {
+      let str = e?.type?.render?.toString?.();
+      if (!str) return false;
+      return str.includes("pendingScheduledMessage") && str.includes(".CHANNEL_TEXT_AREA");
+    })
+  },
+  {
+    id: 141795,
+    filter: (m) => Object.values(m).some((e) => e?.UPLOADING === "UPLOADING")
+  },
+  {
+    id: 258696,
+    filter: (m) => m.type?.toString?.().includes(".isSubmitButtonEnabled")
+  },
+  {
+    id: 805680,
+    filter: (m) => m.type?.toString?.().includes("onSelectGIF")
+  },
+  {
+    id: 28546,
+    filter: Filters.bySource("lastActiveView")
+  },
+  {
+    filter: Filters.byKeys("uploadArea", "chat")
+  },
+  {
+    filter: Filters.byKeys("buttons", "textAreaSlate")
+  }
 ]);
-var [chatboxModule, CloudUploaderModule, buttonsModuleModule, expressionModuleModule, expressionPickerMangled, uploadClasses, chatClasses] = modules;
 var chatbox = findExport(chatboxModule, (e) => e.type);
 var CloudUploader = findExport(CloudUploaderModule, (e) => e.fromJson);
 var buttonsModule = findExport(buttonsModuleModule, true);
@@ -234,6 +253,7 @@ function getInput(title, callback) {
 
 // shared/stores.ts
 var channelStore = BdApi.Webpack.getStore("SelectedChannelStore");
+var userStore = BdApi.Webpack.getStore("UserStore");
 
 // shared/util/upload.ts
 var onSubmit = null;

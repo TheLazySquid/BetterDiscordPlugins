@@ -32,7 +32,8 @@ export default class Editor {
     static panX = 0;
     static panY = 0;
     static scale = 1;
-
+    
+    static maxUndos = 50;
     static undoStack: Use[] = [];
     static redoStack: Use[] = [];
 
@@ -100,10 +101,11 @@ export default class Editor {
         this.panX += dx * factor;
         this.panY += dy * factor;
 
-        this.overlayCtx.setTransform(this.scale, 0, 0, this.scale, this.panX, this.panY);
+        this.tool.onCameraMove?.();
         this.drawView();
     }
 
+    /* Converts window coordinates coordinates relative to the view canvas */
     static getViewCoords(x: number, y: number) {
         const factor = this.viewCanvas.width / this.viewCanvas.clientWidth;
         const rect = this.viewCanvas.getBoundingClientRect();
@@ -113,12 +115,21 @@ export default class Editor {
         return { x: viewX, y: viewY };
     }
 
+    /* Converts window coordinates coordinates relative to the render canvas */
     static getRenderCoords(x: number, y: number) {
         const viewCoords = this.getViewCoords(x, y);
         const renderX = (viewCoords.x - this.panX) / this.scale;
         const renderY = (viewCoords.y - this.panY) / this.scale;
 
         return { x: renderX, y: renderY };
+    }
+
+    /* Converts coordinates relative to the render canvas into coordinates relative to the overlay */
+    static getOverlayCoords(coords: Point) {
+        const overlayX = coords.x * this.scale + this.panX;
+        const overlayY = coords.y * this.scale + this.panY;
+
+        return { x: overlayX, y: overlayY };
     }
 
     static zoom(x: number, y: number, dy: number) {
@@ -132,9 +143,9 @@ export default class Editor {
         // Keep the point under the cursor stationary
         this.panX = viewCoords.x - renderX * this.scale;
         this.panY = viewCoords.y - renderY * this.scale;
-        this.overlayCtx.setTransform(this.scale, 0, 0, this.scale, this.panX, this.panY);
-
-        this.drawView();
+        
+        this.tool.onCameraMove?.();
+        this.drawView(); 
     }
 
     static drawView() {        
@@ -192,15 +203,15 @@ export default class Editor {
         // Re-draw the use so that there's no surprises when undoing/redoing
         const use = this.tool.currentUse;
         this.tool.applyUse(use);
-        this.clearOverlay();
 
         this.renderCtx.globalCompositeOperation = this.tool.compositeOperation;
         this.renderCtx.drawImage(this.changeCanvas, 0, 0);
         this.changeCtx.clearRect(0, 0, this.changeCanvas.width, this.changeCanvas.height);
+        this.overlayCtx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
         
         // Cap undo stack at 50
         this.undoStack.push(use);
-        if(this.undoStack.length > 50) {
+        if(this.undoStack.length > this.maxUndos) {
             let use = this.undoStack.shift()!;
             let compositeOperation = this.useTool(use, this.baseCanvas, this.baseCtx);
             this.baseCtx.globalCompositeOperation = compositeOperation;
@@ -263,13 +274,6 @@ export default class Editor {
         
         const data = this.renderCtx.getImageData(renderCoords.x, renderCoords.y, 1, 1).data;
         return `#${(data[0] << 16 | data[1] << 8 | data[2]).toString(16).padStart(6, '0')}`;
-    }
-
-    static clearOverlay() {
-        this.overlayCtx.save();
-        this.overlayCtx.setTransform(1, 0, 0, 1, 0, 0);
-        this.overlayCtx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
-        this.overlayCtx.restore();
     }
 
     static onKeyPress(e: KeyboardEvent) {

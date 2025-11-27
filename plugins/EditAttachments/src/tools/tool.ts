@@ -28,4 +28,5 @@ export default abstract class Tool<UseType extends Use> {
     abstract onStart(x: number, y: number, color: string, thickness: number): void;
     onMove?(x: number, y: number, shiftPressed: boolean): void;
     onKeyPress?(e: KeyboardEvent): void;
+    onCameraMove?(): void;
 }

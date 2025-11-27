@@ -588,11 +588,13 @@ var CropTool = class extends Tool {
     };
   }
   onMove(x2, y2) {
-    const start = this.currentUse.start;
-    const end = { x: x2, y: y2 };
-    this.currentUse.end = end;
-    this.editor.clearOverlay();
-    this.overlayCtx.lineWidth = 5 / this.editor.scale;
+    const renderStart = this.currentUse.start;
+    const renderEnd = { x: x2, y: y2 };
+    this.currentUse.end = renderEnd;
+    this.overlayCtx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
+    const start = this.editor.getOverlayCoords(renderStart);
+    const end = this.editor.getOverlayCoords(renderEnd);
+    this.overlayCtx.lineWidth = 5;
     this.overlayCtx.setLineDash([]);
     this.overlayCtx.strokeStyle = "black";
     this.overlayCtx.strokeRect(start.x, start.y, end.x - start.x, end.y - start.y);
@@ -615,11 +617,12 @@ var TextTool = class extends Tool {
   drawOutline(use2) {
     this.overlayCtx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
     this.overlayCtx.font = `${use2.size}px sans-serif`;
-    const size = this.overlayCtx.measureText(use2.text);
+    const size = this.overlayCtx.measureText(use2.text).width * this.editor.scale;
     this.overlayCtx.strokeStyle = use2.color;
-    this.overlayCtx.lineWidth = 0.1 / this.editor.scale * use2.size;
-    const padding = 0.25 / this.editor.scale * use2.size;
-    this.overlayCtx.strokeRect(use2.position.x - padding, use2.position.y - padding, size.width + padding * 2, use2.size + padding * 2);
+    this.overlayCtx.lineWidth = use2.size / 10;
+    const padding = use2.size / 4 * this.editor.scale;
+    const pos = this.editor.getOverlayCoords(use2.position);
+    this.overlayCtx.strokeRect(pos.x - padding, pos.y - padding, size + padding * 2, use2.size * this.editor.scale + padding * 2);
   }
   onStart(x2, y2, color, thickness) {
     this.currentUse = {
@@ -639,6 +642,9 @@ var TextTool = class extends Tool {
     }
     this.drawOutline(this.currentUse);
     this.applyUse(this.currentUse);
+  }
+  onCameraMove() {
+    this.drawOutline(this.currentUse);
   }
 };
 
@@ -664,6 +670,7 @@ var Editor = class {
   static panX = 0;
   static panY = 0;
   static scale = 1;
+  static maxUndos = 50;
   static undoStack = [];
   static redoStack = [];
   static export(callback) {
@@ -717,9 +724,10 @@ var Editor = class {
     const factor = this.viewCanvas.width / this.viewCanvas.clientWidth;
     this.panX += dx * factor;
     this.panY += dy * factor;
-    this.overlayCtx.setTransform(this.scale, 0, 0, this.scale, this.panX, this.panY);
+    this.tool.onCameraMove?.();
     this.drawView();
   }
+  /* Converts window coordinates coordinates relative to the view canvas */
   static getViewCoords(x2, y2) {
     const factor = this.viewCanvas.width / this.viewCanvas.clientWidth;
     const rect = this.viewCanvas.getBoundingClientRect();
@@ -727,11 +735,18 @@ var Editor = class {
     const viewY = (y2 - rect.top) * factor;
     return { x: viewX, y: viewY };
   }
+  /* Converts window coordinates coordinates relative to the render canvas */
   static getRenderCoords(x2, y2) {
     const viewCoords = this.getViewCoords(x2, y2);
     const renderX = (viewCoords.x - this.panX) / this.scale;
     const renderY = (viewCoords.y - this.panY) / this.scale;
     return { x: renderX, y: renderY };
+  }
+  /* Converts coordinates relative to the render canvas into coordinates relative to the overlay */
+  static getOverlayCoords(coords) {
+    const overlayX = coords.x * this.scale + this.panX;
+    const overlayY = coords.y * this.scale + this.panY;
+    return { x: overlayX, y: overlayY };
   }
   static zoom(x2, y2, dy) {
     const viewCoords = this.getViewCoords(x2, y2);
@@ -741,7 +756,7 @@ var Editor = class {
     this.scale *= scaleMultiplier;
     this.panX = viewCoords.x - renderX * this.scale;
     this.panY = viewCoords.y - renderY * this.scale;
-    this.overlayCtx.setTransform(this.scale, 0, 0, this.scale, this.panX, this.panY);
+    this.tool.onCameraMove?.();
     this.drawView();
   }
   static drawView() {
@@ -783,12 +798,12 @@ var Editor = class {
     if (!this.tool) return;
     const use2 = this.tool.currentUse;
     this.tool.applyUse(use2);
-    this.clearOverlay();
     this.renderCtx.globalCompositeOperation = this.tool.compositeOperation;
     this.renderCtx.drawImage(this.changeCanvas, 0, 0);
     this.changeCtx.clearRect(0, 0, this.changeCanvas.width, this.changeCanvas.height);
+    this.overlayCtx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
     this.undoStack.push(use2);
-    if (this.undoStack.length > 50) {
+    if (this.undoStack.length > this.maxUndos) {
       let use3 = this.undoStack.shift();
       let compositeOperation = this.useTool(use3, this.baseCanvas, this.baseCtx);
       this.baseCtx.globalCompositeOperation = compositeOperation;
@@ -838,12 +853,6 @@ var Editor = class {
     if (renderCoords.x < 0 || renderCoords.x >= this.renderCanvas.width || renderCoords.y < 0 || renderCoords.y >= this.renderCanvas.height) return null;
     const data = this.renderCtx.getImageData(renderCoords.x, renderCoords.y, 1, 1).data;
     return `#${(data[0] << 16 | data[1] << 8 | data[2]).toString(16).padStart(6, "0")}`;
-  }
-  static clearOverlay() {
-    this.overlayCtx.save();
-    this.overlayCtx.setTransform(1, 0, 0, 1, 0, 0);
-    this.overlayCtx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
-    this.overlayCtx.restore();
   }
   static onKeyPress(e) {
     this.tool.onKeyPress?.(e);

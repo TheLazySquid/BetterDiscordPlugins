@@ -1,5 +1,6 @@
-import { Api } from "$shared/bd";
 import type { ModuleFilter } from "betterdiscord";
+import type { ModuleLocator } from "../../types";
+import { Api } from "$shared/bd";
 
 export function demangle(module: Record<string, any>, demangler: Record<string, (mod: any) => boolean>) {
     let returned: Record<string, any> = {};
@@ -36,25 +37,38 @@ interface Filter {
     defaultExport?: boolean;
 }
 
-export function fallbackMissing(modules: any[], filters: Filter[]) {
-    let missingIndexes: number[] = [];
-    let queries: Filter[] = [];
+export function getModules(locators: ModuleLocator[]) {
+    const modules: any[] = [];
 
-    // Check which modules are missing
-    for(let i = 0; i < modules.length; i++) {
+    for(let i = 0; i < locators.length; i++) {
+        if(!locators[i].id) continue;
+
+        // @ts-expect-error types haven't been updated yet
+        modules[i] = BdApi.Webpack.getById(locators[i].id);
+        if(!modules[i]) Api.Logger.warn(`Module with ID ${locators[i].id} not found`);
+    }
+
+    // Get missing modules using their filters
+    const missingIndexes: number[] = [];
+    const filters: Filter[] = [];
+
+    for(let i = 0; i < locators.length; i++) {
         if(modules[i]) continue;
+        
         missingIndexes.push(i);
-        queries.push(filters[i]);
+        filters.push({
+            filter: locators[i].filter,
+            defaultExport: locators[i].defaultExport
+        });
     }
 
-    if(missingIndexes.length === 0) return;
-
-    Api.Logger.warn("Some modules not found by id:", missingIndexes.join(", "));
-
-    // Get the fallback with the filter
-    const found = BdApi.Webpack.getBulk(...queries);
-    for(let i = 0; i < missingIndexes.length; i++) {
-        modules[missingIndexes[i]] = found[i];
-        if(!found[i]) Api.Logger.warn("Fallback filter failed for module", missingIndexes[i]);
+    if(missingIndexes.length > 0) {
+        const found = BdApi.Webpack.getBulk(...filters);
+        for(let i = 0; i < missingIndexes.length; i++) {
+            modules[missingIndexes[i]] = found[i];
+            if(!found[i]) Api.Logger.error(`Module filter ${missingIndexes[i]} failed`);
+        }
     }
+
+    return modules;
 }

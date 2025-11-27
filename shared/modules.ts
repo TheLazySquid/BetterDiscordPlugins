@@ -22,11 +22,9 @@ export const modules: Record<keyof Modules, ModuleDefinition> = {
         filter: `(m) => m.type?.toString?.().includes(".isSubmitButtonEnabled")`
     },
     uploadClasses: {
-        id: 161655,
         filter: `Filters.byKeys("uploadArea", "chat")`
     },
     chatClasses: {
-        id: 564355,
         filter: `Filters.byKeys("buttons", "textAreaSlate")`
     },
     gifDisplay: {

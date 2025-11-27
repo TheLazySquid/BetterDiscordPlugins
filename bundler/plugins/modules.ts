@@ -23,30 +23,23 @@ export function modulesPlugin(ids: (keyof Modules)[]): Plugin {
 function createModulesFile(ids: (keyof Modules)[]): string {
     if(ids.length === 0) return "";
 
-    let contents = `import { demangle, findExport, findExportWithKey, fallbackMissing } from "$shared/util/modules";\n`
+    let contents = `import { demangle, findExport, findExportWithKey, getModules } from "$shared/util/modules";\n`
         + "const Filters = BdApi.Webpack.Filters;\n\n";
     
     // Get all the modules
-    contents += `const modules = BdApi.Webpack.getBulk(\n`;
+    const moduleIds = ids.map(id => modules[id].demangler ? `${id}Mangled` : modules[id].getExport ? `${id}Module` : id);
+    contents += `const [${moduleIds.join(",")}] = getModules([\n`;
     for(let i = 0; i < ids.length; i++) {
-        let module = modules[ids[i]];
-        contents += `    { filter: (_, __, id) => id == ${module.id} },\n`
+        let definition = modules[ids[i]];
+        contents += "  {\n"
+        if(definition.id) contents += `    id: ${definition.id},\n`;
+        contents += `    filter: ${definition.filter},\n`;
+        if(definition.defaultExport) contents += `    defaultExport: true,\n`;
+        contents += "  },\n";
     }
-    contents += `);\n\n`;
-
-    // Add fallbacks for the missing modules
-    contents += `fallbackMissing(modules, [\n`;
-    for(let i = 0; i < ids.length; i++) {
-        let module = modules[ids[i]];
-        const defaultExport = module.defaultExport ? ", defaultExport: true" : "";
-        contents += `    {filter: ${module.filter}${defaultExport}},`;
-    }
-    contents += `\n]);\n\n`;
+    contents += `]);\n\n`;
 
     // Get the modules into their final form
-    const moduleIds = ids.map(id => modules[id].demangler ? `${id}Mangled` : modules[id].getExport ? `${id}Module` : id);
-    contents += `const [${moduleIds.join(",")}] = modules;\n\n`;
-
     for(let i = 0; i < ids.length; i++) {
         let module = modules[ids[i]];
         if(module.demangler) {

@@ -25,14 +25,16 @@ export default class CropTool extends Tool<CropUse> {
     }
 
     onMove(x: number, y: number) {
-        const start = this.currentUse.start;
-        const end = { x, y };
-        this.currentUse.end = end;
-
-        this.editor.clearOverlay();
+        const renderStart = this.currentUse.start;
+        const renderEnd = { x, y };
+        this.currentUse.end = renderEnd;
         
         // Draw a dashed rectangle to show the crop area
-        this.overlayCtx.lineWidth = 5 / this.editor.scale;
+        this.overlayCtx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
+        const start = this.editor.getOverlayCoords(renderStart);
+        const end = this.editor.getOverlayCoords(renderEnd);
+
+        this.overlayCtx.lineWidth = 5;
         this.overlayCtx.setLineDash([]);
         this.overlayCtx.strokeStyle = "black";
         this.overlayCtx.strokeRect(start.x, start.y, end.x - start.x, end.y - start.y);

@@ -1,13 +1,20 @@
 import type { CloudUpload } from "@vencord/discord-types";
+import type { ModuleFilter } from "betterdiscord";
 
 export interface ModuleDefinition {
-    id: number;
+    id?: number;
     getExport?: string | true;
     demangler?: Record<string, string>;
     getWithKey?: boolean;
 
     // Fallback
     filter: string;
+    defaultExport?: boolean;
+}
+
+export interface ModuleLocator {
+    id?: number;
+    filter: ModuleFilter;
     defaultExport?: boolean;
 }
 
