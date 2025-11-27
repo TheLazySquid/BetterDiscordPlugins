@@ -7,13 +7,13 @@ interface MoreQuickReactsSettings {
 export const settings = createSettings<MoreQuickReactsSettings>([
     {
         type: "slider",
-        min: 3,
-        max: 15,
+        min: 0,
+        max: 30,
         id: "amount",
         name: "Amount of Quick Reacts",
         note: "Switching channels may be required to see changes.",
         step: 1,
-        markers: [3, 6, 9, 12, 15]
+        markers: [0, 5, 10, 15, 20, 25, 30]
     }
 ], {
     amount: 5

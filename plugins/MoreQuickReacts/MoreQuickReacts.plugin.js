@@ -1,7 +1,7 @@
 /**
  * @name MoreQuickReacts
  * @description Increases the number of quick reactions available when hovering over a message
- * @version 1.0.2
+ * @version 1.0.3
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -130,13 +130,13 @@ function createSettings(panelSettings, defaults) {
 var settings = createSettings([
   {
     type: "slider",
-    min: 3,
-    max: 15,
+    min: 0,
+    max: 30,
     id: "amount",
     name: "Amount of Quick Reacts",
     note: "Switching channels may be required to see changes.",
     step: 1,
-    markers: [3, 6, 9, 12, 15]
+    markers: [0, 5, 10, 15, 20, 25, 30]
   }
 ], {
   amount: 5
