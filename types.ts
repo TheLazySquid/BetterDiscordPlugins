@@ -23,7 +23,7 @@ interface ReactElementModule {
 }
 
 interface ExpressionPicker {
-    toggle: (id: string, type: any) => void;
+    toggle: (id: string, type: any, channel: string) => void;
     close: () => void;
     store: {
         getState: () => { activeView: string };

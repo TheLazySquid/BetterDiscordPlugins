@@ -10,6 +10,7 @@ import { patchContextMenu } from '$shared/api/contextmenu';
 import Manager, { types } from './manager';
 import { onStart, onStop } from '$shared/bd';
 import { findReactChild, forceUpdate } from '$shared/util/react';
+import { channelStore } from '$shared/stores';
 
 addFont(futura, "futuraBoldCondensed");
 
@@ -24,8 +25,9 @@ after(buttonsModule, "type", ({ args, returnVal }) => {
     let div = BdApi.React.createElement('div', {
         className: 'if-button',
         onMouseDown: () => {
+            const channel = channelStore.getChannelId();
             // genuinely no idea why this setTimeout is needed
-            setTimeout(() => expressionPicker.toggle('if-image', type));
+            setTimeout(() => expressionPicker.toggle('if-image', type, channel));
         },
         dangerouslySetInnerHTML: { __html: imagePlusOutline },
         key: "if-image"
