@@ -12,7 +12,7 @@
 }
 
 .if-button:hover {
-    background-color: var(--background-modifier-selected);
+    background-color: var(--interactive-background-selected);
 }
 
 .if-button svg {
@@ -21,11 +21,11 @@
 }
 
 .if-button path {
-    fill: var(--interactive-normal);
+    fill: var(--interactive-text-default);
 }
 
 .if-button:hover path {
-    fill: var(--interactive-hover);
+    fill: var(--interactive-text-hover);
 }
 
 .if-view {
