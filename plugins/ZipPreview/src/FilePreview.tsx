@@ -70,10 +70,9 @@ export default function FilePreview({ name, type: startType, blob, buff, onClose
                 dangerouslySetInnerHTML={{ __html: Copy }}></button> : null}
                 <button className="icon" onClick={downloadFile}
                 dangerouslySetInnerHTML={{ __html: Download }}></button>
-                <button onClick={onClose}
-                className="bd-button bd-button-filled bd-button-color-brand bd-button-medium">
+                <BdApi.Components.Button onClick={onClose}>
                     Close
-                </button>
+                </BdApi.Components.Button>
             </div>
         </div>
     )

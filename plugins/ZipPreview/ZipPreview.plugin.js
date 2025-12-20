@@ -1,7 +1,7 @@
 /**
  * @name ZipPreview
  * @description Lets you see inside zips and preview/download files without ever downloading/extracting the zip
- * @version 0.5.3
+ * @version 0.5.4
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -1403,14 +1403,7 @@ function FilePreview({ name, type: startType, blob, buff, onClose }) {
       onClick: downloadFile,
       dangerouslySetInnerHTML: { __html: download_default }
     }
-  ), /* @__PURE__ */ BdApi.React.createElement(
-    "button",
-    {
-      onClick: onClose,
-      className: "bd-button bd-button-filled bd-button-color-brand bd-button-medium"
-    },
-    "Close"
-  )));
+  ), /* @__PURE__ */ BdApi.React.createElement(BdApi.Components.Button, { onClick: onClose }, "Close")));
 }
 
 // plugins/ZipPreview/src/ZipPreview.tsx
