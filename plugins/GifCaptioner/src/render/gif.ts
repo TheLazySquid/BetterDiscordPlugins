@@ -4,7 +4,7 @@ import ProgressDisplay from "$shared/util/progress";
 
 export default async function captionGif(url: string, width: number, height: number, transform: GifTransform) {
     const progress = new ProgressDisplay("Fetching");
-    let res = await fetch(url);
+    let res = await BdApi.Net.fetch(url);
     let buffer = await res.arrayBuffer();
 
     let parsed = parseGIF(buffer);

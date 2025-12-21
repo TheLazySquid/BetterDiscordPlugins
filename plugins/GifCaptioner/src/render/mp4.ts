@@ -5,7 +5,7 @@ import ProgressDisplay from "$shared/util/progress";
 
 export default async function captionMp4(url: string, width: number, height: number, transform: GifTransform) {
 	const progress = new ProgressDisplay("Fetching");
-	let res = await fetch(url).catch(() => {
+	let res = await BdApi.Net.fetch(url).catch(() => {
 		progress.close();
 		error("Failed to fetch gif");
 	});

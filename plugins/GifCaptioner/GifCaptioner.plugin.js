@@ -1,7 +1,7 @@
 /**
  * @name GifCaptioner
  * @description A BetterDiscord plugin that allows you to add a caption to discord gifs
- * @version 1.3.3
+ * @version 1.3.4
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -7168,7 +7168,7 @@ var ProgressDisplay = class {
 // plugins/GifCaptioner/src/render/mp4.ts
 async function captionMp4(url, width, height, transform) {
   const progress = new ProgressDisplay("Fetching");
-  let res = await fetch(url).catch(() => {
+  let res = await BdApi.Net.fetch(url).catch(() => {
     progress.close();
     error("Failed to fetch gif");
   });
@@ -7382,7 +7382,7 @@ addStyle(`.gc-trigger {
 var import_gifuct_js = __toESM(require_lib2(), 1);
 async function captionGif(url, width, height, transform) {
   const progress = new ProgressDisplay("Fetching");
-  let res = await fetch(url);
+  let res = await BdApi.Net.fetch(url);
   let buffer = await res.arrayBuffer();
   let parsed = (0, import_gifuct_js.parseGIF)(buffer);
   let frames = (0, import_gifuct_js.decompressFrames)(parsed, true);
