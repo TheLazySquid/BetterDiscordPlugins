@@ -28,6 +28,9 @@ after(gifDisplay.prototype, "render", ({ thisVal, returnVal }) => {
                 url = url.slice(0, typeIndex) + "o" + url.slice(typeIndex + 1);
             }
 
+            // Fix errors caused by protocol-relative urls
+            if(url.startsWith("//")) url = url.replace("//", "https://");
+
             if(isGif) {
                 let image = document.createElement("img");
                 image.src = url;
