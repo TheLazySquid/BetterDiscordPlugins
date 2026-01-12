@@ -1,7 +1,7 @@
 /**
  * @name VideoCompressor
  * @description Compress videos that are too large to upload normally
- * @version 0.1.3
+ * @version 0.1.4
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -15286,7 +15286,7 @@ async function renderVideo(file, maxSize, values, attach2) {
     }
     success(`Video compressed successfully (now ${size})`);
     const newName = file.name.slice(0, file.name.lastIndexOf(".")) + `-compressed.mp4`;
-    const newFile = new File([output.target.buffer], newName, {type: "video/mp4"});
+    const newFile = new File([output.target.buffer], newName, { type: "video/mp4" });
     attach2(newFile);
   } catch (err) {
     Api.Logger.error("Error compressing video", err);
