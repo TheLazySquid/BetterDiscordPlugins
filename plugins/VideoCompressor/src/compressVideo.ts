@@ -94,7 +94,7 @@ async function renderVideo(file: File, maxSize: number, values: CompressValues, 
         success(`Video compressed successfully (now ${size})`);
 
         const newName = file.name.slice(0, file.name.lastIndexOf(".")) + `-compressed.mp4`;
-        const newFile = new File([ output.target.buffer ], newName);
+        const newFile = new File([ output.target.buffer ], newName, {type: "video/mp4"});
         attach(newFile);
     } catch (err) {
         Api.Logger.error("Error compressing video", err);
