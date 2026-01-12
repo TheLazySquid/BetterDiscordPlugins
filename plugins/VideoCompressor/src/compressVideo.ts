@@ -64,8 +64,13 @@ async function renderVideo(file: File, maxSize: number, values: CompressValues, 
         Api.Logger.info("Width:", width, "Frame Rate:", frameRate);
 
         const conversion = await Conversion.init({
-            input, output,
-            video: { width, frameRate }
+            input,
+            output,
+            video: {
+                width,
+                frameRate,
+                codec: "av1"
+            }
         });
         
         conversion.onProgress = (amount) => {

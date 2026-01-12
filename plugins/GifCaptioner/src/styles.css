@@ -62,23 +62,6 @@
     width: 100%;
 }
 
-.gc-progress {
-    color: white;
-    width: 300px;
-}
-
-.gc-status {
-    font-size: 30px;
-    font-weight: bold;
-    white-space: nowrap;
-}
-
-.gc-progress progress {
-    width: 100%;
-    margin: 10px 0;
-    height: 20px;
-}
-
 .gc-speechbubbler {
     position: relative;
 }

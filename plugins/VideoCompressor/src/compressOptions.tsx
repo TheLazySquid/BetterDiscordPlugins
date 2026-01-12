@@ -30,11 +30,11 @@ export default function CompressOptions({ fullSize, maxSize, onChange, values }:
             </div>
 
             <div>Resolution: {Math.floor(resolutionFactor * 100)}%</div>
-            <input type="range" value={resolutionFactor} min={0.1} max={1} step={0.0001}
+            <input type="range" value={resolutionFactor} min={0.1} max={1} step={0.01}
                 onChange={(e) => setResolutionFactor(parseFloat(e.target.value))}></input>
 
             <div>FPS: {Math.floor(fpsFactor * 100)}%</div>
-            <input type="range" value={fpsFactor} min={0.1} max={1} step={0.0001}
+            <input type="range" value={fpsFactor} min={0.1} max={1} step={0.01}
                 onChange={(e) => setFpsFactor(parseFloat(e.target.value))}></input>
         </div>
     )

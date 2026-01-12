@@ -1,7 +1,7 @@
 /**
  * @name VideoCompressor
  * @description Compress videos that are too large to upload normally
- * @version 0.1.4
+ * @version 0.2.0
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -15143,7 +15143,7 @@ function CompressOptions({ fullSize, maxSize, onChange, values }) {
       value: resolutionFactor,
       min: 0.1,
       max: 1,
-      step: 1e-4,
+      step: 0.01,
       onChange: (e) => setResolutionFactor(parseFloat(e.target.value))
     }
   ), /* @__PURE__ */ BdApi.React.createElement("div", null, "FPS: ", Math.floor(fpsFactor * 100), "%"), /* @__PURE__ */ BdApi.React.createElement(
@@ -15153,14 +15153,45 @@ function CompressOptions({ fullSize, maxSize, onChange, values }) {
       value: fpsFactor,
       min: 0.1,
       max: 1,
-      step: 1e-4,
+      step: 0.01,
       onChange: (e) => setFpsFactor(parseFloat(e.target.value))
     }
   ));
 }
 
+// shared/api/styles.ts
+var count = 0;
+function addStyle(css) {
+  onStart(() => {
+    Api.DOM.addStyle(`${pluginName}-${count++}`, css);
+  });
+}
+onStop(() => {
+  for (let i = 0; i < count; i++) {
+    Api.DOM.removeStyle(`${pluginName}-${i}`);
+  }
+});
+
+// shared/util/progress.css
+addStyle(`.lz-progress {
+  color: white;
+  width: 300px;
+}
+
+.lz-status {
+  font-size: 30px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.lz-progress progress {
+  width: 100%;
+  margin: 10px 0;
+  height: 20px;
+}`);
+
 // shared/util/progress.tsx
-function Progress({ onUpdater, status: initialStatus, cancelable }) {
+function Progress({ onUpdater, status: initialStatus }) {
   const React = BdApi.React;
   const [status, setStatus] = React.useState(initialStatus);
   const [progress, setProgress] = React.useState();
@@ -15170,7 +15201,7 @@ function Progress({ onUpdater, status: initialStatus, cancelable }) {
       setProgress(progress2);
     });
   }, []);
-  return /* @__PURE__ */ BdApi.React.createElement("div", { className: "gc-progress" }, /* @__PURE__ */ BdApi.React.createElement("h2", { className: "gc-status" }, status), /* @__PURE__ */ BdApi.React.createElement("progress", { value: progress, max: 1 }));
+  return /* @__PURE__ */ BdApi.React.createElement("div", { className: "lz-progress" }, /* @__PURE__ */ BdApi.React.createElement("h2", { className: "lz-status" }, status), /* @__PURE__ */ BdApi.React.createElement("progress", { value: progress, max: 1 }));
 }
 var ProgressDisplay = class {
   updater;
@@ -15187,8 +15218,7 @@ var ProgressDisplay = class {
         Progress,
         {
           status,
-          onUpdater: (updater) => this.updater = updater,
-          cancelable
+          onUpdater: (updater) => this.updater = updater
         }
       )));
     }, {
@@ -15265,7 +15295,11 @@ async function renderVideo(file, maxSize, values, attach2) {
     const conversion = await Conversion.init({
       input,
       output,
-      video: { width, frameRate }
+      video: {
+        width,
+        frameRate,
+        codec: "av1"
+      }
     });
     conversion.onProgress = (amount) => {
       progress.update("Rendering", amount);
@@ -15304,19 +15338,6 @@ function advanceQueue(maxSize, attach2) {
   }
   showPopup(next, maxSize, attach2);
 }
-
-// shared/api/styles.ts
-var count = 0;
-function addStyle(css) {
-  onStart(() => {
-    Api.DOM.addStyle(`${pluginName}-${count++}`, css);
-  });
-}
-onStop(() => {
-  for (let i = 0; i < count; i++) {
-    Api.DOM.removeStyle(`${pluginName}-${i}`);
-  }
-});
 
 // plugins/VideoCompressor/src/styles.css
 addStyle(`.vc-options {

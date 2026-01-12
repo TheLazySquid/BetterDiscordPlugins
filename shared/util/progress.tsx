@@ -1,8 +1,8 @@
+import "./progress.css";
 import { ModalSystem, Modal } from "$shared/modules";
 export type Updater = (status: string, progress: number | undefined) => void;
 
-function Progress({ onUpdater, status: initialStatus, cancelable }:
-    { onUpdater: (updater: Updater) => void, status: string, cancelable: boolean }) {
+function Progress({ onUpdater, status: initialStatus }: { onUpdater: (updater: Updater) => void, status: string }) {
     const React = BdApi.React;
     const [status, setStatus] = React.useState(initialStatus);
     const [progress, setProgress] = React.useState<number | undefined>();
@@ -14,8 +14,8 @@ function Progress({ onUpdater, status: initialStatus, cancelable }:
         });
     }, []);
 
-    return (<div className="gc-progress">
-        <h2 className="gc-status">{ status }</h2>
+    return (<div className="lz-progress">
+        <h2 className="lz-status">{ status }</h2>
         <progress value={progress} max={1}></progress>
     </div>)
 }
@@ -42,7 +42,6 @@ export default class ProgressDisplay {
                     <Progress
                         status={status}
                         onUpdater={(updater) => this.updater = updater}
-                        cancelable={cancelable}
                     />
                 </Modal.Content>
             </Modal.Root>)
