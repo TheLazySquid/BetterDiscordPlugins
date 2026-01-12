@@ -18,12 +18,12 @@ export function addFile(file: File, maxSize: number, attach: Attach) {
     }
     
     editing = true;
-    showPopup(file, maxSize, attach, defaultValues);
+    showPopup(file, file.size, maxSize, attach, defaultValues);
 }
 
-export function showPopup(file: File, maxSize: number, attach: Attach, values = defaultValues) {
+export function showPopup(file: File, fullSize: number, maxSize: number, attach: Attach, values = defaultValues) {
     const Options = BdApi.React.createElement(CompressOptions, {
-        fullSize: file.size,
+        fullSize,
         maxSize,
         values,
         onChange: (newValues) => values = newValues
@@ -87,12 +87,16 @@ async function renderVideo(file: File, maxSize: number, values: CompressValues, 
         if(!output.target.buffer) throw new Error("No output buffer found");
 
         // Check that the size is now small enough
-        let size = `${(output.target.buffer.byteLength / 1024 / 1024).toFixed(2)} MB`;
-        Api.Logger.info("Final size:", size);
+        const size = output.target.buffer.byteLength;
+        const sizeString = `${(output.target.buffer.byteLength / 1024 / 1024).toFixed(2)} MB`;
+        Api.Logger.info("Final size:", sizeString);
 
         if(output.target.buffer.byteLength > maxSize) {
-            warning(`Compressed video is still too large (${size})`);
-            showPopup(file, maxSize, attach, values);
+            warning(`Compressed video is still too large (${sizeString}). Size estimate has been updated.`);
+            const newFullSize = size / values.fpsFactor / (values.resolutionFactor ** 2);
+            Api.Logger.info("Reopening popup with new base size estimate:", newFullSize);
+
+            showPopup(file, newFullSize, maxSize, attach, values);
             return;
         }
 
@@ -117,5 +121,5 @@ function advanceQueue(maxSize: number, attach: Attach) {
         return;
     }
 
-    showPopup(next, maxSize, attach);
+    showPopup(next, next.size, maxSize, attach);
 }

@@ -1,7 +1,7 @@
 /**
  * @name VideoCompressor
  * @description Compress videos that are too large to upload normally
- * @version 0.2.0
+ * @version 0.2.1
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -15258,11 +15258,11 @@ function addFile(file, maxSize, attach2) {
     return;
   }
   editing = true;
-  showPopup(file, maxSize, attach2, defaultValues);
+  showPopup(file, file.size, maxSize, attach2, defaultValues);
 }
-function showPopup(file, maxSize, attach2, values = defaultValues) {
+function showPopup(file, fullSize, maxSize, attach2, values = defaultValues) {
   const Options = BdApi.React.createElement(CompressOptions, {
-    fullSize: file.size,
+    fullSize,
     maxSize,
     values,
     onChange: (newValues) => values = newValues
@@ -15311,11 +15311,14 @@ async function renderVideo(file, maxSize, values, attach2) {
     });
     await conversion.execute();
     if (!output.target.buffer) throw new Error("No output buffer found");
-    let size = `${(output.target.buffer.byteLength / 1024 / 1024).toFixed(2)} MB`;
-    Api.Logger.info("Final size:", size);
+    const size = output.target.buffer.byteLength;
+    const sizeString = `${(output.target.buffer.byteLength / 1024 / 1024).toFixed(2)} MB`;
+    Api.Logger.info("Final size:", sizeString);
     if (output.target.buffer.byteLength > maxSize) {
-      warning(`Compressed video is still too large (${size})`);
-      showPopup(file, maxSize, attach2, values);
+      warning(`Compressed video is still too large (${sizeString}). Size estimate has been updated.`);
+      const newFullSize = size / values.fpsFactor / values.resolutionFactor ** 2;
+      Api.Logger.info("Reopening popup with new base size estimate:", newFullSize);
+      showPopup(file, newFullSize, maxSize, attach2, values);
       return;
     }
     success(`Video compressed successfully (now ${size})`);
@@ -15336,7 +15339,7 @@ function advanceQueue(maxSize, attach2) {
     editing = false;
     return;
   }
-  showPopup(next, maxSize, attach2);
+  showPopup(next, next.size, maxSize, attach2);
 }
 
 // plugins/VideoCompressor/src/styles.css
