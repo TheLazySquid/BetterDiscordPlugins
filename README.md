@@ -1,4 +1,5 @@
 # BetterDiscord Plugins
+[![Discord Support Server](https://img.shields.io/badge/Discord-Support_Server-5865F2?logo=discord)](https://discord.gg/fKdAaFYbD5)
 
 This repository contains my [BetterDiscord](https://betterdiscord.app) plugins.
 
