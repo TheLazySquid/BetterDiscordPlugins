@@ -1,4 +1,3 @@
-import imagePlusOutline from '$assets/image-plus-outline.svg';
 import { after, tempAfter } from '$shared/api/patching';
 import { buttonsModule, chatClasses, expressionModule, expressionPicker, uploadClasses } from "$shared/modules";
 import View from "./ui/view";
@@ -11,6 +10,8 @@ import Manager, { types } from './manager';
 import { onStart, onStop } from '$shared/bd';
 import { findReactChild, forceUpdate } from '$shared/util/react';
 import { channelStore } from '$shared/stores';
+import { LucideIcon } from '$shared/ui/icons';
+import { ImagePlus } from 'lucide';
 
 addFont(futura, "futuraBoldCondensed");
 
@@ -29,9 +30,8 @@ after(buttonsModule, "type", ({ args, returnVal }) => {
             // genuinely no idea why this setTimeout is needed
             setTimeout(() => expressionPicker.toggle('if-image', type, channel));
         },
-        dangerouslySetInnerHTML: { __html: imagePlusOutline },
         key: "if-image"
-    });
+    }, BdApi.React.createElement(LucideIcon, { icon: ImagePlus }));
 
     returnVal.props.children.splice(gifIndex, 0, div);
     

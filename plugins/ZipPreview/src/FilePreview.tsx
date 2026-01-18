@@ -1,7 +1,6 @@
-import Download from "$assets/download.svg"
-import Close from "$assets/close.svg";
-import Copy from "$assets/content-copy.svg";
 import { highlightModule } from "$shared/modules";
+import { LucideIcon } from "$shared/ui/icons";
+import { Copy, Download, X } from "lucide";
 
 const React = BdApi.React;
 
@@ -41,12 +40,14 @@ export default function FilePreview({ name, type: startType, blob, buff, onClose
         <div className="zp-preview" onClick={(e) => e.stopPropagation()}>
             <div className="zp-preview-header">
                 <div className="zp-preview-title">{ name }</div>
-                <div className="zp-preview-close" onClick={onClose}
-                dangerouslySetInnerHTML={{ __html: Close }}></div>
+                <div className="zp-preview-close" onClick={onClose}>
+                    <LucideIcon icon={X} />
+                </div>
             </div>
             <div className="zp-preview-content-wrap">
-                { type == "text" || type == "image" ? <div className="zp-preview-copy" onClick={copyFile}
-                dangerouslySetInnerHTML={{ __html: Copy }}></div> : null}
+                { type == "text" || type == "image" ? <div className="zp-preview-copy" onClick={copyFile}>
+                    <LucideIcon icon={Copy} />
+                </div> : null}
                 <div className="zp-preview-content">
                     {type == "image" ? <img src={url.current} /> : null}
                     {type == "video" ? <video controls src={url.current} /> : null}
@@ -66,10 +67,12 @@ export default function FilePreview({ name, type: startType, blob, buff, onClose
                 </div>
             </div>
             <div className="zp-preview-footer">
-                { type == "text" || type == "image" ? <button className="icon" onClick={copyFile}
-                dangerouslySetInnerHTML={{ __html: Copy }}></button> : null}
-                <button className="icon" onClick={downloadFile}
-                dangerouslySetInnerHTML={{ __html: Download }}></button>
+                { type == "text" || type == "image" ? <button className="icon" onClick={copyFile}>
+                    <LucideIcon icon={Copy} />
+                </button> : null}
+                <button className="icon" onClick={downloadFile}>
+                    <LucideIcon icon={Download} />
+                </button>
                 <BdApi.Components.Button onClick={onClose}>
                     Close
                 </BdApi.Components.Button>

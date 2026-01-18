@@ -2,11 +2,10 @@ import { type ZipInfo, unzip, type ZipEntry } from "unzipit";
 // I won't lie, I got pretty desperate trying to find a library that a) works b) builds
 import { isBinaryFile } from "arraybuffer-isbinary";
 
-import ExpandDown from "$assets/arrow-expand-down.svg"
-import ExpandUp from "$assets/arrow-expand-up.svg"
-import FolderReturn from "$assets/folder-arrow-left-outline.svg"
 import FilePreview from "./FilePreview.tsx";
 import { Modal, ModalSystem } from "$shared/modules";
+import { LucideIcon } from "$shared/ui/icons.tsx";
+import { ArrowDownFromLine, ArrowUpFromLine, FolderOutput } from "lucide";
 
 const React = BdApi.React;
 
@@ -105,13 +104,12 @@ function ZipPreview({ url }: { url: string }) {
             <div className={"zp-zip-preview " + (expanded ? "expanded" : "")}>
                 {folderContents ? [
                     <div className="zp-path">
-                        <div dangerouslySetInnerHTML={{ __html: FolderReturn }}
-                        className="zp-folderReturn"
-                            onClick={() => {
-                                if(folderContents.parent) {
-                                    setFolderContents(folderContents.parent)
-                                }
-                            }}>
+                        <div className="zp-folderReturn" onClick={() => {
+                            if(folderContents.parent) {
+                                setFolderContents(folderContents.parent)
+                            }
+                        }}>
+                            <LucideIcon icon={FolderOutput} />
                         </div>
                         <div>
                             {folderContents.path}
@@ -141,8 +139,8 @@ function ZipPreview({ url }: { url: string }) {
                     })
                 ] : "Loading..."}
             </div>
-            <div className="zp-dropdown-expander" dangerouslySetInnerHTML={{ __html: expanded ? ExpandUp : ExpandDown }}
-            onClick={toggleExpanded}>
+            <div className="zp-dropdown-expander" onClick={toggleExpanded}>
+                <LucideIcon icon={expanded ? ArrowUpFromLine : ArrowDownFromLine} />
             </div>
         </div>
     )

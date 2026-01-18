@@ -24,7 +24,7 @@
 .zp-dropdown-expander svg {
     width: 16px;
     height: 16px;
-    fill: var(--text-link);   
+    color: var(--text-link);   
 }
 
 .zp-zip-preview {
@@ -68,7 +68,7 @@
 }
 
 .zp-folderReturn svg {
-    fill: var(--text-default);
+    color: var(--text-default);
     width: 20px;
     height: 20px;
 }
@@ -192,7 +192,7 @@
     width: 35px;
     border: none;
     background-color: transparent;
-    fill: var(--text-default);
+    color: var(--text-default);
     display: flex;
     align-items: center;
     justify-content: center;

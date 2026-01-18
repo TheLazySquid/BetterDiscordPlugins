@@ -30,9 +30,8 @@
   },
   "type": "module",
   "dependencies": {
-    "lucide-react": "^0.542.0",
-    "mediabunny": "^1.8.0",
-    "react-colorful": "^5.6.1"
+    "lucide": "^0.562.0",
+    "mediabunny": "^1.8.0"
   },
   "overrides": {
     "@types/react": "19.0.0"

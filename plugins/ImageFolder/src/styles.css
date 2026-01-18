@@ -2,8 +2,8 @@
     aspect-ratio: 1 / 1;
     padding: 0;
     cursor: pointer;
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     border-radius: 8px;
     transition-duration: 0.2s;
     display: flex;
@@ -18,14 +18,11 @@
 .if-button svg {
     width: 23px;
     height: 23px;
+    color: var(--interactive-text-default);
 }
 
-.if-button path {
-    fill: var(--interactive-text-default);
-}
-
-.if-button:hover path {
-    fill: var(--interactive-text-hover);
+.if-button:hover svg {
+    color: var(--interactive-text-hover);
 }
 
 .if-view {
@@ -34,10 +31,6 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
-}
-
-.if-svg-wrap {
-    display: contents;
 }
 
 .if-view svg {

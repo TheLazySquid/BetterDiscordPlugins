@@ -2,11 +2,8 @@ import type { DirContents } from "../types";
 import Manager from "../manager";
 import MediaDisplay from "./mediaDisplay";
 import FolderDisplay from "./folderDisplay";
-import FolderBack from "$assets/folder-back.svg";
-import FolderTree from "$assets/folder-tree.svg";
-import FolderPlus from "$assets/folder-plus-outline.svg";
-import FilePlus from "$assets/file-plus.svg";
-import Search from "$assets/search.svg";
+import { LucideIcon } from "$shared/ui/icons";
+import { FilePlus, FolderOutput, FolderPlus, FolderTree, Search } from "lucide";
 
 export default function View() {
 	const React = BdApi.React;
@@ -124,14 +121,14 @@ export default function View() {
 	return (<div className="if-view">
 		<div className="if-controls">
 			<button title="Upload media" onClick={() => Manager.uploadMedia()}>
-				<div className="if-svg-wrap" dangerouslySetInnerHTML={{ __html: FilePlus }}></div>
+				<LucideIcon icon={FilePlus} />
 			</button>
 			<button title="Create folder" onClick={() => Manager.createFolder()}>
-				<div className="if-svg-wrap" dangerouslySetInnerHTML={{ __html: FolderPlus }}></div>
+				<LucideIcon icon={FolderPlus} />
 			</button>
 			<div className="if-search">
 				<button className="if-search-icon" onClick={startSearch}>
-					<div className="if-svg-wrap" dangerouslySetInnerHTML={{ __html: Search }}></div>
+					<LucideIcon icon={Search} />
 				</button>
 				{searching ?
 					<input type="text"
@@ -143,12 +140,12 @@ export default function View() {
 				: null}
 			</div>
 			<button title="Reveal in file manager" onClick={() => Manager.showFolder()}>
-				<div className="if-svg-wrap" dangerouslySetInnerHTML={{ __html: FolderTree }}></div>
+				<LucideIcon icon={FolderTree} />
 			</button>
 		</div>
 		{dir !== "" ? <div className="if-path">
 			<button className="if-back" onClick={() => moveBack()}>
-				<div className="if-svg-wrap" dangerouslySetInnerHTML={{ __html: FolderBack }}></div>
+				<LucideIcon icon={FolderOutput} />
 			</button>
 			<button onClick={() => {clear(); setDir("")}}>/</button>
 			{dir.split("/").map((subdir, i, arr) => (<>

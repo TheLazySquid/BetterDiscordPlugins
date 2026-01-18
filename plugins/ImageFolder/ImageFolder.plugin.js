@@ -1,7 +1,7 @@
 /**
  * @name ImageFolder
  * @description A BetterDiscord plugin that allows you to save and send images from a folder for easy access
- * @version 1.4.11
+ * @version 1.5.0
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -32,9 +32,6 @@ var __toBinary = /* @__PURE__ */ (() => {
     return bytes;
   };
 })();
-
-// assets/image-plus-outline.svg
-var image_plus_outline_default = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 19C13 19.7 13.13 20.37 13.35 21H5C3.9 21 3 20.11 3 19V5C3 3.9 3.9 3 5 3H19C20.11 3 21 3.9 21 5V13.35C20.37 13.13 19.7 13 19 13V5H5V19H13M13.96 12.29L11.21 15.83L9.25 13.47L6.5 17H13.35C13.75 15.88 14.47 14.91 15.4 14.21L13.96 12.29M20 18V15H18V18H15V20H18V23H20V20H23V18H20Z" /></svg>';
 
 // meta-ns:meta
 var pluginName = "ImageFolder";
@@ -798,8 +795,91 @@ function MediaDisplay({ media }) {
   return /* @__PURE__ */ BdApi.React.createElement("button", { ref: wrap, onClick: send, onContextMenu: openContextMenu }, media.size > settings.maxPreviewSize * 1e6 ? /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-no-preview" }, media.name, " is too large to be previewed") : url ? media.type === "image" ? /* @__PURE__ */ BdApi.React.createElement("img", { src: url }) : media.type === "audio" ? /* @__PURE__ */ BdApi.React.createElement("div", null, /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-audio-label" }, media.name), /* @__PURE__ */ BdApi.React.createElement("audio", { src: url, controls: true })) : /* @__PURE__ */ BdApi.React.createElement("video", { src: url, loop: true, autoPlay: true, muted: true }) : "loading...");
 }
 
-// assets/folder-open.svg
-var folder_open_default = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder-open-icon lucide-folder-open"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg>';
+// shared/ui/icons.tsx
+function LucideIcon({ icon, size = 24, color, className }) {
+  const stroke = color ?? "currentColor";
+  return /* @__PURE__ */ BdApi.React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke, "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", className }, icon.map(([tag, attrs]) => BdApi.React.createElement(tag, attrs)));
+}
+
+// node_modules/lucide/dist/esm/icons/file-plus.js
+var FilePlus = [
+  [
+    "path",
+    {
+      d: "M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"
+    }
+  ],
+  ["path", { d: "M14 2v5a1 1 0 0 0 1 1h5" }],
+  ["path", { d: "M9 15h6" }],
+  ["path", { d: "M12 18v-6" }]
+];
+
+// node_modules/lucide/dist/esm/icons/folder-open.js
+var FolderOpen = [
+  [
+    "path",
+    {
+      d: "m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"
+    }
+  ]
+];
+
+// node_modules/lucide/dist/esm/icons/folder-output.js
+var FolderOutput = [
+  [
+    "path",
+    {
+      d: "M2 7.5V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-1.5"
+    }
+  ],
+  ["path", { d: "M2 13h10" }],
+  ["path", { d: "m5 10-3 3 3 3" }]
+];
+
+// node_modules/lucide/dist/esm/icons/folder-plus.js
+var FolderPlus = [
+  ["path", { d: "M12 10v6" }],
+  ["path", { d: "M9 13h6" }],
+  [
+    "path",
+    {
+      d: "M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"
+    }
+  ]
+];
+
+// node_modules/lucide/dist/esm/icons/folder-tree.js
+var FolderTree = [
+  [
+    "path",
+    {
+      d: "M20 10a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2.5a1 1 0 0 1-.8-.4l-.9-1.2A1 1 0 0 0 15 3h-2a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z"
+    }
+  ],
+  [
+    "path",
+    {
+      d: "M20 21a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1h-2.9a1 1 0 0 1-.88-.55l-.42-.85a1 1 0 0 0-.92-.6H13a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z"
+    }
+  ],
+  ["path", { d: "M3 5a2 2 0 0 0 2 2h3" }],
+  ["path", { d: "M3 3v13a2 2 0 0 0 2 2h3" }]
+];
+
+// node_modules/lucide/dist/esm/icons/image-plus.js
+var ImagePlus = [
+  ["path", { d: "M16 5h6" }],
+  ["path", { d: "M19 2v6" }],
+  ["path", { d: "M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5" }],
+  ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" }],
+  ["circle", { cx: "9", cy: "9", r: "2" }]
+];
+
+// node_modules/lucide/dist/esm/icons/search.js
+var Search = [
+  ["path", { d: "m21 21-4.34-4.34" }],
+  ["circle", { cx: "11", cy: "11", r: "8" }]
+];
 
 // plugins/ImageFolder/src/ui/folderDisplay.tsx
 function FolderDisplay({ folder, onClick }) {
@@ -858,25 +938,10 @@ function FolderDisplay({ folder, onClick }) {
       onContextMenu,
       onClick
     },
-    /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-svg-wrap", dangerouslySetInnerHTML: { __html: folder_open_default } }),
+    /* @__PURE__ */ BdApi.React.createElement(LucideIcon, { icon: FolderOpen }),
     folder.name
   );
 }
-
-// assets/folder-back.svg
-var folder_back_default = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder-output-icon lucide-folder-output"><path d="M2 7.5V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-1.5"/><path d="M2 13h10"/><path d="m5 10-3 3 3 3"/></svg>';
-
-// assets/folder-tree.svg
-var folder_tree_default = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder-tree-icon lucide-folder-tree"><path d="M20 10a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2.5a1 1 0 0 1-.8-.4l-.9-1.2A1 1 0 0 0 15 3h-2a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z"/><path d="M20 21a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1h-2.9a1 1 0 0 1-.88-.55l-.42-.85a1 1 0 0 0-.92-.6H13a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z"/><path d="M3 5a2 2 0 0 0 2 2h3"/><path d="M3 3v13a2 2 0 0 0 2 2h3"/></svg>';
-
-// assets/folder-plus-outline.svg
-var folder_plus_outline_default = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="20" viewBox="0 0 24 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder-plus-icon lucide-folder-plus"><path d="M12 10v6"/><path d="M9 13h6"/><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>';
-
-// assets/file-plus.svg
-var file_plus_default = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-plus-icon lucide-file-plus"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M9 15h6"/><path d="M12 18v-6"/></svg>';
-
-// assets/search.svg
-var search_default = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>';
 
 // plugins/ImageFolder/src/ui/view.tsx
 function View() {
@@ -968,7 +1033,7 @@ function View() {
   const searchInput = React.useCallback((node) => {
     if (node) node.focus();
   }, []);
-  return /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-view" }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-controls" }, /* @__PURE__ */ BdApi.React.createElement("button", { title: "Upload media", onClick: () => Manager.uploadMedia() }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-svg-wrap", dangerouslySetInnerHTML: { __html: file_plus_default } })), /* @__PURE__ */ BdApi.React.createElement("button", { title: "Create folder", onClick: () => Manager.createFolder() }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-svg-wrap", dangerouslySetInnerHTML: { __html: folder_plus_outline_default } })), /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-search" }, /* @__PURE__ */ BdApi.React.createElement("button", { className: "if-search-icon", onClick: startSearch }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-svg-wrap", dangerouslySetInnerHTML: { __html: search_default } })), searching ? /* @__PURE__ */ BdApi.React.createElement(
+  return /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-view" }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-controls" }, /* @__PURE__ */ BdApi.React.createElement("button", { title: "Upload media", onClick: () => Manager.uploadMedia() }, /* @__PURE__ */ BdApi.React.createElement(LucideIcon, { icon: FilePlus })), /* @__PURE__ */ BdApi.React.createElement("button", { title: "Create folder", onClick: () => Manager.createFolder() }, /* @__PURE__ */ BdApi.React.createElement(LucideIcon, { icon: FolderPlus })), /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-search" }, /* @__PURE__ */ BdApi.React.createElement("button", { className: "if-search-icon", onClick: startSearch }, /* @__PURE__ */ BdApi.React.createElement(LucideIcon, { icon: Search })), searching ? /* @__PURE__ */ BdApi.React.createElement(
     "input",
     {
       type: "text",
@@ -979,7 +1044,7 @@ function View() {
       spellCheck: false,
       placeholder: "Search by filename"
     }
-  ) : null), /* @__PURE__ */ BdApi.React.createElement("button", { title: "Reveal in file manager", onClick: () => Manager.showFolder() }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-svg-wrap", dangerouslySetInnerHTML: { __html: folder_tree_default } }))), dir !== "" ? /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-path" }, /* @__PURE__ */ BdApi.React.createElement("button", { className: "if-back", onClick: () => moveBack() }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-svg-wrap", dangerouslySetInnerHTML: { __html: folder_back_default } })), /* @__PURE__ */ BdApi.React.createElement("button", { onClick: () => {
+  ) : null), /* @__PURE__ */ BdApi.React.createElement("button", { title: "Reveal in file manager", onClick: () => Manager.showFolder() }, /* @__PURE__ */ BdApi.React.createElement(LucideIcon, { icon: FolderTree }))), dir !== "" ? /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-path" }, /* @__PURE__ */ BdApi.React.createElement("button", { className: "if-back", onClick: () => moveBack() }, /* @__PURE__ */ BdApi.React.createElement(LucideIcon, { icon: FolderOutput })), /* @__PURE__ */ BdApi.React.createElement("button", { onClick: () => {
     clear();
     setDir("");
   } }, "/"), dir.split("/").map((subdir, i, arr) => /* @__PURE__ */ BdApi.React.createElement(React.Fragment, null, /* @__PURE__ */ BdApi.React.createElement("button", { onClick: () => setDepth(i) }, subdir), i !== arr.length - 1 ? /* @__PURE__ */ BdApi.React.createElement("button", { onClick: () => setDepth(i) }, "/") : null))) : null, /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-content" }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-folder-list" }, showContents.folders.map((folder) => /* @__PURE__ */ BdApi.React.createElement(
@@ -1026,8 +1091,8 @@ addStyle(`.if-button {
   aspect-ratio: 1 / 1;
   padding: 0;
   cursor: pointer;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: 8px;
   transition-duration: 0.2s;
   display: flex;
@@ -1042,14 +1107,11 @@ addStyle(`.if-button {
 .if-button svg {
   width: 23px;
   height: 23px;
+  color: var(--interactive-text-default);
 }
 
-.if-button path {
-  fill: var(--interactive-text-default);
-}
-
-.if-button:hover path {
-  fill: var(--interactive-text-hover);
+.if-button:hover svg {
+  color: var(--interactive-text-hover);
 }
 
 .if-view {
@@ -1058,10 +1120,6 @@ addStyle(`.if-button {
   display: flex;
   flex-direction: column;
   min-height: 0;
-}
-
-.if-svg-wrap {
-  display: contents;
 }
 
 .if-view svg {
@@ -1262,9 +1320,8 @@ after(buttonsModule, "type", ({ args, returnVal }) => {
       const channel = channelStore.getChannelId();
       setTimeout(() => expressionPicker.toggle("if-image", type, channel));
     },
-    dangerouslySetInnerHTML: { __html: image_plus_outline_default },
     key: "if-image"
-  });
+  }, BdApi.React.createElement(LucideIcon, { icon: ImagePlus }));
   returnVal.props.children.splice(gifIndex, 0, div);
   return returnVal;
 });

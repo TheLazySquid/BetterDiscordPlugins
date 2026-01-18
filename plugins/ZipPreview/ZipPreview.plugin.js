@@ -1,7 +1,7 @@
 /**
  * @name ZipPreview
  * @description Lets you see inside zips and preview/download files without ever downloading/extracting the zip
- * @version 0.5.4
+ * @version 0.6.0
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -175,7 +175,7 @@ addStyle(`.zp-wrap {
 .zp-dropdown-expander svg {
   width: 16px;
   height: 16px;
-  fill: var(--text-link);   
+  color: var(--text-link);   
 }
 
 .zp-zip-preview {
@@ -219,7 +219,7 @@ addStyle(`.zp-wrap {
 }
 
 .zp-folderReturn svg {
-  fill: var(--text-default);
+  color: var(--text-default);
   width: 20px;
   height: 20px;
 }
@@ -343,7 +343,7 @@ addStyle(`.zp-wrap {
   width: 35px;
   border: none;
   background-color: transparent;
-  fill: var(--text-default);
+  color: var(--text-default);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1329,23 +1329,56 @@ function isBinaryCheck(fileBuffer, bytesRead) {
   return false;
 }
 
-// assets/arrow-expand-down.svg
-var arrow_expand_down_default = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M22,4V2H2V4H11V18.17L5.5,12.67L4.08,14.08L12,22L19.92,14.08L18.5,12.67L13,18.17V4H22Z" /></svg>';
+// shared/ui/icons.tsx
+function LucideIcon({ icon, size = 24, color, className }) {
+  const stroke = color ?? "currentColor";
+  return /* @__PURE__ */ BdApi.React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke, "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", className }, icon.map(([tag, attrs]) => BdApi.React.createElement(tag, attrs)));
+}
 
-// assets/arrow-expand-up.svg
-var arrow_expand_up_default = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M2,20V22H22V20H13V5.83L18.5,11.33L19.92,9.92L12,2L4.08,9.92L5.5,11.33L11,5.83V20H2Z" /></svg>';
+// node_modules/lucide/dist/esm/icons/arrow-down-from-line.js
+var ArrowDownFromLine = [
+  ["path", { d: "M19 3H5" }],
+  ["path", { d: "M12 21V7" }],
+  ["path", { d: "m6 15 6 6 6-6" }]
+];
 
-// assets/folder-arrow-left-outline.svg
-var folder_arrow_left_outline_default = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M22 8V13.81C21.39 13.46 20.72 13.22 20 13.09V8H4V18H13.09C13.04 18.33 13 18.66 13 19C13 19.34 13.04 19.67 13.09 20H4C2.9 20 2 19.11 2 18V6C2 4.89 2.89 4 4 4H10L12 6H20C21.1 6 22 6.89 22 8M18 16L15 19L18 22V20H22V18H18V16Z" /></svg>';
+// node_modules/lucide/dist/esm/icons/arrow-up-from-line.js
+var ArrowUpFromLine = [
+  ["path", { d: "m18 9-6-6-6 6" }],
+  ["path", { d: "M12 3v14" }],
+  ["path", { d: "M5 21h14" }]
+];
 
-// assets/download.svg
-var download_default = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z" /></svg>';
+// node_modules/lucide/dist/esm/icons/copy.js
+var Copy = [
+  ["rect", { width: "14", height: "14", x: "8", y: "8", rx: "2", ry: "2" }],
+  ["path", { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" }]
+];
 
-// assets/close.svg
-var close_default = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" /></svg>';
+// node_modules/lucide/dist/esm/icons/download.js
+var Download = [
+  ["path", { d: "M12 15V3" }],
+  ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }],
+  ["path", { d: "m7 10 5 5 5-5" }]
+];
 
-// assets/content-copy.svg
-var content_copy_default = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" /></svg>';
+// node_modules/lucide/dist/esm/icons/folder-output.js
+var FolderOutput = [
+  [
+    "path",
+    {
+      d: "M2 7.5V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-1.5"
+    }
+  ],
+  ["path", { d: "M2 13h10" }],
+  ["path", { d: "m5 10-3 3 3 3" }]
+];
+
+// node_modules/lucide/dist/esm/icons/x.js
+var X = [
+  ["path", { d: "M18 6 6 18" }],
+  ["path", { d: "m6 6 12 12" }]
+];
 
 // plugins/ZipPreview/src/FilePreview.tsx
 var React = BdApi.React;
@@ -1373,37 +1406,9 @@ function FilePreview({ name, type: startType, blob, buff, onClose }) {
   }
   const ext = name.split(".").at(-1);
   const hasCode = highlightModule.hasLanguage(ext);
-  return /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview-header" }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview-title" }, name), /* @__PURE__ */ BdApi.React.createElement(
-    "div",
-    {
-      className: "zp-preview-close",
-      onClick: onClose,
-      dangerouslySetInnerHTML: { __html: close_default }
-    }
-  )), /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview-content-wrap" }, type == "text" || type == "image" ? /* @__PURE__ */ BdApi.React.createElement(
-    "div",
-    {
-      className: "zp-preview-copy",
-      onClick: copyFile,
-      dangerouslySetInnerHTML: { __html: content_copy_default }
-    }
-  ) : null, /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview-content" }, type == "image" ? /* @__PURE__ */ BdApi.React.createElement("img", { src: url.current }) : null, type == "video" ? /* @__PURE__ */ BdApi.React.createElement("video", { controls: true, src: url.current }) : null, type == "audio" ? /* @__PURE__ */ BdApi.React.createElement("audio", { controls: true, src: url.current }) : null, type == "text" ? hasCode ? /* @__PURE__ */ BdApi.React.createElement("pre", { dangerouslySetInnerHTML: {
+  return /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview-header" }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview-title" }, name), /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview-close", onClick: onClose }, /* @__PURE__ */ BdApi.React.createElement(LucideIcon, { icon: X }))), /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview-content-wrap" }, type == "text" || type == "image" ? /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview-copy", onClick: copyFile }, /* @__PURE__ */ BdApi.React.createElement(LucideIcon, { icon: Copy })) : null, /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview-content" }, type == "image" ? /* @__PURE__ */ BdApi.React.createElement("img", { src: url.current }) : null, type == "video" ? /* @__PURE__ */ BdApi.React.createElement("video", { controls: true, src: url.current }) : null, type == "audio" ? /* @__PURE__ */ BdApi.React.createElement("audio", { controls: true, src: url.current }) : null, type == "text" ? hasCode ? /* @__PURE__ */ BdApi.React.createElement("pre", { dangerouslySetInnerHTML: {
     __html: highlightModule.highlight(ext, new TextDecoder().decode(buff), true).value
-  } }) : /* @__PURE__ */ BdApi.React.createElement("pre", null, new TextDecoder().decode(buff)) : null, type == "binary" ? /* @__PURE__ */ BdApi.React.createElement("div", null, "Can't preview this file :(", /* @__PURE__ */ BdApi.React.createElement("button", { className: "zp-preview-override", onClick: () => setType("text") }, "Do it anyways")) : null)), /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview-footer" }, type == "text" || type == "image" ? /* @__PURE__ */ BdApi.React.createElement(
-    "button",
-    {
-      className: "icon",
-      onClick: copyFile,
-      dangerouslySetInnerHTML: { __html: content_copy_default }
-    }
-  ) : null, /* @__PURE__ */ BdApi.React.createElement(
-    "button",
-    {
-      className: "icon",
-      onClick: downloadFile,
-      dangerouslySetInnerHTML: { __html: download_default }
-    }
-  ), /* @__PURE__ */ BdApi.React.createElement(BdApi.Components.Button, { onClick: onClose }, "Close")));
+  } }) : /* @__PURE__ */ BdApi.React.createElement("pre", null, new TextDecoder().decode(buff)) : null, type == "binary" ? /* @__PURE__ */ BdApi.React.createElement("div", null, "Can't preview this file :(", /* @__PURE__ */ BdApi.React.createElement("button", { className: "zp-preview-override", onClick: () => setType("text") }, "Do it anyways")) : null)), /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview-footer" }, type == "text" || type == "image" ? /* @__PURE__ */ BdApi.React.createElement("button", { className: "icon", onClick: copyFile }, /* @__PURE__ */ BdApi.React.createElement(LucideIcon, { icon: Copy })) : null, /* @__PURE__ */ BdApi.React.createElement("button", { className: "icon", onClick: downloadFile }, /* @__PURE__ */ BdApi.React.createElement(LucideIcon, { icon: Download })), /* @__PURE__ */ BdApi.React.createElement(BdApi.Components.Button, { onClick: onClose }, "Close")));
 }
 
 // plugins/ZipPreview/src/ZipPreview.tsx
@@ -1470,18 +1475,11 @@ function ZipPreview({ url }) {
     return (size / 1024 / 1024 / 1024).toFixed(2) + " GB";
   }
   return /* @__PURE__ */ BdApi.React.createElement("div", null, /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-zip-preview " + (expanded ? "expanded" : "") }, folderContents ? [
-    /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-path" }, /* @__PURE__ */ BdApi.React.createElement(
-      "div",
-      {
-        dangerouslySetInnerHTML: { __html: folder_arrow_left_outline_default },
-        className: "zp-folderReturn",
-        onClick: () => {
-          if (folderContents.parent) {
-            setFolderContents(folderContents.parent);
-          }
-        }
+    /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-path" }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-folderReturn", onClick: () => {
+      if (folderContents.parent) {
+        setFolderContents(folderContents.parent);
       }
-    ), /* @__PURE__ */ BdApi.React.createElement("div", null, folderContents.path)),
+    } }, /* @__PURE__ */ BdApi.React.createElement(LucideIcon, { icon: FolderOutput })), /* @__PURE__ */ BdApi.React.createElement("div", null, folderContents.path)),
     Object.keys(folderContents.folders).map((name) => {
       return /* @__PURE__ */ BdApi.React.createElement(
         "div",
@@ -1499,14 +1497,7 @@ function ZipPreview({ url }) {
     Object.entries(folderContents.files).map((parts) => {
       return /* @__PURE__ */ BdApi.React.createElement("div", { key: parts[0], onClick: () => openFile(parts[0], parts[1]) }, /* @__PURE__ */ BdApi.React.createElement("span", { className: "zp-entry" }, parts[0]), /* @__PURE__ */ BdApi.React.createElement("span", { className: "zp-filesize" }, "(", formatSize(parts[1].size), ")"));
     })
-  ] : "Loading..."), /* @__PURE__ */ BdApi.React.createElement(
-    "div",
-    {
-      className: "zp-dropdown-expander",
-      dangerouslySetInnerHTML: { __html: expanded ? arrow_expand_up_default : arrow_expand_down_default },
-      onClick: toggleExpanded
-    }
-  ));
+  ] : "Loading..."), /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-dropdown-expander", onClick: toggleExpanded }, /* @__PURE__ */ BdApi.React.createElement(LucideIcon, { icon: expanded ? ArrowUpFromLine : ArrowDownFromLine })));
 }
 var ZipPreview_default = React2.memo(ZipPreview);
 

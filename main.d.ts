@@ -3,11 +3,6 @@ declare module "*.txt" {
     export default content;
 }
 
-declare module "*.svg" {
-    const content: string;
-    export default content;
-}
-
 declare module "*.otf" {
     const content: Uint8Array<ArrayBuffer>;
     export default content;

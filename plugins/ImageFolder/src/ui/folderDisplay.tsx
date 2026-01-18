@@ -1,6 +1,7 @@
 import type { Folder } from "../types";
 import Manager from "../manager";
-import FolderOpen from "$assets/folder-open.svg";
+import { LucideIcon } from "$shared/ui/icons";
+import { FolderOpen } from "lucide";
 
 export default function FolderDisplay({ folder, onClick }: { folder: Folder, onClick: () => void }) {
 	const React = BdApi.React;
@@ -58,7 +59,7 @@ export default function FolderDisplay({ folder, onClick }: { folder: Folder, onC
     return (<button className={`if-folder ${canDrop ? "highlighted" : ""}`} onDrop={onDrop}
 	onDragOver={onDragOver} onDragEnter={onDragEnter} onDragLeave={onDragLeave}
     onContextMenu={onContextMenu} onClick={onClick}>
-        <div className="if-svg-wrap" dangerouslySetInnerHTML={{ __html: FolderOpen }}></div>
+        <LucideIcon icon={FolderOpen} />
         {folder.name}
     </button>)
 }

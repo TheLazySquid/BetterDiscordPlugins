@@ -1,5 +1,4 @@
 import futura from "$assets/Futura Condensed Extra Bold.otf";
-import CaptionBtnSVG from "$assets/page-layout-header.svg";
 import { addFont } from "$shared/api/fonts";
 import { after } from "$shared/api/patching";
 import { error } from "$shared/api/toast";
@@ -10,12 +9,12 @@ import captionGif, { parseGif } from "./render/gif";
 import Modal from "./ui/modal";
 import type { GifTransform } from "./render/gifRenderer";
 import { expose } from "$shared/bd";
+import { CCIcon } from "$shared/ui/icons";
 
 addFont(futura, "futuraBoldCondensed");
 
 after(gifDisplay.prototype, "render", ({ thisVal, returnVal }) => {
     const button = BdApi.React.createElement("button", {
-        dangerouslySetInnerHTML: { __html: CaptionBtnSVG },
         className: "gc-trigger",
         onClick: (e) => {
             e.stopPropagation();
@@ -60,7 +59,7 @@ after(gifDisplay.prototype, "render", ({ thisVal, returnVal }) => {
                 video.addEventListener("error", () => error("Failed to load gif"));
             }
         }
-    });
+    }, BdApi.React.createElement(CCIcon));
 
     returnVal.props.children.unshift(button);
 });

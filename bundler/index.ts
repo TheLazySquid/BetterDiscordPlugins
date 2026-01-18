@@ -62,8 +62,7 @@ let esbuildConfig: BuildOptions = {
     bundle: true,
     outfile: `plugins/${args.plugin}/${args.plugin}.plugin.js`,
     loader: {
-        ".otf": "binary",
-        ".svg": "text"
+        ".otf": "binary"
     },
     banner: {
         js: header
