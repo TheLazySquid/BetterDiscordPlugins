@@ -131,10 +131,9 @@ export default class GifRenderer {
 		this.addFrameToGif(source.delay);
 	}
 
-	addVideoFrame(source: VideoFrame, delay: number) {
-		this.ctx.drawImage(source, 0, this.topOffset, this.width, this.height);
-		this.addFrameToGif(delay);
-		source.close();
+	addVideoFrame(canvas: HTMLCanvasElement | OffscreenCanvas, delay: number) {
+		this.ctx.drawImage(canvas, 0, this.topOffset, this.width, this.height);		
+		this.addFrameToGif(delay * 1000); // convert to ms
 	}
 
 	addFrameToGif(delay: number) {

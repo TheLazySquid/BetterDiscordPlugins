@@ -15,6 +15,10 @@ const args = parseArgs({
         plugin: {
             type: "string"
         },
+        plugindir: {
+            type: "string",
+            short: "d",
+        },
         watch: {
             type: "boolean",
             short: "w"
@@ -83,7 +87,7 @@ let esbuildConfig: BuildOptions = {
 if(config.modules) esbuildConfig.plugins?.push(modulesPlugin(config.modules));
 
 // I'm unusure if this works cross-platform
-let pluginsDir: string | null = null;
+let pluginsDir = args.plugindir;
 
 if(!args.nocopy) {
     const appData = process.env.APPDATA ||

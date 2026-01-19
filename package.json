@@ -8,13 +8,7 @@
     "@types/gif.js": "^0.2.5",
     "@types/react": "19.0.0",
     "@vencord/discord-types": "^1.0.0",
-    "arraybuffer-isbinary": "^1.0.2",
-    "esbuild": "^0.24.2",
-    "events": "^3.3.0",
-    "gif.js": "^0.2.0",
-    "gifuct-js": "^2.1.2",
-    "mp4box": "^0.6.5",
-    "unzipit": "^1.4.3"
+    "esbuild": "^0.24.2"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
@@ -30,8 +24,12 @@
   },
   "type": "module",
   "dependencies": {
+    "arraybuffer-isbinary": "^1.0.2",
+    "gif.js": "^0.2.0",
+    "gifuct-js": "^2.1.2",
     "lucide": "^0.562.0",
-    "mediabunny": "^1.8.0"
+    "mediabunny": "^1.8.0",
+    "unzipit": "^1.4.3"
   },
   "overrides": {
     "@types/react": "19.0.0"

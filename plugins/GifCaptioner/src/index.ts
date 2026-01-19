@@ -3,12 +3,11 @@ import { addFont } from "$shared/api/fonts";
 import { after } from "$shared/api/patching";
 import { error } from "$shared/api/toast";
 import { expressionPicker, gifDisplay } from "$shared/modules";
-import captionMp4, { parseMp4 } from "./render/mp4";
+import captionMp4 from "./render/video";
 import "./styles.css";
-import captionGif, { parseGif } from "./render/gif";
+import captionGif from "./render/gif";
 import Modal from "./ui/modal";
 import type { GifTransform } from "./render/gifRenderer";
-import { expose } from "$shared/bd";
 import { CCIcon } from "$shared/ui/icons";
 
 addFont(futura, "futuraBoldCondensed");
@@ -20,17 +19,6 @@ after(gifDisplay.prototype, "render", ({ thisVal, returnVal }) => {
             e.stopPropagation();
             let isGif = thisVal.props.format === 1;
             let url = thisVal.props.src;
-
-            if(!isGif) {
-                const urlObject = new URL(url, location.href);
-                const rootDomain = urlObject.hostname.split(".").slice(-2).join(".");
-                
-                // For some reason tenor urls have an id that ends with "o" for mp4
-                if(rootDomain === "tenor.com") {
-                    let typeIndex = url.lastIndexOf("/") - 1;
-                    url = url.slice(0, typeIndex) + "o" + url.slice(typeIndex + 1);
-                }
-            }
 
             // Fix errors caused by protocol-relative urls
             if(url.startsWith("//")) url = url.replace("//", "https://");
@@ -87,6 +75,3 @@ function showCaptioner(width: number, height: number, element: HTMLElement, onCo
         }
     });
 }
-
-expose("parseMp4", parseMp4);
-expose("parseGif", parseGif);
