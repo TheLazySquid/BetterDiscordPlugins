@@ -1,7 +1,7 @@
 /**
  * @name GifCaptioner
  * @description A BetterDiscord plugin that allows you to add a caption to discord gifs
- * @version 1.4.0
+ * @version 1.4.1
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -7539,8 +7539,12 @@ after(gifDisplay.prototype, "render", ({ thisVal, returnVal }) => {
       let isGif = thisVal.props.format === 1;
       let url = thisVal.props.src;
       if (!isGif) {
-        let typeIndex = url.lastIndexOf("/") - 1;
-        url = url.slice(0, typeIndex) + "o" + url.slice(typeIndex + 1);
+        const urlObject = new URL(url, location.href);
+        const rootDomain = urlObject.hostname.split(".").slice(-2).join(".");
+        if (rootDomain === "tenor.com") {
+          let typeIndex = url.lastIndexOf("/") - 1;
+          url = url.slice(0, typeIndex) + "o" + url.slice(typeIndex + 1);
+        }
       }
       if (url.startsWith("//")) url = url.replace("//", "https://");
       if (isGif) {

@@ -21,10 +21,15 @@ after(gifDisplay.prototype, "render", ({ thisVal, returnVal }) => {
             let isGif = thisVal.props.format === 1;
             let url = thisVal.props.src;
 
-            // For some reason tenor urls have an id that ends with "o" for mp4
             if(!isGif) {
-                let typeIndex = url.lastIndexOf("/") - 1;
-                url = url.slice(0, typeIndex) + "o" + url.slice(typeIndex + 1);
+                const urlObject = new URL(url, location.href);
+                const rootDomain = urlObject.hostname.split(".").slice(-2).join(".");
+                
+                // For some reason tenor urls have an id that ends with "o" for mp4
+                if(rootDomain === "tenor.com") {
+                    let typeIndex = url.lastIndexOf("/") - 1;
+                    url = url.slice(0, typeIndex) + "o" + url.slice(typeIndex + 1);
+                }
             }
 
             // Fix errors caused by protocol-relative urls
