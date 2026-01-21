@@ -89,7 +89,7 @@ if(config.modules) esbuildConfig.plugins?.push(modulesPlugin(config.modules));
 // I'm unusure if this works cross-platform
 let pluginsDir = args.plugindir;
 
-if(!args.nocopy) {
+if(!args.nocopy && !pluginsDir) {
     const appData = process.env.APPDATA ||
         (process.platform == 'darwin' ?
         process.env.HOME + '/Library/Preferences' :
@@ -102,7 +102,7 @@ if(!args.nocopy) {
 if(!pluginsDir && !args.nocopy) console.warn("Failed to determine where to put the built plugin! Use --no-copy to disable this.");
 
 async function copyPlugin() {
-    if(!pluginsDir) return;
+    if(!pluginsDir || args.nocopy) return;
     const input = Bun.file(`./plugins/${args.plugin}/${args.plugin}.plugin.js`);
     await Bun.write(`${pluginsDir}/${args.plugin}.plugin.js`, input);
 }
