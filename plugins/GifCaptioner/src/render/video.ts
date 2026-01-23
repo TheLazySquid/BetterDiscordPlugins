@@ -76,7 +76,6 @@ export async function* getCanvases(sink: CanvasSink) {
 	for await (const sample of sink.canvases()) {
 		time += sample.duration;
 		let delay = time - lastFrameTime;
-		console.log(delay);
 
 		if(delay >= minFrameLength) {
 			lastFrameTime = time;

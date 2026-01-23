@@ -1,8 +1,7 @@
 import { after } from "$shared/api/patching";
-import { Api } from "$shared/bd";
 import { createSlate } from "$shared/modules";
 
-after(createSlate, "Z", ({ returnVal: editor }) => {
+after(createSlate, "A", ({ returnVal: editor }) => {
     let waitingToUpdate = false;
 
     function onChange() {

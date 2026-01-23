@@ -6,6 +6,7 @@ import FilePreview from "./FilePreview.tsx";
 import { Modal, ModalSystem } from "$shared/modules";
 import { LucideIcon } from "$shared/ui/icons.tsx";
 import { ArrowDownFromLine, ArrowUpFromLine, FolderOutput } from "lucide";
+import { Api } from "$shared/bd.ts";
 
 const React = BdApi.React;
 
@@ -57,7 +58,7 @@ function ZipPreview({ url }: { url: string }) {
                     current.files[path[path.length - 1]] = file;
                 }
 
-                console.log("[ZipPreview] extracted zip", contents);
+                Api.Logger.log("extracted zip", contents);
                 setFolderContents(contents);
             });
     }

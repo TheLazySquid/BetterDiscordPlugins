@@ -3,58 +3,58 @@ import type { ModuleDefinition, Modules } from "../types";
 // Module ids are now stable, so we can use them directly
 export const modules: Record<keyof Modules, ModuleDefinition> = {
     fileModule: {
-        id: 40330,
-        filter: `(m) => m.Z?.toString().includes("filenameLinkWrapper")`
+        id: 718468,
+        filter: `(m) => m.Z?.toString().includes("().filesize(")`
     },
     CloudUploader: {
-        id: 141795,
+        id: 743445,
         getExport: `(e) => e.fromJson`,
         filter: `(m) => Object.values(m).some((e) => e?.UPLOADING === "UPLOADING")`
     },
     expressionModule: {
-        id: 805680,
+        id: 834755,
         getExport: true,
         filter: `(m) => m.type?.toString?.().includes("onSelectGIF")`
     },
     buttonsModule: {
-        id: 258696,
+        id: 147025,
         getExport: true,
         filter: `(m) => m.type?.toString?.().includes(".isSubmitButtonEnabled")`
     },
     uploadClasses: {
-        filter: `Filters.byKeys("uploadArea", "chat")`
+        filter: `Filters.byKeys("uploadArea", "chat")`,
     },
     chatClasses: {
         filter: `Filters.byKeys("buttons", "textAreaSlate")`
     },
     gifDisplay: {
-        id: 215016,
+        id: 247683,
         getExport: `(e) => e.prototype?.renderGIF`,
         filter: `(m) => Object.values(m).some(Filters.byStrings("renderGIF()", "imagePool"))`
     },
     premiumPermissions: {
-        id: 74538,
+        id: 927578,
         getExport: `(e) => e.getUserMaxFileSize`,
         filter: `Filters.byKeys("getUserMaxFileSize")`
     },
     highlightModule: {
-        id: 364964,
+        id: 752238,
         getExport: true,
         filter: `Filters.byKeys("highlight", "hasLanguage")`
     },
     createSlate: {
-        id: 196483,
+        id: 913728,
         filter: `Filters.byStrings("insertText=", "onChange=")`,
         defaultExport: false
     },
     attachFiles: {
-        id: 127654,
+        id: 518960,
         getExport: `(e) => e.toString().includes("filesMetadata")`,
         getWithKey: true,
         filter: `(m) => Object.values(m).some(Filters.byStrings("filesMetadata:", "requireConfirm:"))`
     },
     chatbox: {
-        id: 893718,
+        id: 133343,
         getExport: `(e) => e.type`,
         filter: `(m) => Object.values(m).some((e) => {
             let str = e?.type?.render?.toString?.();
@@ -63,7 +63,7 @@ export const modules: Record<keyof Modules, ModuleDefinition> = {
         })`
     },
     ModalSystem: {
-        id: 952265,
+        id: 192308,
         demangler: {
             open: `Filters.byStrings(",instant:")`,
             close: `Filters.byStrings(".onCloseCallback()")`
@@ -71,43 +71,33 @@ export const modules: Record<keyof Modules, ModuleDefinition> = {
         filter: `Filters.bySource(".modalKey?")`
     },
     expressionPicker: {
-        id: 28546,
+        id: 151271,
         demangler: {
             toggle: `(f) => f.toString().includes("activeView===")`,
             close: `(f) => f.toString().includes("activeView:null")`,
             store: `(f) => f.getState`
         },
-        filter: `Filters.bySource("lastActiveView")`
+        filter: `Filters.bySource("lastActiveView", "isSearchSuggestion")`
     },
     Modal: {
-        id: 466377,
+        id: 935462,
         demangler: {
             Root: `Filters.byStrings(".ImpressionNames.MODAL_ROOT_LEGACY")`,
             Content: `Filters.byStrings("scrollerRef", "scrollbarType")`,
-            Header: `Filters.byStrings(".header,")`,
-            Close: `Filters.byStrings(".closeWithCircleBackground]:")`,
-            Footer: `Filters.byStrings(".footerSeparator]:")`
+            Header: `Filters.byStrings("headerIdIsManaged")`,
+            Close: `Filters.byStrings(".withCircleBackground")`,
+            Footer: `Filters.byStrings("grow:0")`
         },
         filter: `Filters.bySource(".MODAL_ROOT_LEGACY,properties")`
     },
-    AttachmentButtons: {
-        id: 898463,
-        filter: `Filters.byStrings("draftType:", "keyboardModeEnabled:", "currentColor")`,
-        defaultExport: false
-    },
-    AttachmentButton: {
-        id: 273031,
-        getExport: true,
-        filter: `Filters.byStrings("actionBarIcon", "hideOnClick")`
-    },
     AttachmentSystem: {
-        id: 166459,
+        id: 608299,
         getExport: true,
         filter: `(m) => m?.setUploads?.name === "setUploads")`,
         defaultExport: false
     },
     frequentlyUsedEmojis: {
-        id: 543241,
+        id: 822123,
         getExport: `(e) => e.toString().includes("getFrequentlyUsedReactionEmojisWithoutFetchingLatest")`,
         getWithKey: true,
         filter: `(m) => Object.values(m).some(Filters.byStrings("getFrequentlyUsedReactionEmojisWithoutFetchingLatest", "loadIfNecessary"))`
@@ -130,7 +120,5 @@ export let chatbox: Modules['chatbox'];
 export let ModalSystem: Modules['ModalSystem'];
 export let expressionPicker: Modules['expressionPicker'];
 export let Modal: Modules['Modal'];
-export let AttachmentButtons: Modules['AttachmentButtons'];
-export let AttachmentButton: Modules['AttachmentButton'];
 export let AttachmentSystem: Modules['AttachmentSystem'];
 export let frequentlyUsedEmojis: Modules['frequentlyUsedEmojis'];

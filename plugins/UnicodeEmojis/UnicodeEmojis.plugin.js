@@ -1,7 +1,7 @@
 /**
  * @name UnicodeEmojis
  * @description Replaces discord emojis that you send with their unicode equivalent
- * @version 1.1.4
+ * @version 1.1.5
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -88,13 +88,13 @@ function getModules(locators) {
 var Filters = BdApi.Webpack.Filters;
 var [createSlate] = getModules([
   {
-    id: 196483,
+    id: 913728,
     filter: Filters.byStrings("insertText=", "onChange=")
   }
 ]);
 
 // plugins/UnicodeEmojis/src/index.ts
-after(createSlate, "Z", ({ returnVal: editor }) => {
+after(createSlate, "A", ({ returnVal: editor }) => {
   let waitingToUpdate = false;
   function onChange() {
     for (let lineIndex = editor.children.length - 1; lineIndex >= 0; lineIndex--) {

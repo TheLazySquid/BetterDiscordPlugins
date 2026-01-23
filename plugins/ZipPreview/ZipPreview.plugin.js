@@ -1,7 +1,7 @@
 /**
  * @name ZipPreview
  * @description Lets you see inside zips and preview/download files without ever downloading/extracting the zip
- * @version 0.6.0
+ * @version 0.6.1
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -106,19 +106,19 @@ function getModules(locators) {
 var Filters = BdApi.Webpack.Filters;
 var [fileModule, highlightModuleModule, ModalMangled, ModalSystemMangled] = getModules([
   {
-    id: 40330,
-    filter: (m) => m.Z?.toString().includes("filenameLinkWrapper")
+    id: 718468,
+    filter: (m) => m.Z?.toString().includes("().filesize(")
   },
   {
-    id: 364964,
+    id: 752238,
     filter: Filters.byKeys("highlight", "hasLanguage")
   },
   {
-    id: 466377,
+    id: 935462,
     filter: Filters.bySource(".MODAL_ROOT_LEGACY,properties")
   },
   {
-    id: 952265,
+    id: 192308,
     filter: Filters.bySource(".modalKey?")
   }
 ]);
@@ -126,9 +126,9 @@ var highlightModule = findExport(highlightModuleModule, true);
 var Modal = demangle(ModalMangled, {
   Root: Filters.byStrings(".ImpressionNames.MODAL_ROOT_LEGACY"),
   Content: Filters.byStrings("scrollerRef", "scrollbarType"),
-  Header: Filters.byStrings(".header,"),
-  Close: Filters.byStrings(".closeWithCircleBackground]:"),
-  Footer: Filters.byStrings(".footerSeparator]:")
+  Header: Filters.byStrings("headerIdIsManaged"),
+  Close: Filters.byStrings(".withCircleBackground"),
+  Footer: Filters.byStrings("grow:0")
 });
 var ModalSystem = demangle(ModalSystemMangled, {
   open: Filters.byStrings(",instant:"),
@@ -1440,7 +1440,7 @@ function ZipPreview({ url }) {
         }
         current.files[path[path.length - 1]] = file;
       }
-      console.log("[ZipPreview] extracted zip", contents);
+      Api.Logger.log("extracted zip", contents);
       setFolderContents(contents);
     });
   }
@@ -1506,7 +1506,7 @@ var previews = /* @__PURE__ */ new Map();
 onSwitch(() => {
   previews.clear();
 });
-after(fileModule, "Z", ({ args, returnVal }) => {
+after(fileModule, "A", ({ args, returnVal }) => {
   if (args[0].item?.contentType !== "application/zip") return;
   let url = args[0].url;
   let preview;
