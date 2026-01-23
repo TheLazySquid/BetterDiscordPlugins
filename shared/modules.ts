@@ -4,7 +4,7 @@ import type { ModuleDefinition, Modules } from "../types";
 export const modules: Record<keyof Modules, ModuleDefinition> = {
     fileModule: {
         id: 718468,
-        filter: `(m) => m.Z?.toString().includes("().filesize(")`
+        filter: `(m) => m.A?.toString().includes("().filesize(")`
     },
     CloudUploader: {
         id: 743445,

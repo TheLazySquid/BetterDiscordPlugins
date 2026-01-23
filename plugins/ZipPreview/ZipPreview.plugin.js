@@ -107,7 +107,7 @@ var Filters = BdApi.Webpack.Filters;
 var [fileModule, highlightModuleModule, ModalMangled, ModalSystemMangled] = getModules([
   {
     id: 718468,
-    filter: (m) => m.Z?.toString().includes("().filesize(")
+    filter: (m) => m.A?.toString().includes("().filesize(")
   },
   {
     id: 752238,
