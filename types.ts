@@ -69,8 +69,6 @@ export interface Modules {
     ModalSystem: ModalSystem;
     expressionPicker: ExpressionPicker;
     Modal: { Root: any; Content: any; Header: any; Close: any; Footer: any };
-    AttachmentButtons: any;
-    AttachmentButton: any;
     AttachmentSystem: AttachmentSystem;
     frequentlyUsedEmojis: [any, string];
 }

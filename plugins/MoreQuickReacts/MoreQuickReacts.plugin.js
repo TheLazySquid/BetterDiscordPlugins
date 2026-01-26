@@ -1,7 +1,7 @@
 /**
  * @name MoreQuickReacts
  * @description Increases the number of quick reactions available when hovering over a message
- * @version 1.0.3
+ * @version 1.0.4
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -98,7 +98,7 @@ function getModules(locators) {
 var Filters = BdApi.Webpack.Filters;
 var [frequentlyUsedEmojisModule] = getModules([
   {
-    id: 543241,
+    id: 822123,
     filter: (m) => Object.values(m).some(Filters.byStrings("getFrequentlyUsedReactionEmojisWithoutFetchingLatest", "loadIfNecessary"))
   }
 ]);

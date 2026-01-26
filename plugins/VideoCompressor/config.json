@@ -1,6 +1,6 @@
 {
     "description": "Compress videos that are too large to upload normally",
-    "version": "0.2.2",
+    "version": "0.2.3",
     "modules": [
         "attachFiles",
         "premiumPermissions",

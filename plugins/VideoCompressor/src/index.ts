@@ -4,7 +4,6 @@ import { addFile } from "./compressVideo";
 import './styles.css';
 import { getMaxFileSize } from "$shared/util/permissions";
 
-console.log(attachFiles);
 const attach = attachFiles[0][attachFiles[1]];
 before(...attachFiles, ({ args }) => {
     const maxSize = getMaxFileSize();

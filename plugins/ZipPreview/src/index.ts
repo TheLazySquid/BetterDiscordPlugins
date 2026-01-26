@@ -10,7 +10,7 @@ onSwitch(() => {
     previews.clear();
 });
 
-after(fileModule, "Z", ({ args, returnVal }) => {
+after(fileModule, "A", ({ args, returnVal }) => {
     if(args[0].item?.contentType !== "application/zip") return;
     let url = args[0].url;
 

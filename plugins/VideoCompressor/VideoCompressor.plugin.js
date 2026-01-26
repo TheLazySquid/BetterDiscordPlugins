@@ -1,7 +1,7 @@
 /**
  * @name VideoCompressor
  * @description Compress videos that are too large to upload normally
- * @version 0.2.2
+ * @version 0.2.3
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -92,19 +92,19 @@ function getModules(locators) {
 var Filters = BdApi.Webpack.Filters;
 var [attachFilesModule, premiumPermissionsModule, ModalSystemMangled, ModalMangled] = getModules([
   {
-    id: 127654,
+    id: 518960,
     filter: (m) => Object.values(m).some(Filters.byStrings("filesMetadata:", "requireConfirm:"))
   },
   {
-    id: 74538,
+    id: 927578,
     filter: Filters.byKeys("getUserMaxFileSize")
   },
   {
-    id: 952265,
+    id: 192308,
     filter: Filters.bySource(".modalKey?")
   },
   {
-    id: 466377,
+    id: 935462,
     filter: Filters.bySource(".MODAL_ROOT_LEGACY,properties")
   }
 ]);
@@ -117,9 +117,9 @@ var ModalSystem = demangle(ModalSystemMangled, {
 var Modal = demangle(ModalMangled, {
   Root: Filters.byStrings(".ImpressionNames.MODAL_ROOT_LEGACY"),
   Content: Filters.byStrings("scrollerRef", "scrollbarType"),
-  Header: Filters.byStrings(".header,"),
-  Close: Filters.byStrings(".closeWithCircleBackground]:"),
-  Footer: Filters.byStrings(".footerSeparator]:")
+  Header: Filters.byStrings("headerIdIsManaged"),
+  Close: Filters.byStrings(".withCircleBackground"),
+  Footer: Filters.byStrings("grow:0")
 });
 
 // shared/api/patching.ts
@@ -15379,7 +15379,6 @@ function getMaxFileSize() {
 }
 
 // plugins/VideoCompressor/src/index.ts
-console.log(attachFiles);
 var attach = attachFiles[0][attachFiles[1]];
 before(...attachFiles, ({ args }) => {
   const maxSize = getMaxFileSize();
