@@ -1,7 +1,7 @@
 /**
  * @name GifCaptioner
  * @description A BetterDiscord plugin that allows you to add a caption to discord gifs
- * @version 2.0.1
+ * @version 2.1.0
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -1604,7 +1604,6 @@ function Progress({ onUpdater, status: initialStatus }) {
   }, []);
   return /* @__PURE__ */ BdApi.React.createElement("div", { className: "lz-progress" }, /* @__PURE__ */ BdApi.React.createElement("h2", { className: "lz-status" }, status), /* @__PURE__ */ BdApi.React.createElement("progress", { value: progress, max: 1 }));
 }
-console.log(Modal);
 var ProgressDisplay = class {
   updater;
   modalId;
@@ -10924,35 +10923,35 @@ var Input = class {
 // plugins/GifCaptioner/src/render/video.ts
 async function captionMp4(url, width, height, transform) {
   const progress = new ProgressDisplay("Fetching");
-  const onError = () => {
-    progress.close();
-    error("Failed to parse gif");
-  };
-  let res = await BdApi.Net.fetch(url).catch(() => {
-    progress.close();
-    error("Failed to fetch gif");
-  });
-  if (!res) return;
-  const arrayBuffer = await res.arrayBuffer();
-  const input = new Input({
-    formats: [WEBM, MP4],
-    source: new BufferSource(arrayBuffer)
-  });
-  const track = await input.getPrimaryVideoTrack();
-  if (!track) return onError();
-  const sampleSink = new VideoSampleSink(track);
-  const canvasSink = new CanvasSink(track);
-  progress.update("Preparing");
-  let frames = await countFrames(sampleSink);
-  progress.update("Rendering", 0);
-  const renderer = new GifRenderer({ progress, frames, width, height, transform });
-  let i = 0;
-  for await (const frame of getCanvases(canvasSink)) {
-    progress.update("Rendering", i / frames);
-    renderer.addVideoFrame(frame.canvas, frame.delay);
-    i++;
+  try {
+    const res = await BdApi.Net.fetch(url);
+    if (!res.ok || !res.headers.get("content-type")?.startsWith("video/")) {
+      throw new Error("Failed to fetch video");
+    }
+    const arrayBuffer = await res.arrayBuffer();
+    const input = new Input({
+      formats: [WEBM, MP4],
+      source: new BufferSource(arrayBuffer)
+    });
+    const track = await input.getPrimaryVideoTrack();
+    if (!track) throw new Error("Video has no track");
+    const sampleSink = new VideoSampleSink(track);
+    const canvasSink = new CanvasSink(track);
+    progress.update("Preparing");
+    let frames = await countFrames(sampleSink);
+    progress.update("Rendering", 0);
+    const renderer = new GifRenderer({ progress, frames, width, height, transform });
+    let i = 0;
+    for await (const frame of getCanvases(canvasSink)) {
+      progress.update("Rendering", i / frames);
+      renderer.addVideoFrame(frame.canvas, frame.delay);
+      i++;
+    }
+    renderer.render();
+  } catch (e) {
+    Api.Logger.error("Failed to caption video", e);
+    error("Failed to caption video");
   }
-  renderer.render();
 }
 var minFrameLength = 1 / 50;
 async function countFrames(sink) {
@@ -11062,21 +11061,26 @@ addStyle(`.gc-trigger {
 var import_gifuct_js = __toESM(require_lib2(), 1);
 async function captionGif(url, width, height, transform) {
   const progress = new ProgressDisplay("Fetching");
-  let res = await BdApi.Net.fetch(url);
-  let buffer = await res.arrayBuffer();
-  let parsed = (0, import_gifuct_js.parseGIF)(buffer);
-  let frames = (0, import_gifuct_js.decompressFrames)(parsed, true);
-  let numFrames = frames.length;
-  const renderer = new GifRenderer({ progress, width, height, transform, frames: frames.length });
-  let frame;
-  let i = 0;
-  while (frame = frames.shift()) {
-    progress.update("Rendering", i / numFrames);
-    renderer.addGifFrame(frame, parsed);
-    i++;
-    await new Promise((res2) => setTimeout(res2));
+  try {
+    const res = await BdApi.Net.fetch(url);
+    const buffer = await res.arrayBuffer();
+    const parsed = (0, import_gifuct_js.parseGIF)(buffer);
+    const frames = (0, import_gifuct_js.decompressFrames)(parsed, true);
+    const numFrames = frames.length;
+    const renderer = new GifRenderer({ progress, width, height, transform, frames: frames.length });
+    let frame;
+    let i = 0;
+    while (frame = frames.shift()) {
+      progress.update("Rendering", i / numFrames);
+      renderer.addGifFrame(frame, parsed);
+      i++;
+      await new Promise((res2) => setTimeout(res2));
+    }
+    renderer.render();
+  } catch (e) {
+    Api.Logger.error("Failed to caption gif", e);
+    error("Failed to caption gif");
   }
-  renderer.render();
 }
 
 // plugins/GifCaptioner/src/ui/captioner.tsx
@@ -11214,9 +11218,10 @@ after(gifDisplay.prototype, "render", ({ thisVal, returnVal }) => {
     className: "gc-trigger",
     onClick: (e) => {
       e.stopPropagation();
-      let isGif = thisVal.props.format === 1;
-      let url = thisVal.props.src;
-      if (url.startsWith("//")) url = url.replace("//", "https://");
+      const isGif = thisVal.props.format === 1;
+      const rawUrl = thisVal.props.src;
+      const url = formatUrl(rawUrl);
+      Api.Logger.info("URL formatted to", url);
       if (isGif) {
         let image = document.createElement("img");
         image.src = url;
@@ -11261,6 +11266,21 @@ function showCaptioner(width, height, element, onConfirm) {
       if (res) onConfirm(res);
     }
   });
+}
+function formatUrl(rawUrl) {
+  const url = new URL(rawUrl, location.href);
+  if (url.hostname === "media.discordapp.net") url.hostname = "cdn.discordapp.com";
+  url.searchParams.delete("format");
+  url.searchParams.delete("animated");
+  url.searchParams.delete("width");
+  url.searchParams.delete("height");
+  url.searchParams.delete("quality");
+  if (url.hostname.endsWith("tenor.com")) {
+    const path = url.pathname;
+    const typeIndex = path.lastIndexOf("/") - 1;
+    url.pathname = path.slice(0, typeIndex) + "o" + path.slice(typeIndex + 1);
+  }
+  return url.toString();
 }
   }
 }

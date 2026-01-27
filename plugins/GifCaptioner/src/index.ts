@@ -1,3 +1,4 @@
+import type { GifTransform } from "./render/gifRenderer";
 import futura from "$assets/Futura Condensed Extra Bold.otf";
 import { addFont } from "$shared/api/fonts";
 import { after } from "$shared/api/patching";
@@ -7,8 +8,8 @@ import captionMp4 from "./render/video";
 import "./styles.css";
 import captionGif from "./render/gif";
 import Modal from "./ui/modal";
-import type { GifTransform } from "./render/gifRenderer";
 import { CCIcon } from "$shared/ui/icons";
+import { Api } from "$shared/bd";
 
 addFont(futura, "futuraBoldCondensed");
 
@@ -17,11 +18,10 @@ after(gifDisplay.prototype, "render", ({ thisVal, returnVal }) => {
         className: "gc-trigger",
         onClick: (e) => {
             e.stopPropagation();
-            let isGif = thisVal.props.format === 1;
-            let url = thisVal.props.src;
-
-            // Fix errors caused by protocol-relative urls
-            if(url.startsWith("//")) url = url.replace("//", "https://");
+            const isGif = thisVal.props.format === 1;
+            const rawUrl = thisVal.props.src;
+            const url = formatUrl(rawUrl);
+            Api.Logger.info("URL formatted to", url);
 
             if(isGif) {
                 let image = document.createElement("img");
@@ -74,4 +74,26 @@ function showCaptioner(width: number, height: number, element: HTMLElement, onCo
             if(res) onConfirm(res);
         }
     });
+}
+
+function formatUrl(rawUrl: string) {
+    const url = new URL(rawUrl, location.href);
+
+    // Prefer using discord CDN (thanks Knew)
+    if (url.hostname === "media.discordapp.net") url.hostname = "cdn.discordapp.com";
+    url.searchParams.delete("format");
+    url.searchParams.delete("animated");
+    url.searchParams.delete("width");
+    url.searchParams.delete("height");
+    url.searchParams.delete("quality");
+
+    // Prefer using mp4 from tenor for higher quality
+    // For some reason tenor denotes this by ending the id with an o
+    if(url.hostname.endsWith("tenor.com")) {
+        const path = url.pathname;
+        const typeIndex = path.lastIndexOf("/") - 1;
+        url.pathname = path.slice(0, typeIndex) + "o" + path.slice(typeIndex + 1);
+    }
+
+    return url.toString();
 }
