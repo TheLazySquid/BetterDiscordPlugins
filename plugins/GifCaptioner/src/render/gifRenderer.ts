@@ -30,7 +30,7 @@ let worker = getUrl(GifWorker);
 
 export default class GifRenderer {
 	canvas = document.createElement("canvas");
-	ctx = this.canvas.getContext("2d")!;
+	ctx = this.canvas.getContext("2d", { willReadFrequently: true })!;
 	topOffset = 0;
 	width: number;
 	height: number; // Doesn't include caption height
