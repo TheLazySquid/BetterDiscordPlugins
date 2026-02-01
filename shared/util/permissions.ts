@@ -1,7 +1,7 @@
-import { premiumPermissions } from "$shared/modules";
-import { userStore } from "$shared/stores";
+import { maxUploadSize } from "$shared/modules";
+import { selectedGuildStore } from "$shared/stores";
 
 export function getMaxFileSize() {
-	const user = userStore.getCurrentUser();
-	return premiumPermissions.getUserMaxFileSize(user);
+	const id = selectedGuildStore.getGuildId();
+	return maxUploadSize(id);
 }

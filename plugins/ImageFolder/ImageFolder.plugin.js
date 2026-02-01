@@ -249,14 +249,14 @@ function getInput(title, callback) {
 }
 
 // shared/stores.ts
-var channelStore = BdApi.Webpack.getStore("SelectedChannelStore");
-var userStore = BdApi.Webpack.getStore("UserStore");
+var selectedChannelStore = BdApi.Webpack.getStore("SelectedChannelStore");
+var selectedGuildStore = BdApi.Webpack.getStore("SelectedGuildStore");
 
 // shared/util/upload.ts
 var onSubmit = null;
 before(chatbox?.type, "render", ({ args }) => onSubmit = args[0].onSubmit);
 async function uploadFile(file) {
-  const channelId = channelStore.getCurrentlySelectedChannelId();
+  const channelId = selectedChannelStore.getCurrentlySelectedChannelId();
   if (!channelId) return;
   const upload = new CloudUploader({ file, platform: 1 }, channelId);
   if (!onSubmit) {
@@ -1317,7 +1317,7 @@ after(buttonsModule, "type", ({ args, returnVal }) => {
   let div = BdApi.React.createElement("div", {
     className: "if-button",
     onMouseDown: () => {
-      const channel = channelStore.getChannelId();
+      const channel = selectedChannelStore.getChannelId();
       setTimeout(() => expressionPicker.toggle("if-image", type, channel));
     },
     key: "if-image"

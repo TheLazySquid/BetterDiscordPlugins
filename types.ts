@@ -61,7 +61,6 @@ export interface Modules {
     uploadClasses: Record<string, string>;
     chatClasses: Record<string, string>;
     gifDisplay: any;
-    premiumPermissions: any;
     highlightModule: any;
     createSlate: any;
     attachFiles: [any, string];
@@ -71,6 +70,7 @@ export interface Modules {
     Modal: { Root: any; Content: any; Header: any; Close: any; Footer: any };
     AttachmentSystem: AttachmentSystem;
     frequentlyUsedEmojis: [any, string];
+    maxUploadSize: (guildId: string | null) => number;
 }
 
 export interface PluginConfig {

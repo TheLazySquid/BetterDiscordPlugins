@@ -32,11 +32,6 @@ export const modules: Record<keyof Modules, ModuleDefinition> = {
         getExport: `(e) => e.prototype?.renderGIF`,
         filter: `(m) => Object.values(m).some(Filters.byStrings("renderGIF()", "imagePool"))`
     },
-    premiumPermissions: {
-        id: 927578,
-        getExport: `(e) => e.getUserMaxFileSize`,
-        filter: `Filters.byKeys("getUserMaxFileSize")`
-    },
     highlightModule: {
         id: 752238,
         getExport: true,
@@ -101,6 +96,11 @@ export const modules: Record<keyof Modules, ModuleDefinition> = {
         getExport: `(e) => e.toString().includes("getFrequentlyUsedReactionEmojisWithoutFetchingLatest")`,
         getWithKey: true,
         filter: `(m) => Object.values(m).some(Filters.byStrings("getFrequentlyUsedReactionEmojisWithoutFetchingLatest", "loadIfNecessary"))`
+    },
+    maxUploadSize: {
+        id: 453771,
+        getExport: `Filters.byStrings("getUserMaxFileSize", "premiumTier")`,
+        filter: `Filters.bySource("getUserMaxFileSize", "premiumTier")`
     }
 }
 
@@ -112,7 +112,6 @@ export let buttonsModule: Modules['buttonsModule'];
 export let uploadClasses: Modules['uploadClasses'];
 export let chatClasses: Modules['chatClasses'];
 export let gifDisplay: Modules['gifDisplay'];
-export let premiumPermissions: Modules['premiumPermissions'];
 export let highlightModule: Modules['highlightModule'];
 export let createSlate: Modules['createSlate'];
 export let attachFiles: Modules['attachFiles'];
@@ -122,3 +121,4 @@ export let expressionPicker: Modules['expressionPicker'];
 export let Modal: Modules['Modal'];
 export let AttachmentSystem: Modules['AttachmentSystem'];
 export let frequentlyUsedEmojis: Modules['frequentlyUsedEmojis'];
+export let maxUploadSize: Modules['maxUploadSize'];

@@ -1,7 +1,7 @@
 /**
  * @name VideoCompressor
  * @description Compress videos that are too large to upload normally
- * @version 0.2.3
+ * @version 0.2.4
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -90,14 +90,14 @@ function getModules(locators) {
 
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var [attachFilesModule, premiumPermissionsModule, ModalSystemMangled, ModalMangled] = getModules([
+var [attachFilesModule, maxUploadSizeModule, ModalSystemMangled, ModalMangled] = getModules([
   {
     id: 518960,
     filter: (m) => Object.values(m).some(Filters.byStrings("filesMetadata:", "requireConfirm:"))
   },
   {
-    id: 927578,
-    filter: Filters.byKeys("getUserMaxFileSize")
+    id: 453771,
+    filter: Filters.bySource("getUserMaxFileSize", "premiumTier")
   },
   {
     id: 192308,
@@ -109,7 +109,7 @@ var [attachFilesModule, premiumPermissionsModule, ModalSystemMangled, ModalMangl
   }
 ]);
 var attachFiles = findExportWithKey(attachFilesModule, (e) => e.toString().includes("filesMetadata"));
-var premiumPermissions = findExport(premiumPermissionsModule, (e) => e.getUserMaxFileSize);
+var maxUploadSize = findExport(maxUploadSizeModule, Filters.byStrings("getUserMaxFileSize", "premiumTier"));
 var ModalSystem = demangle(ModalSystemMangled, {
   open: Filters.byStrings(",instant:"),
   close: Filters.byStrings(".onCloseCallback()")
@@ -15369,13 +15369,13 @@ addStyle(`.vc-options {
 }`);
 
 // shared/stores.ts
-var channelStore = BdApi.Webpack.getStore("SelectedChannelStore");
-var userStore = BdApi.Webpack.getStore("UserStore");
+var selectedChannelStore = BdApi.Webpack.getStore("SelectedChannelStore");
+var selectedGuildStore = BdApi.Webpack.getStore("SelectedGuildStore");
 
 // shared/util/permissions.ts
 function getMaxFileSize() {
-  const user = userStore.getCurrentUser();
-  return premiumPermissions.getUserMaxFileSize(user);
+  const id = selectedGuildStore.getGuildId();
+  return maxUploadSize(id);
 }
 
 // plugins/VideoCompressor/src/index.ts

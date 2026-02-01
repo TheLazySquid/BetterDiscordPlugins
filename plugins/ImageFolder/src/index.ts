@@ -9,7 +9,7 @@ import { patchContextMenu } from '$shared/api/contextmenu';
 import Manager, { types } from './manager';
 import { onStart, onStop } from '$shared/bd';
 import { findReactChild, forceUpdate } from '$shared/util/react';
-import { channelStore } from '$shared/stores';
+import { selectedChannelStore } from '$shared/stores';
 import { LucideIcon } from '$shared/ui/icons';
 import { ImagePlus } from 'lucide';
 
@@ -26,7 +26,7 @@ after(buttonsModule, "type", ({ args, returnVal }) => {
     let div = BdApi.React.createElement('div', {
         className: 'if-button',
         onMouseDown: () => {
-            const channel = channelStore.getChannelId();
+            const channel = selectedChannelStore.getChannelId();
             // genuinely no idea why this setTimeout is needed
             setTimeout(() => expressionPicker.toggle('if-image', type, channel));
         },
