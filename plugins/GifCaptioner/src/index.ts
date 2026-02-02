@@ -19,52 +19,97 @@ after(gifDisplay.prototype, "render", ({ thisVal, returnVal }) => {
 		onClick: (e) => {
 			e.stopPropagation();
 
-			const rawUrl = thisVal.props.src;
-			const url = formatUrl(rawUrl);
-			Api.Logger.info("URL formatted to", url);
+			try {
+				const rawUrl = thisVal?.props?.src;
+				if (!rawUrl || typeof rawUrl !== "string") {
+					Api.Logger.error("[GifCaptioner] Missing media URL", { rawUrl });
+					error("Failed to read media URL.");
+					return;
+				}
 
-			const lowerUrl = url.toLowerCase();
-			const looksGif = lowerUrl.includes(".gif");
-			const looksVideo = lowerUrl.includes(".mp4") || lowerUrl.includes(".webm");
+				const url = formatUrl(rawUrl);
+				Api.Logger.info("URL formatted to", url);
 
-			// Tenor embeds often render as GIFs in the client UI, but the underlying media is usually MP4/WebM. - Knew
-			const isGif = looksVideo ? false : (looksGif ? true : thisVal.props.format === 1);
+				const lowerUrl = url.toLowerCase();
+				const looksGif = lowerUrl.includes(".gif");
+				const looksVideo = lowerUrl.includes(".mp4") || lowerUrl.includes(".webm");
 
-			if (isGif) {
-				const image = document.createElement("img");
-				image.src = url;
+				// Tenor embeds often render as GIFs in the client UI, but the underlying media is usually MP4/WebM. - Knew
+				const isGif = looksVideo ? false : (looksGif ? true : thisVal.props.format === 1);
 
-				image.addEventListener("load", () => {
-					// For some reason the height and width change once added to the DOM.
-					const { width, height } = image;
-					showCaptioner(width, height, image, (transform) => {
-						captionGif(url, width, height, transform).catch((err) => {
-							Api.Logger.error("captionGif failed", err);
-							error(`Encode failed: ${String(err?.message || err)}`);
-						});
+				if (!looksGif && !looksVideo && typeof thisVal?.props?.format !== "number") {
+					Api.Logger.error("[GifCaptioner] Unsupported media type", { url });
+					error("Unsupported media type for captioning.");
+					return;
+				}
+
+				if (isGif) {
+					const image = document.createElement("img");
+					image.src = url;
+
+					image.addEventListener("load", () => {
+						try {
+							// For some reason the height and width change once added to the DOM.
+							const { width, height } = image;
+							if (!width || !height) {
+								Api.Logger.error("[GifCaptioner] Invalid image dimensions", { url, width, height });
+								error("Failed to read GIF dimensions.");
+								return;
+							}
+
+							showCaptioner(width, height, image, (transform) => {
+								captionGif(url, width, height, transform).catch((err) => {
+									console.error("[GifCaptioner] captionGif (encode) failed:", { url, err });
+									error(`Encode failed: ${String(err?.message || err)}`);
+								});
+							});
+						} catch (err) {
+							console.error("[GifCaptioner] GIF preview load handler failed:", { url, err });
+							error(`Failed to open editor: ${String(err?.message || err)}`);
+						}
 					});
-				});
 
-				image.addEventListener("error", () => error("Failed to load gif"));
-			} else {
-				const video = document.createElement("video");
-				video.src = url;
-				video.autoplay = true;
-				video.loop = true;
-				video.muted = true;
-				video.load();
-
-				video.addEventListener("canplaythrough", () => {
-					const { videoWidth, videoHeight } = video;
-					showCaptioner(videoWidth, videoHeight, video, (transform) => {
-						captionMp4(url, videoWidth, videoHeight, transform).catch((err) => {
-							Api.Logger.error("captionMp4 failed", err);
-							error(`Encode failed: ${String(err?.message || err)}`);
-						});
+					image.addEventListener("error", (ev) => {
+						console.error("[GifCaptioner] Preview image failed to load:", url, ev);
+						error("Failed to load gif");
 					});
-				}, { once: true });
+				} else { //isVideo
+					const video = document.createElement("video");
+					video.src = url;
+					video.autoplay = true;
+					video.loop = true;
+					video.muted = true;
+					video.load();
 
-				video.addEventListener("error", () => error("Failed to load gif"));
+					video.addEventListener("canplaythrough", () => {
+						try {
+							const { videoWidth, videoHeight } = video;
+							if (!videoWidth || !videoHeight) {
+								Api.Logger.error("[GifCaptioner] Invalid video dimensions", { url, videoWidth, videoHeight });
+								error("Failed to read video dimensions.");
+								return;
+							}
+
+							showCaptioner(videoWidth, videoHeight, video, (transform) => {
+								captionMp4(url, videoWidth, videoHeight, transform).catch((err) => {
+									console.error("[GifCaptioner] captionMp4 (encode) failed:", { url, err });
+									error(`Encode failed: ${String(err?.message || err)}`);
+								});
+							});
+						} catch (err) {
+							console.error("[GifCaptioner] Video preview load handler failed:", { url, err });
+							error(`Failed to open editor: ${String(err?.message || err)}`);
+						}
+					}, { once: true });
+
+					video.addEventListener("error", (ev) => {
+						console.error("[GifCaptioner] Preview video failed to load:", url, ev);
+						error("Failed to load gif");
+					});
+				}
+			} catch (err) {
+				console.error("[GifCaptioner] Click handler failed:", err);
+				error(`Failed to prepare media: ${String(err?.message || err)}`);
 			}
 		}
 	}, BdApi.React.createElement(CCIcon));
@@ -84,9 +129,14 @@ function showCaptioner(width: number, height: number, element: HTMLElement, onCo
 
 	BdApi.UI.showConfirmationModal("Edit GIF", modal, {
 		onConfirm: () => {
-			expressionPicker.close();
-			const res = submitCallback?.();
-			if (res) onConfirm(res);
+			try {
+				expressionPicker.close();
+				const res = submitCallback?.();
+				if (res) onConfirm(res);
+			} catch (err) {
+				console.error("[GifCaptioner] Submit failed:", err);
+				error(`Failed to submit: ${String(err?.message || err)}`);
+			}
 		}
 	});
 }
@@ -99,8 +149,7 @@ function unwrapDiscordExternalUrl(inputUrl: string): string {
 		const u = new URL(fixed, location.href);
 		const host = u.hostname.toLowerCase();
 
-		// Favourited Tenor links (sometimes) end up as external.discordapp.net URLs, and it is more simple to unwrap this for 'gif.ts' and 'video.ts'. - Knew
-		// More clean to just not have this, but it makes things more complex ouside this code. - Knew
+		// Favourited Tenor links (sometimes) end up as 'external.discordapp.net' URLs, and it is more simple to unwrap this for 'gif.ts' and 'video.ts'. - Knew
 		if (!host.startsWith("external.") || (!host.endsWith("discordapp.net") && !host.endsWith("discordapp.com"))) return fixed;
 
 		const httpsMarker = "/https/";
