@@ -79,7 +79,9 @@ export default class Manager {
             let typeSymbol = Object.getOwnPropertySymbols(files[0])[0];
 
             for(let file of files) {
-                if((file as any)[typeSymbol] === 2) {
+                // Separate folders/symlinks
+                const fileType = (file as any)[typeSymbol];
+                if(fileType === 2 || fileType === 3) {
                     folders.push({ name: file.name });
                     continue;
                 }
