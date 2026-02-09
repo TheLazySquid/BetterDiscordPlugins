@@ -15,6 +15,7 @@ export interface ModuleDefinition {
 export interface ModuleLocator {
     id?: number;
     filter: ModuleFilter;
+    cacheId: string;
     defaultExport?: boolean;
 }
 

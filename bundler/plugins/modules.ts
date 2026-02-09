@@ -23,21 +23,22 @@ export function modulesPlugin(ids: (keyof Modules)[]): Plugin {
 function createModulesFile(ids: (keyof Modules)[]): string {
     if(ids.length === 0) return "";
 
-    let contents = `import { demangle, findExport, findExportWithKey, getModules } from "$shared/util/modules";\n`
+    let contents = `import { demangle, findExport, findExportWithKey } from "$shared/util/modules";\n`
         + "const Filters = BdApi.Webpack.Filters;\n\n";
     
     // Get all the modules
     const moduleIds = ids.map(id => modules[id].demangler ? `${id}Mangled` : modules[id].getExport ? `${id}Module` : id);
-    contents += `const [${moduleIds.join(",")}] = getModules([\n`;
+    contents += `const [${moduleIds.join(",")}] = BdApi.Webpack.getBulk(\n`;
     for(let i = 0; i < ids.length; i++) {
         let definition = modules[ids[i]];
         contents += "  {\n"
-        if(definition.id) contents += `    id: ${definition.id},\n`;
         contents += `    filter: ${definition.filter},\n`;
-        if(definition.defaultExport) contents += `    defaultExport: true,\n`;
+        if(definition.defaultExport !== undefined) contents += `    defaultExport: ${definition.defaultExport},\n`;
+        if(definition.id) contents += `    firstId: ${definition.id},\n`;
+        contents += `    cacheId: "${ids[i]}",\n`;
         contents += "  },\n";
     }
-    contents += `]);\n\n`;
+    contents += `);\n\n`;
 
     // Get the modules into their final form
     for(let i = 0; i < ids.length; i++) {

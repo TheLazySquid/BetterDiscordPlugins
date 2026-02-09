@@ -1,7 +1,7 @@
 /**
  * @name GifCaptioner
  * @description A BetterDiscord plugin that allows you to add a caption to discord gifs
- * @version 2.1.2
+ * @version 2.1.3
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -1221,69 +1221,50 @@ function findExport(module, filter) {
     if (filter === true || filter(value)) return value;
   }
 }
-function getModules(locators) {
-  const modules = [];
-  for (let i = 0; i < locators.length; i++) {
-    if (!locators[i].id) continue;
-    modules[i] = BdApi.Webpack.getById(locators[i].id);
-    if (!modules[i]) Api.Logger.warn(`Module with ID ${locators[i].id} not found`);
-  }
-  const missingIndexes = [];
-  const filters = [];
-  for (let i = 0; i < locators.length; i++) {
-    if (modules[i]) continue;
-    missingIndexes.push(i);
-    filters.push({
-      filter: locators[i].filter,
-      defaultExport: locators[i].defaultExport
-    });
-  }
-  if (missingIndexes.length > 0) {
-    const found = BdApi.Webpack.getBulk(...filters);
-    for (let i = 0; i < missingIndexes.length; i++) {
-      modules[missingIndexes[i]] = found[i];
-      if (!found[i]) Api.Logger.error(`Module filter ${missingIndexes[i]} failed`);
-    }
-  }
-  return modules;
-}
 
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var [chatboxModule, CloudUploaderModule, expressionPickerMangled, gifDisplayModule, ModalSystemMangled, ModalMangled, maxUploadSizeModule] = getModules([
+var [chatboxModule, CloudUploaderModule, expressionPickerMangled, gifDisplayModule, ModalSystemMangled, ModalMangled, maxUploadSizeModule] = BdApi.Webpack.getBulk(
   {
-    id: 133343,
     filter: (m) => Object.values(m).some((e) => {
       let str = e?.type?.render?.toString?.();
       if (!str) return false;
       return str.includes("pendingScheduledMessage") && str.includes(".CHANNEL_TEXT_AREA");
-    })
+    }),
+    firstId: 133343,
+    cacheId: "chatbox"
   },
   {
-    id: 743445,
-    filter: (m) => Object.values(m).some((e) => e?.UPLOADING === "UPLOADING")
+    filter: (m) => Object.values(m).some((e) => e?.UPLOADING === "UPLOADING"),
+    firstId: 743445,
+    cacheId: "CloudUploader"
   },
   {
-    id: 151271,
-    filter: Filters.bySource("lastActiveView", "isSearchSuggestion")
+    filter: Filters.bySource("lastActiveView", "isSearchSuggestion"),
+    firstId: 151271,
+    cacheId: "expressionPicker"
   },
   {
-    id: 247683,
-    filter: (m) => Object.values(m).some(Filters.byStrings("renderGIF()", "imagePool"))
+    filter: (m) => Object.values(m).some(Filters.byStrings("renderGIF()", "imagePool")),
+    firstId: 247683,
+    cacheId: "gifDisplay"
   },
   {
-    id: 192308,
-    filter: Filters.bySource(".modalKey?")
+    filter: Filters.bySource(".modalKey?"),
+    firstId: 192308,
+    cacheId: "ModalSystem"
   },
   {
-    id: 935462,
-    filter: Filters.bySource(".MODAL_ROOT_LEGACY,properties")
+    filter: Filters.bySource(".MODAL_ROOT_LEGACY,properties"),
+    firstId: 935462,
+    cacheId: "Modal"
   },
   {
-    id: 453771,
-    filter: Filters.bySource("getUserMaxFileSize", "premiumTier")
+    filter: Filters.bySource("getUserMaxFileSize", "premiumTier"),
+    firstId: 453771,
+    cacheId: "maxUploadSize"
   }
-]);
+);
 var chatbox = findExport(chatboxModule, (e) => e.type);
 var CloudUploader = findExport(CloudUploaderModule, (e) => e.fromJson);
 var expressionPicker = demangle(expressionPickerMangled, {

@@ -1,7 +1,7 @@
 /**
  * @name ZipPreview
  * @description Lets you see inside zips and preview/download files without ever downloading/extracting the zip
- * @version 0.6.1
+ * @version 0.6.2
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -70,59 +70,31 @@ function demangle(module2, demangler) {
   }
   return returned;
 }
-function findExport(module2, filter) {
-  for (let value of Object.values(module2)) {
-    if (filter === true || filter(value)) return value;
-  }
-}
-function getModules(locators) {
-  const modules = [];
-  for (let i = 0; i < locators.length; i++) {
-    if (!locators[i].id) continue;
-    modules[i] = BdApi.Webpack.getById(locators[i].id);
-    if (!modules[i]) Api.Logger.warn(`Module with ID ${locators[i].id} not found`);
-  }
-  const missingIndexes = [];
-  const filters = [];
-  for (let i = 0; i < locators.length; i++) {
-    if (modules[i]) continue;
-    missingIndexes.push(i);
-    filters.push({
-      filter: locators[i].filter,
-      defaultExport: locators[i].defaultExport
-    });
-  }
-  if (missingIndexes.length > 0) {
-    const found = BdApi.Webpack.getBulk(...filters);
-    for (let i = 0; i < missingIndexes.length; i++) {
-      modules[missingIndexes[i]] = found[i];
-      if (!found[i]) Api.Logger.error(`Module filter ${missingIndexes[i]} failed`);
-    }
-  }
-  return modules;
-}
 
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var [fileModule, highlightModuleModule, ModalMangled, ModalSystemMangled] = getModules([
+var [fileModule, highlightModule, ModalMangled, ModalSystemMangled] = BdApi.Webpack.getBulk(
   {
-    id: 718468,
-    filter: (m) => m.A?.toString().includes("().filesize(")
+    filter: (m) => m.A?.toString().includes("().filesize("),
+    firstId: 718468,
+    cacheId: "fileModule"
   },
   {
-    id: 752238,
-    filter: Filters.byKeys("highlight", "hasLanguage")
+    filter: Filters.byKeys("highlight", "hasLanguage"),
+    firstId: 752238,
+    cacheId: "highlightModule"
   },
   {
-    id: 935462,
-    filter: Filters.bySource(".MODAL_ROOT_LEGACY,properties")
+    filter: Filters.bySource(".MODAL_ROOT_LEGACY,properties"),
+    firstId: 935462,
+    cacheId: "Modal"
   },
   {
-    id: 192308,
-    filter: Filters.bySource(".modalKey?")
+    filter: Filters.bySource(".modalKey?"),
+    firstId: 192308,
+    cacheId: "ModalSystem"
   }
-]);
-var highlightModule = findExport(highlightModuleModule, true);
+);
 var Modal = demangle(ModalMangled, {
   Root: Filters.byStrings(".ImpressionNames.MODAL_ROOT_LEGACY"),
   Content: Filters.byStrings("scrollerRef", "scrollbarType"),

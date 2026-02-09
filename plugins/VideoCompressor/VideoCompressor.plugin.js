@@ -1,7 +1,7 @@
 /**
  * @name VideoCompressor
  * @description Compress videos that are too large to upload normally
- * @version 0.2.4
+ * @version 0.2.5
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -61,53 +61,31 @@ function findExportWithKey(module, filter) {
     return [module, key];
   }
 }
-function getModules(locators) {
-  const modules = [];
-  for (let i = 0; i < locators.length; i++) {
-    if (!locators[i].id) continue;
-    modules[i] = BdApi.Webpack.getById(locators[i].id);
-    if (!modules[i]) Api.Logger.warn(`Module with ID ${locators[i].id} not found`);
-  }
-  const missingIndexes = [];
-  const filters = [];
-  for (let i = 0; i < locators.length; i++) {
-    if (modules[i]) continue;
-    missingIndexes.push(i);
-    filters.push({
-      filter: locators[i].filter,
-      defaultExport: locators[i].defaultExport
-    });
-  }
-  if (missingIndexes.length > 0) {
-    const found = BdApi.Webpack.getBulk(...filters);
-    for (let i = 0; i < missingIndexes.length; i++) {
-      modules[missingIndexes[i]] = found[i];
-      if (!found[i]) Api.Logger.error(`Module filter ${missingIndexes[i]} failed`);
-    }
-  }
-  return modules;
-}
 
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var [attachFilesModule, maxUploadSizeModule, ModalSystemMangled, ModalMangled] = getModules([
+var [attachFilesModule, maxUploadSizeModule, ModalSystemMangled, ModalMangled] = BdApi.Webpack.getBulk(
   {
-    id: 518960,
-    filter: (m) => Object.values(m).some(Filters.byStrings("filesMetadata:", "requireConfirm:"))
+    filter: (m) => Object.values(m).some(Filters.byStrings("filesMetadata:", "requireConfirm:")),
+    firstId: 518960,
+    cacheId: "attachFiles"
   },
   {
-    id: 453771,
-    filter: Filters.bySource("getUserMaxFileSize", "premiumTier")
+    filter: Filters.bySource("getUserMaxFileSize", "premiumTier"),
+    firstId: 453771,
+    cacheId: "maxUploadSize"
   },
   {
-    id: 192308,
-    filter: Filters.bySource(".modalKey?")
+    filter: Filters.bySource(".modalKey?"),
+    firstId: 192308,
+    cacheId: "ModalSystem"
   },
   {
-    id: 935462,
-    filter: Filters.bySource(".MODAL_ROOT_LEGACY,properties")
+    filter: Filters.bySource(".MODAL_ROOT_LEGACY,properties"),
+    firstId: 935462,
+    cacheId: "Modal"
   }
-]);
+);
 var attachFiles = findExportWithKey(attachFilesModule, (e) => e.toString().includes("filesMetadata"));
 var maxUploadSize = findExport(maxUploadSizeModule, Filters.byStrings("getUserMaxFileSize", "premiumTier"));
 var ModalSystem = demangle(ModalSystemMangled, {

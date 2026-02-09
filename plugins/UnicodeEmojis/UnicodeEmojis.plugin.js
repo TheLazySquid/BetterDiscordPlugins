@@ -1,7 +1,7 @@
 /**
  * @name UnicodeEmojis
  * @description Replaces discord emojis that you send with their unicode equivalent
- * @version 1.1.5
+ * @version 1.1.6
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -56,44 +56,19 @@ onStop(() => {
   Api.Patcher.unpatchAll();
 });
 
-// shared/util/modules.ts
-function getModules(locators) {
-  const modules = [];
-  for (let i = 0; i < locators.length; i++) {
-    if (!locators[i].id) continue;
-    modules[i] = BdApi.Webpack.getById(locators[i].id);
-    if (!modules[i]) Api.Logger.warn(`Module with ID ${locators[i].id} not found`);
-  }
-  const missingIndexes = [];
-  const filters = [];
-  for (let i = 0; i < locators.length; i++) {
-    if (modules[i]) continue;
-    missingIndexes.push(i);
-    filters.push({
-      filter: locators[i].filter,
-      defaultExport: locators[i].defaultExport
-    });
-  }
-  if (missingIndexes.length > 0) {
-    const found = BdApi.Webpack.getBulk(...filters);
-    for (let i = 0; i < missingIndexes.length; i++) {
-      modules[missingIndexes[i]] = found[i];
-      if (!found[i]) Api.Logger.error(`Module filter ${missingIndexes[i]} failed`);
-    }
-  }
-  return modules;
-}
-
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var [createSlate] = getModules([
+var [createSlate] = BdApi.Webpack.getBulk(
   {
-    id: 913728,
-    filter: Filters.byStrings("insertText=", "onChange=")
+    filter: Filters.byStrings("insertText=", "onChange="),
+    defaultExport: false,
+    firstId: 913728,
+    cacheId: "createSlate"
   }
-]);
+);
 
 // plugins/UnicodeEmojis/src/index.ts
+console.log(createSlate);
 after(createSlate, "A", ({ returnVal: editor }) => {
   let waitingToUpdate = false;
   function onChange() {

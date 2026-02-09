@@ -1,6 +1,6 @@
 {
     "description": "Lets you see inside zips and preview/download files without ever downloading/extracting the zip",
-    "version": "0.6.1",
+    "version": "0.6.2",
     "modules": [
         "fileModule",
         "highlightModule",

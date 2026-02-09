@@ -13,12 +13,10 @@ export const modules: Record<keyof Modules, ModuleDefinition> = {
     },
     expressionModule: {
         id: 834755,
-        getExport: true,
         filter: `(m) => m.type?.toString?.().includes("onSelectGIF")`
     },
     buttonsModule: {
         id: 147025,
-        getExport: true,
         filter: `(m) => m.type?.toString?.().includes(".isSubmitButtonEnabled")`
     },
     uploadClasses: {
@@ -34,7 +32,6 @@ export const modules: Record<keyof Modules, ModuleDefinition> = {
     },
     highlightModule: {
         id: 752238,
-        getExport: true,
         filter: `Filters.byKeys("highlight", "hasLanguage")`
     },
     createSlate: {

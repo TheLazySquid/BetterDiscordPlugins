@@ -1,7 +1,7 @@
 /**
  * @name MoreQuickReacts
  * @description Increases the number of quick reactions available when hovering over a message
- * @version 1.0.4
+ * @version 1.0.5
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -67,41 +67,16 @@ function findExportWithKey(module, filter) {
     return [module, key];
   }
 }
-function getModules(locators) {
-  const modules = [];
-  for (let i = 0; i < locators.length; i++) {
-    if (!locators[i].id) continue;
-    modules[i] = BdApi.Webpack.getById(locators[i].id);
-    if (!modules[i]) Api.Logger.warn(`Module with ID ${locators[i].id} not found`);
-  }
-  const missingIndexes = [];
-  const filters = [];
-  for (let i = 0; i < locators.length; i++) {
-    if (modules[i]) continue;
-    missingIndexes.push(i);
-    filters.push({
-      filter: locators[i].filter,
-      defaultExport: locators[i].defaultExport
-    });
-  }
-  if (missingIndexes.length > 0) {
-    const found = BdApi.Webpack.getBulk(...filters);
-    for (let i = 0; i < missingIndexes.length; i++) {
-      modules[missingIndexes[i]] = found[i];
-      if (!found[i]) Api.Logger.error(`Module filter ${missingIndexes[i]} failed`);
-    }
-  }
-  return modules;
-}
 
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var [frequentlyUsedEmojisModule] = getModules([
+var [frequentlyUsedEmojisModule] = BdApi.Webpack.getBulk(
   {
-    id: 822123,
-    filter: (m) => Object.values(m).some(Filters.byStrings("getFrequentlyUsedReactionEmojisWithoutFetchingLatest", "loadIfNecessary"))
+    filter: (m) => Object.values(m).some(Filters.byStrings("getFrequentlyUsedReactionEmojisWithoutFetchingLatest", "loadIfNecessary")),
+    firstId: 822123,
+    cacheId: "frequentlyUsedEmojis"
   }
-]);
+);
 var frequentlyUsedEmojis = findExportWithKey(frequentlyUsedEmojisModule, (e) => e.toString().includes("getFrequentlyUsedReactionEmojisWithoutFetchingLatest"));
 
 // shared/util/settings.ts
