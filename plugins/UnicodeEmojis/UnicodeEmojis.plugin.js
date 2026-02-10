@@ -68,7 +68,6 @@ var [createSlate] = BdApi.Webpack.getBulk(
 );
 
 // plugins/UnicodeEmojis/src/index.ts
-console.log(createSlate);
 after(createSlate, "A", ({ returnVal: editor }) => {
   let waitingToUpdate = false;
   function onChange() {
