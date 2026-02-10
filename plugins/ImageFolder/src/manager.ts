@@ -133,7 +133,7 @@ export default class Manager {
     }
 
     static async renameMedia(media: Media) {
-        const mediaPath = path.join(this.saveDir, this.dir, media.name);
+        const mediaPath = path.join(this.base, this.dir, media.name);
 
         let dialog = await BdApi.UI.openDialog({
             mode: "save",

@@ -1,7 +1,7 @@
 /**
  * @name ImageFolder
  * @description A BetterDiscord plugin that allows you to save and send images from a folder for easy access
- * @version 1.5.3
+ * @version 1.5.4
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -352,7 +352,7 @@ var Manager = class {
     this.update?.({ ...this.contents });
   }
   static async renameMedia(media) {
-    const mediaPath = path.join(this.saveDir, this.dir, media.name);
+    const mediaPath = path.join(this.base, this.dir, media.name);
     let dialog = await BdApi.UI.openDialog({
       mode: "save",
       defaultPath: mediaPath,
