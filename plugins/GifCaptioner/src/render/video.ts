@@ -5,7 +5,7 @@ import { BufferSource, CanvasSink, Input, MP4, VideoSampleSink, WEBM } from "med
 import { Api } from "$shared/bd";
 
 export default async function captionMp4(url: string, width: number, height: number, transform: GifTransform) {
-	const progress = new ProgressDisplay("Fetching");
+	const progress = new ProgressDisplay("Rendering GIF", "Fetching");
 
 	try {
 		// Fetch the video

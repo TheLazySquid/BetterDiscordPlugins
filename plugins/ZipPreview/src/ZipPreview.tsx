@@ -2,8 +2,8 @@ import { type ZipInfo, unzip, type ZipEntry } from "unzipit";
 // I won't lie, I got pretty desperate trying to find a library that a) works b) builds
 import { isBinaryFile } from "arraybuffer-isbinary";
 
-import FilePreview from "./FilePreview.tsx";
-import { Modal, ModalSystem } from "$shared/modules";
+import FilePreviewModal from "./FilePreviewModal.tsx";
+import { modalMethods } from "$shared/modules";
 import { LucideIcon } from "$shared/ui/icons.tsx";
 import { ArrowDownFromLine, ArrowUpFromLine, FolderOutput } from "lucide";
 import { Api } from "$shared/bd.ts";
@@ -81,15 +81,11 @@ function ZipPreview({ url }: { url: string }) {
         }
         if(type == "text" && isBinaryFile(buff)) type = "binary";
 
-        let id = ModalSystem.open((props: any) => (
-            <Modal.Root size="dynamic" {...props}>
-                <Modal.Content className="zp-no-padding">
-                    <FilePreview
-                        name={name} type={type} blob={blob} buff={buff}
-                        onClose={() => ModalSystem.close(id)}
-                    />
-                </Modal.Content>
-            </Modal.Root>
+        modalMethods.openModal((props) => (
+            <FilePreviewModal
+                name={name} type={type} blob={blob} buff={buff}
+                {...props}
+            />
         ));
     }
 

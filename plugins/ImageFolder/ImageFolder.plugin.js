@@ -1,7 +1,7 @@
 /**
  * @name ImageFolder
  * @description A BetterDiscord plugin that allows you to save and send images from a folder for easy access
- * @version 1.5.4
+ * @version 1.5.5
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -118,7 +118,7 @@ function findExport(module, filter) {
 
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var [chatboxModule, CloudUploaderModule, buttonsModule, expressionModule, expressionPickerMangled, uploadClasses, chatClasses] = BdApi.Webpack.getBulk(
+var [chatboxModule, CloudUploaderModule, buttonsModule, expressionModule, expressionPickerMangled, uploadAreaClassModule, chatbarInnerClassModule] = BdApi.Webpack.getBulk(
   {
     filter: (m) => Object.values(m).some((e) => {
       let str = e?.type?.render?.toString?.();
@@ -150,11 +150,11 @@ var [chatboxModule, CloudUploaderModule, buttonsModule, expressionModule, expres
   },
   {
     filter: Filters.byKeys("uploadArea", "chat"),
-    cacheId: "uploadClasses"
+    cacheId: "uploadAreaClass"
   },
   {
     filter: Filters.byKeys("buttons", "textAreaSlate"),
-    cacheId: "chatClasses"
+    cacheId: "chatbarInnerClass"
   }
 );
 var chatbox = findExport(chatboxModule, (e) => e.type);
@@ -164,6 +164,8 @@ var expressionPicker = demangle(expressionPickerMangled, {
   close: (f) => f.toString().includes("activeView:null"),
   store: (f) => f.getState
 });
+var uploadAreaClass = uploadAreaClassModule.uploadArea;
+var chatbarInnerClass = chatbarInnerClassModule.inner;
 
 // shared/api/toast.ts
 function success(message) {
@@ -1306,7 +1308,7 @@ after(buttonsModule, "type", ({ args, returnVal }) => {
   return returnVal;
 });
 onStart(() => {
-  forceUpdate("." + chatClasses.inner);
+  forceUpdate("." + chatbarInnerClass);
 });
 after(expressionModule, "type", ({ returnVal }) => {
   if (!returnVal) return returnVal;
@@ -1331,8 +1333,7 @@ after(expressionModule, "type", ({ returnVal }) => {
     }
   });
 });
-var uploadClass = uploadClasses.uploadArea;
-var hideCss = `.${uploadClass} { display: none; pointer-events: none; }`;
+var hideCss = `.${uploadAreaClass} { display: none; pointer-events: none; }`;
 onStart(() => {
   let unsub = expressionPicker.store.subscribe((state) => {
     if (state.activeView) {

@@ -27,7 +27,7 @@ function createModulesFile(ids: (keyof Modules)[]): string {
         + "const Filters = BdApi.Webpack.Filters;\n\n";
     
     // Get all the modules
-    const moduleIds = ids.map(id => modules[id].demangler ? `${id}Mangled` : modules[id].getExport ? `${id}Module` : id);
+    const moduleIds = ids.map(id => modules[id].demangler ? `${id}Mangled` : (modules[id].getExport || modules[id].key) ? `${id}Module` : id);
     contents += `const [${moduleIds.join(",")}] = BdApi.Webpack.getBulk(\n`;
     for(let i = 0; i < ids.length; i++) {
         let definition = modules[ids[i]];
@@ -54,6 +54,8 @@ function createModulesFile(ids: (keyof Modules)[]): string {
             // Add getExport calls
             const finder = module.getWithKey ? "findExportWithKey" : "findExport";
             contents += `const ${ids[i]} = ${finder}(${ids[i]}Module, ${module.getExport});\n`;
+        } else if(module.key) {
+            contents += `const ${ids[i]} = ${ids[i]}Module.${module.key};\n`;
         }
     }
 

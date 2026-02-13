@@ -5,7 +5,7 @@ import { Api } from "$shared/bd";
 import { error } from "$shared/api/toast";
 
 export default async function captionGif(url: string, width: number, height: number, transform: GifTransform) {
-    const progress = new ProgressDisplay("Fetching");
+    const progress = new ProgressDisplay("Rendering GIF", "Fetching");
 
     try {
         // Fetch the gif

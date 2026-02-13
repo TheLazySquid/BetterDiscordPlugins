@@ -25,3 +25,9 @@ export function CCIcon() {
         </svg>
     )
 }
+
+export function IconComponent(options: IconOptions) {
+    return function() {
+        return LucideIcon(options);
+    }
+}

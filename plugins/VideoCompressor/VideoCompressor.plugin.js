@@ -1,7 +1,7 @@
 /**
  * @name VideoCompressor
  * @description Compress videos that are too large to upload normally
- * @version 0.2.5
+ * @version 0.2.6
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -37,19 +37,6 @@ var onStop = createCallbackHandler("stop");
 var onSwitch = createCallbackHandler("onSwitch");
 
 // shared/util/modules.ts
-function demangle(module, demangler) {
-  let returned = {};
-  let values = Object.values(module);
-  for (let id in demangler) {
-    for (let i = 0; i < values.length; i++) {
-      if (demangler[id](values[i])) {
-        returned[id] = values[i];
-        break;
-      }
-    }
-  }
-  return returned;
-}
 function findExport(module, filter) {
   for (let value of Object.values(module)) {
     if (filter === true || filter(value)) return value;
@@ -64,7 +51,7 @@ function findExportWithKey(module, filter) {
 
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var [attachFilesModule, maxUploadSizeModule, ModalSystemMangled, ModalMangled] = BdApi.Webpack.getBulk(
+var [attachFilesModule, maxUploadSizeModule, modalMethods, ModalModule, modalContainerClassModule] = BdApi.Webpack.getBulk(
   {
     filter: (m) => Object.values(m).some(Filters.byStrings("filesMetadata:", "requireConfirm:")),
     firstId: 518960,
@@ -76,29 +63,24 @@ var [attachFilesModule, maxUploadSizeModule, ModalSystemMangled, ModalMangled] =
     cacheId: "maxUploadSize"
   },
   {
-    filter: Filters.bySource(".modalKey?"),
+    filter: Filters.byKeys("openModal"),
     firstId: 192308,
-    cacheId: "ModalSystem"
+    cacheId: "modalMethods"
   },
   {
-    filter: Filters.bySource(".MODAL_ROOT_LEGACY,properties"),
-    firstId: 935462,
+    filter: Filters.byKeys("Modal"),
+    firstId: 158954,
     cacheId: "Modal"
+  },
+  {
+    filter: Filters.byKeys("container", "padding-size-sm"),
+    cacheId: "modalContainerClass"
   }
 );
 var attachFiles = findExportWithKey(attachFilesModule, (e) => e.toString().includes("filesMetadata"));
 var maxUploadSize = findExport(maxUploadSizeModule, Filters.byStrings("getUserMaxFileSize", "premiumTier"));
-var ModalSystem = demangle(ModalSystemMangled, {
-  open: Filters.byStrings(",instant:"),
-  close: Filters.byStrings(".onCloseCallback()")
-});
-var Modal = demangle(ModalMangled, {
-  Root: Filters.byStrings(".ImpressionNames.MODAL_ROOT_LEGACY"),
-  Content: Filters.byStrings("scrollerRef", "scrollbarType"),
-  Header: Filters.byStrings("headerIdIsManaged"),
-  Close: Filters.byStrings(".withCircleBackground"),
-  Footer: Filters.byStrings("grow:0")
-});
+var Modal = ModalModule.Modal;
+var modalContainerClass = modalContainerClassModule.container;
 
 // shared/api/patching.ts
 function check(module, key) {
@@ -15153,11 +15135,11 @@ onStop(() => {
 // shared/util/progress.css
 addStyle(`.lz-progress {
   color: white;
-  width: 300px;
+  width: 100%;
 }
 
 .lz-status {
-  font-size: 30px;
+  font-size: 24px;
   font-weight: bold;
   white-space: nowrap;
 }
@@ -15186,20 +15168,27 @@ var ProgressDisplay = class {
   modalId;
   onCancelCallback;
   canceled = false;
-  constructor(status, cancelable = false) {
-    this.modalId = ModalSystem.open((props) => {
-      return /* @__PURE__ */ BdApi.React.createElement(Modal.Root, { size: "dynamic", ...props }, /* @__PURE__ */ BdApi.React.createElement(Modal.Content, null, cancelable ? /* @__PURE__ */ BdApi.React.createElement("div", { style: { position: "absolute", top: "10px", right: "10px" } }, /* @__PURE__ */ BdApi.React.createElement(Modal.Close, { onClick: () => {
-        this.close();
-        this.onCancelCallback?.();
-        this.canceled = true;
-      } })) : null, /* @__PURE__ */ BdApi.React.createElement(
+  constructor(title, status, cancelable = false) {
+    this.modalId = modalMethods.openModal((props) => /* @__PURE__ */ BdApi.React.createElement(
+      Modal,
+      {
+        ...props,
+        title,
+        dismissable: cancelable,
+        onClose: () => {
+          props.onClose();
+          this.onCancelCallback?.();
+          this.canceled = true;
+        }
+      },
+      /* @__PURE__ */ BdApi.React.createElement(
         Progress,
         {
           status,
           onUpdater: (updater) => this.updater = updater
         }
-      )));
-    }, {
+      )
+    ), {
       onCloseRequest: () => false
     });
   }
@@ -15211,7 +15200,7 @@ var ProgressDisplay = class {
     this.updater(status, progress);
   }
   close() {
-    ModalSystem.close(this.modalId);
+    modalMethods.closeModal(this.modalId);
   }
 };
 
@@ -15252,7 +15241,7 @@ function showPopup(file, fullSize, maxSize, attach2, values = defaultValues) {
   });
 }
 async function renderVideo(file, maxSize, values, attach2) {
-  const progress = new ProgressDisplay("Preparing", true);
+  const progress = new ProgressDisplay("Rendering video", "Preparing", true);
   Api.Logger.info("Compressing video", file.name, "with values", values);
   const next = () => advanceQueue(maxSize, attach2);
   try {

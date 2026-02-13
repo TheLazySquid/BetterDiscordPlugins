@@ -3,8 +3,13 @@ import type { ModuleFilter } from "betterdiscord";
 
 export interface ModuleDefinition {
     id?: number;
-    getExport?: string | true;
     demangler?: Record<string, string>;
+
+    // getExport overrides key
+    getExport?: string | true;
+    key?: string;
+
+    // getExport required
     getWithKey?: boolean;
 
     // Fallback
@@ -37,9 +42,9 @@ interface ModalOptions {
     onCloseRequest?: () => boolean;
 }
 
-interface ModalSystem {
-    open: (render: (props: any) => React.ReactNode, options?: ModalOptions) => string;
-    close: (id: string) => void;
+interface ModalMethods {
+    openModal: (render: (props: any) => React.ReactNode, options?: ModalOptions) => string;
+    closeModal: (id: string) => void;
 }
 
 interface AttachmentSystem {
@@ -59,18 +64,19 @@ export interface Modules {
     CloudUploader: typeof CloudUpload;
     expressionModule: ReactElementModule;
     buttonsModule: ReactElementModule;
-    uploadClasses: Record<string, string>;
-    chatClasses: Record<string, string>;
+    uploadAreaClass: string;
+    chatbarInnerClass: string;
+    modalContainerClass: string;
     gifDisplay: any;
     highlightModule: any;
     createSlate: any;
     attachFiles: [any, string];
     chatbox: any;
-    ModalSystem: ModalSystem;
     expressionPicker: ExpressionPicker;
-    Modal: { Root: any; Content: any; Header: any; Close: any; Footer: any };
     AttachmentSystem: AttachmentSystem;
     frequentlyUsedEmojis: [any, string];
+    Modal: any;
+    modalMethods: ModalMethods;
     maxUploadSize: (guildId: string | null) => number;
 }
 

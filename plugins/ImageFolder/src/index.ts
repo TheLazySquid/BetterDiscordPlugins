@@ -1,5 +1,5 @@
 import { after, tempAfter } from '$shared/api/patching';
-import { buttonsModule, chatClasses, expressionModule, expressionPicker, uploadClasses } from "$shared/modules";
+import { buttonsModule, chatbarInnerClass, expressionModule, expressionPicker, uploadAreaClass } from "$shared/modules";
 import View from "./ui/view";
 import { addFont } from '$shared/api/fonts';
 import futura from "$assets/Futura Condensed Extra Bold.otf";
@@ -40,7 +40,7 @@ after(buttonsModule, "type", ({ args, returnVal }) => {
 
 // Add the button on startup
 onStart(() => {
-    forceUpdate("." + chatClasses.inner);
+    forceUpdate("." + chatbarInnerClass);
 });
 
 // Create the image folder tab in the expression picker
@@ -77,8 +77,7 @@ after(expressionModule, "type", ({ returnVal }) => {
 });
 
 // Hide the default upload overlay when the expression picker is open
-const uploadClass = uploadClasses.uploadArea;
-const hideCss = `.${uploadClass} { display: none; pointer-events: none; }`;
+const hideCss = `.${uploadAreaClass} { display: none; pointer-events: none; }`;
 
 onStart(() => {
     let unsub = expressionPicker.store.subscribe((state) => {

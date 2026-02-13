@@ -1,5 +1,5 @@
 import "./progress.css";
-import { ModalSystem, Modal } from "$shared/modules";
+import { modalMethods, Modal } from "$shared/modules";
 export type Updater = (status: string, progress: number | undefined) => void;
 
 function Progress({ onUpdater, status: initialStatus }: { onUpdater: (updater: Updater) => void, status: string }) {
@@ -26,26 +26,24 @@ export default class ProgressDisplay {
     onCancelCallback?: () => void;
     canceled = false;
 
-    constructor(status: string, cancelable = false) {
-        this.modalId = ModalSystem.open((props: any) => {
-            return (<Modal.Root size="dynamic" {...props}>
-                <Modal.Content>
-                    { cancelable ? (
-                        <div style={{ position: "absolute", top: "10px", right: "10px" }}>
-                            <Modal.Close onClick={() => {
-                                this.close();
-                                this.onCancelCallback?.();
-                                this.canceled = true;
-                            }} />
-                        </div>
-                    ) : null }
-                    <Progress
-                        status={status}
-                        onUpdater={(updater) => this.updater = updater}
-                    />
-                </Modal.Content>
-            </Modal.Root>)
-        }, {
+    constructor(title: string, status: string, cancelable = false) {
+        this.modalId = modalMethods.openModal((props) => (
+            <Modal
+                {...props}
+                title={title}
+                dismissable={cancelable}
+                onClose={() => {
+                    props.onClose();
+                    this.onCancelCallback?.();
+                    this.canceled = true;
+                }}
+            >
+                <Progress
+                    status={status}
+                    onUpdater={(updater) => this.updater = updater}
+                />
+            </Modal>
+        ), {
             onCloseRequest: () => false
         });
     }
@@ -60,6 +58,6 @@ export default class ProgressDisplay {
     }
 
     close() {
-        ModalSystem.close(this.modalId);
+        modalMethods.closeModal(this.modalId);
     }
 }

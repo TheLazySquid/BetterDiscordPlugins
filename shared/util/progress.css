@@ -1,10 +1,10 @@
 .lz-progress {
     color: white;
-    width: 300px;
+    width: 100%;
 }
 
 .lz-status {
-    font-size: 30px;
+    font-size: 24px;
     font-weight: bold;
     white-space: nowrap;
 }

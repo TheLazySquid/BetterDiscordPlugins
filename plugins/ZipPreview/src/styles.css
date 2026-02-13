@@ -73,87 +73,13 @@
     height: 20px;
 }
 
-.zp-no-padding {
-    padding: 0;
-    overflow: hidden !important;
-}
-
 .zp-preview {
-    color: var(--text-default);
-    max-width: 80vw;
     min-width: 30vw;
-    max-height: 90vh;
     min-height: 20vh;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    user-select: text;
-    border-radius: var(--radius-md);
 }
 
-.zp-preview-header {
-    height: 45px;
-    background: var(--background-base-low);
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    font-size: 28px;
-    padding-left: 20px;
-    padding-right: 20px;
-    font-weight: 700;
-    border-bottom: 1px solid #bbbbbb;
-}
-
-.zp-preview-title {
-    flex-grow: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-wrap: nowrap;
-    text-overflow: ellipsis;
-    height: 100%;
-    display: flex;
-    align-items: center;
-}
-
-.zp-preview-close {
-    height: 35px;
-    width: 35px;
-    fill: var(--text-default);
-    cursor: pointer;
-}
-
-.zp-preview-content-wrap {
-    margin: 20px;
-    margin-bottom: 0;
-    padding: 20px;
-    border: 1px solid #bbbbbb;
-    border-radius: 10px;
-    min-height: 0;
-    overflow: hidden;
-    display: flex;
-    position: relative;
-    align-self: stretch;
-    flex-grow: 1;
-}
-
-.zp-preview-copy {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 20px;
-    height: 20px;
-    fill: var(--text-default);
-    cursor: pointer;
-}
-
-.zp-preview-content {
-    min-height: 0;
-    overflow: auto;
-    width: 100%;
-    scrollbar-color: var(--background-base-low) var(--background-base-lower);
-    /* prevents a scrollbar from randomly appearing for some reason */
-    padding-top: 3px;
-    padding-bottom: 3px;
+.zp-preview pre {
+    white-space: pre-wrap;
 }
 
 .zp-preview audio {
@@ -161,8 +87,8 @@
 }
 
 .zp-preview img, .zp-preview video {
-    width: 100%;
-    height: auto;
+    max-width: 50vw;
+    max-height: 50vh;
 }
 
 .zp-preview-override {
@@ -175,25 +101,4 @@
     color: white;
     font-weight: bold;
     text-align: center;
-}
-
-.zp-preview-footer {
-    height: 55px;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    padding-right: 20px;
-    align-self: stretch;
-}
-
-.zp-preview-footer .icon {
-    height: 35px;
-    width: 35px;
-    border: none;
-    background-color: transparent;
-    color: var(--text-default);
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }

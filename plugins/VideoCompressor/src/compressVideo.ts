@@ -37,7 +37,7 @@ export function showPopup(file: File, fullSize: number, maxSize: number, attach:
 }
 
 async function renderVideo(file: File, maxSize: number, values: CompressValues, attach: Attach) {
-    const progress = new ProgressDisplay("Preparing", true);
+    const progress = new ProgressDisplay("Rendering video", "Preparing", true);
 
     Api.Logger.info("Compressing video", file.name, "with values", values);
     const next = () => advanceQueue(maxSize, attach);

@@ -1,7 +1,7 @@
 /**
  * @name GifCaptioner
  * @description A BetterDiscord plugin that allows you to add a caption to discord gifs
- * @version 2.1.3
+ * @version 2.1.4
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -1224,7 +1224,7 @@ function findExport(module, filter) {
 
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var [chatboxModule, CloudUploaderModule, expressionPickerMangled, gifDisplayModule, ModalSystemMangled, ModalMangled, maxUploadSizeModule] = BdApi.Webpack.getBulk(
+var [chatboxModule, CloudUploaderModule, expressionPickerMangled, gifDisplayModule, modalMethods, ModalModule, maxUploadSizeModule, modalContainerClassModule] = BdApi.Webpack.getBulk(
   {
     filter: (m) => Object.values(m).some((e) => {
       let str = e?.type?.render?.toString?.();
@@ -1250,19 +1250,23 @@ var [chatboxModule, CloudUploaderModule, expressionPickerMangled, gifDisplayModu
     cacheId: "gifDisplay"
   },
   {
-    filter: Filters.bySource(".modalKey?"),
+    filter: Filters.byKeys("openModal"),
     firstId: 192308,
-    cacheId: "ModalSystem"
+    cacheId: "modalMethods"
   },
   {
-    filter: Filters.bySource(".MODAL_ROOT_LEGACY,properties"),
-    firstId: 935462,
+    filter: Filters.byKeys("Modal"),
+    firstId: 158954,
     cacheId: "Modal"
   },
   {
     filter: Filters.bySource("getUserMaxFileSize", "premiumTier"),
     firstId: 453771,
     cacheId: "maxUploadSize"
+  },
+  {
+    filter: Filters.byKeys("container", "padding-size-sm"),
+    cacheId: "modalContainerClass"
   }
 );
 var chatbox = findExport(chatboxModule, (e) => e.type);
@@ -1273,18 +1277,9 @@ var expressionPicker = demangle(expressionPickerMangled, {
   store: (f) => f.getState
 });
 var gifDisplay = findExport(gifDisplayModule, (e) => e.prototype?.renderGIF);
-var ModalSystem = demangle(ModalSystemMangled, {
-  open: Filters.byStrings(",instant:"),
-  close: Filters.byStrings(".onCloseCallback()")
-});
-var Modal = demangle(ModalMangled, {
-  Root: Filters.byStrings(".ImpressionNames.MODAL_ROOT_LEGACY"),
-  Content: Filters.byStrings("scrollerRef", "scrollbarType"),
-  Header: Filters.byStrings("headerIdIsManaged"),
-  Close: Filters.byStrings(".withCircleBackground"),
-  Footer: Filters.byStrings("grow:0")
-});
+var Modal = ModalModule.Modal;
 var maxUploadSize = findExport(maxUploadSizeModule, Filters.byStrings("getUserMaxFileSize", "premiumTier"));
+var modalContainerClass = modalContainerClassModule.container;
 
 // plugins/GifCaptioner/src/gif.worker.txt
 var gif_worker_default = `// gif.worker.js 0.2.0-wasm - https://github.com/jnordberg/gif.js\r
@@ -1557,11 +1552,11 @@ onStop(() => {
 // shared/util/progress.css
 addStyle(`.lz-progress {
   color: white;
-  width: 300px;
+  width: 100%;
 }
 
 .lz-status {
-  font-size: 30px;
+  font-size: 24px;
   font-weight: bold;
   white-space: nowrap;
 }
@@ -1590,20 +1585,27 @@ var ProgressDisplay = class {
   modalId;
   onCancelCallback;
   canceled = false;
-  constructor(status, cancelable = false) {
-    this.modalId = ModalSystem.open((props) => {
-      return /* @__PURE__ */ BdApi.React.createElement(Modal.Root, { size: "dynamic", ...props }, /* @__PURE__ */ BdApi.React.createElement(Modal.Content, null, cancelable ? /* @__PURE__ */ BdApi.React.createElement("div", { style: { position: "absolute", top: "10px", right: "10px" } }, /* @__PURE__ */ BdApi.React.createElement(Modal.Close, { onClick: () => {
-        this.close();
-        this.onCancelCallback?.();
-        this.canceled = true;
-      } })) : null, /* @__PURE__ */ BdApi.React.createElement(
+  constructor(title, status, cancelable = false) {
+    this.modalId = modalMethods.openModal((props) => /* @__PURE__ */ BdApi.React.createElement(
+      Modal,
+      {
+        ...props,
+        title,
+        dismissable: cancelable,
+        onClose: () => {
+          props.onClose();
+          this.onCancelCallback?.();
+          this.canceled = true;
+        }
+      },
+      /* @__PURE__ */ BdApi.React.createElement(
         Progress,
         {
           status,
           onUpdater: (updater) => this.updater = updater
         }
-      )));
-    }, {
+      )
+    ), {
       onCloseRequest: () => false
     });
   }
@@ -1615,7 +1617,7 @@ var ProgressDisplay = class {
     this.updater(status, progress);
   }
   close() {
-    ModalSystem.close(this.modalId);
+    modalMethods.closeModal(this.modalId);
   }
 };
 
@@ -10903,7 +10905,7 @@ var Input = class {
 
 // plugins/GifCaptioner/src/render/video.ts
 async function captionMp4(url, width, height, transform) {
-  const progress = new ProgressDisplay("Fetching");
+  const progress = new ProgressDisplay("Rendering GIF", "Fetching");
   try {
     const res = await BdApi.Net.fetch(url);
     if (!res.ok || !res.headers.get("content-type")?.startsWith("video/")) {
@@ -11041,7 +11043,7 @@ addStyle(`.gc-trigger {
 // plugins/GifCaptioner/src/render/gif.ts
 var import_gifuct_js = __toESM(require_lib2(), 1);
 async function captionGif(url, width, height, transform) {
-  const progress = new ProgressDisplay("Fetching");
+  const progress = new ProgressDisplay("Rendering GIF", "Fetching");
   try {
     const res = await BdApi.Net.fetch(url);
     const buffer = await res.arrayBuffer();

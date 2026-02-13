@@ -1,7 +1,7 @@
 /**
  * @name ZipPreview
  * @description Lets you see inside zips and preview/download files without ever downloading/extracting the zip
- * @version 0.6.2
+ * @version 0.6.3
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -56,24 +56,9 @@ onStop(() => {
   Api.Patcher.unpatchAll();
 });
 
-// shared/util/modules.ts
-function demangle(module2, demangler) {
-  let returned = {};
-  let values = Object.values(module2);
-  for (let id in demangler) {
-    for (let i = 0; i < values.length; i++) {
-      if (demangler[id](values[i])) {
-        returned[id] = values[i];
-        break;
-      }
-    }
-  }
-  return returned;
-}
-
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var [fileModule, highlightModule, ModalMangled, ModalSystemMangled] = BdApi.Webpack.getBulk(
+var [fileModule, highlightModule, ModalModule, modalMethods, modalContainerClassModule] = BdApi.Webpack.getBulk(
   {
     filter: (m) => m.A?.toString().includes("().filesize("),
     firstId: 718468,
@@ -85,27 +70,22 @@ var [fileModule, highlightModule, ModalMangled, ModalSystemMangled] = BdApi.Webp
     cacheId: "highlightModule"
   },
   {
-    filter: Filters.bySource(".MODAL_ROOT_LEGACY,properties"),
-    firstId: 935462,
+    filter: Filters.byKeys("Modal"),
+    firstId: 158954,
     cacheId: "Modal"
   },
   {
-    filter: Filters.bySource(".modalKey?"),
+    filter: Filters.byKeys("openModal"),
     firstId: 192308,
-    cacheId: "ModalSystem"
+    cacheId: "modalMethods"
+  },
+  {
+    filter: Filters.byKeys("container", "padding-size-sm"),
+    cacheId: "modalContainerClass"
   }
 );
-var Modal = demangle(ModalMangled, {
-  Root: Filters.byStrings(".ImpressionNames.MODAL_ROOT_LEGACY"),
-  Content: Filters.byStrings("scrollerRef", "scrollbarType"),
-  Header: Filters.byStrings("headerIdIsManaged"),
-  Close: Filters.byStrings(".withCircleBackground"),
-  Footer: Filters.byStrings("grow:0")
-});
-var ModalSystem = demangle(ModalSystemMangled, {
-  open: Filters.byStrings(",instant:"),
-  close: Filters.byStrings(".onCloseCallback()")
-});
+var Modal = ModalModule.Modal;
+var modalContainerClass = modalContainerClassModule.container;
 
 // shared/api/styles.ts
 var count = 0;
@@ -196,87 +176,13 @@ addStyle(`.zp-wrap {
   height: 20px;
 }
 
-.zp-no-padding {
-  padding: 0;
-  overflow: hidden !important;
-}
-
 .zp-preview {
-  color: var(--text-default);
-  max-width: 80vw;
   min-width: 30vw;
-  max-height: 90vh;
   min-height: 20vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  user-select: text;
-  border-radius: var(--radius-md);
 }
 
-.zp-preview-header {
-  height: 45px;
-  background: var(--background-base-low);
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  font-size: 28px;
-  padding-left: 20px;
-  padding-right: 20px;
-  font-weight: 700;
-  border-bottom: 1px solid #bbbbbb;
-}
-
-.zp-preview-title {
-  flex-grow: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-wrap: nowrap;
-  text-overflow: ellipsis;
-  height: 100%;
-  display: flex;
-  align-items: center;
-}
-
-.zp-preview-close {
-  height: 35px;
-  width: 35px;
-  fill: var(--text-default);
-  cursor: pointer;
-}
-
-.zp-preview-content-wrap {
-  margin: 20px;
-  margin-bottom: 0;
-  padding: 20px;
-  border: 1px solid #bbbbbb;
-  border-radius: 10px;
-  min-height: 0;
-  overflow: hidden;
-  display: flex;
-  position: relative;
-  align-self: stretch;
-  flex-grow: 1;
-}
-
-.zp-preview-copy {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 20px;
-  height: 20px;
-  fill: var(--text-default);
-  cursor: pointer;
-}
-
-.zp-preview-content {
-  min-height: 0;
-  overflow: auto;
-  width: 100%;
-  scrollbar-color: var(--background-base-low) var(--background-base-lower);
-  /* prevents a scrollbar from randomly appearing for some reason */
-  padding-top: 3px;
-  padding-bottom: 3px;
+.zp-preview pre {
+  white-space: pre-wrap;
 }
 
 .zp-preview audio {
@@ -284,8 +190,8 @@ addStyle(`.zp-wrap {
 }
 
 .zp-preview img, .zp-preview video {
-  width: 100%;
-  height: auto;
+  max-width: 50vw;
+  max-height: 50vh;
 }
 
 .zp-preview-override {
@@ -298,27 +204,6 @@ addStyle(`.zp-wrap {
   color: white;
   font-weight: bold;
   text-align: center;
-}
-
-.zp-preview-footer {
-  height: 55px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding-right: 20px;
-  align-self: stretch;
-}
-
-.zp-preview-footer .icon {
-  height: 35px;
-  width: 35px;
-  border: none;
-  background-color: transparent;
-  color: var(--text-default);
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }`);
 
 // node_modules/unzipit/dist/unzipit.module.js
@@ -1306,6 +1191,30 @@ function LucideIcon({ icon, size = 24, color, className }) {
   const stroke = color ?? "currentColor";
   return /* @__PURE__ */ BdApi.React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke, "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", className }, icon.map(([tag, attrs]) => BdApi.React.createElement(tag, attrs)));
 }
+function IconComponent(options) {
+  return function() {
+    return LucideIcon(options);
+  };
+}
+
+// shared/util/dynamicModal.tsx
+function DynamicModal(props) {
+  BdApi.React.useEffect(() => {
+    BdApi.DOM.addStyle("modal-size-override", `.${modalContainerClass} {
+            max-width: max-content !important;
+        }
+            
+        .${modalContainerClass} footer button {
+            flex: 0 !important;
+        }
+            
+        .${modalContainerClass} [data-justify=start] {
+            justify-content: flex-end;
+        }`);
+    return () => BdApi.DOM.removeStyle("modal-size-override");
+  }, []);
+  return /* @__PURE__ */ BdApi.React.createElement(Modal, { ...props }, props.children);
+}
 
 // node_modules/lucide/dist/esm/icons/arrow-down-from-line.js
 var ArrowDownFromLine = [
@@ -1346,15 +1255,9 @@ var FolderOutput = [
   ["path", { d: "m5 10-3 3 3 3" }]
 ];
 
-// node_modules/lucide/dist/esm/icons/x.js
-var X = [
-  ["path", { d: "M18 6 6 18" }],
-  ["path", { d: "m6 6 12 12" }]
-];
-
-// plugins/ZipPreview/src/FilePreview.tsx
+// plugins/ZipPreview/src/FilePreviewModal.tsx
 var React = BdApi.React;
-function FilePreview({ name, type: startType, blob, buff, onClose }) {
+function FilePreview({ name, type: startType, blob, buff, ...props }) {
   const [type, setType] = React.useState(startType);
   const url = React.useRef(URL.createObjectURL(blob));
   React.useEffect(() => () => URL.revokeObjectURL(url.current), []);
@@ -1378,9 +1281,33 @@ function FilePreview({ name, type: startType, blob, buff, onClose }) {
   }
   const ext = name.split(".").at(-1);
   const hasCode = highlightModule.hasLanguage(ext);
-  return /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview-header" }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview-title" }, name), /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview-close", onClick: onClose }, /* @__PURE__ */ BdApi.React.createElement(LucideIcon, { icon: X }))), /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview-content-wrap" }, type == "text" || type == "image" ? /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview-copy", onClick: copyFile }, /* @__PURE__ */ BdApi.React.createElement(LucideIcon, { icon: Copy })) : null, /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview-content" }, type == "image" ? /* @__PURE__ */ BdApi.React.createElement("img", { src: url.current }) : null, type == "video" ? /* @__PURE__ */ BdApi.React.createElement("video", { controls: true, src: url.current }) : null, type == "audio" ? /* @__PURE__ */ BdApi.React.createElement("audio", { controls: true, src: url.current }) : null, type == "text" ? hasCode ? /* @__PURE__ */ BdApi.React.createElement("pre", { dangerouslySetInnerHTML: {
-    __html: highlightModule.highlight(ext, new TextDecoder().decode(buff), true).value
-  } }) : /* @__PURE__ */ BdApi.React.createElement("pre", null, new TextDecoder().decode(buff)) : null, type == "binary" ? /* @__PURE__ */ BdApi.React.createElement("div", null, "Can't preview this file :(", /* @__PURE__ */ BdApi.React.createElement("button", { className: "zp-preview-override", onClick: () => setType("text") }, "Do it anyways")) : null)), /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview-footer" }, type == "text" || type == "image" ? /* @__PURE__ */ BdApi.React.createElement("button", { className: "icon", onClick: copyFile }, /* @__PURE__ */ BdApi.React.createElement(LucideIcon, { icon: Copy })) : null, /* @__PURE__ */ BdApi.React.createElement("button", { className: "icon", onClick: downloadFile }, /* @__PURE__ */ BdApi.React.createElement(LucideIcon, { icon: Download })), /* @__PURE__ */ BdApi.React.createElement(BdApi.Components.Button, { onClick: onClose }, "Close")));
+  return /* @__PURE__ */ BdApi.React.createElement(
+    DynamicModal,
+    {
+      ...props,
+      title: name,
+      actions: [
+        {
+          icon: IconComponent({ icon: Copy }),
+          variant: "icon-only",
+          onClick: copyFile
+        },
+        {
+          icon: IconComponent({ icon: Download }),
+          variant: "icon-only",
+          onClick: downloadFile
+        },
+        {
+          text: "Close",
+          onClick: () => props.onClose(),
+          className: "test-here"
+        }
+      ]
+    },
+    /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview" }, type == "image" ? /* @__PURE__ */ BdApi.React.createElement("img", { src: url.current }) : null, type == "video" ? /* @__PURE__ */ BdApi.React.createElement("video", { controls: true, src: url.current }) : null, type == "audio" ? /* @__PURE__ */ BdApi.React.createElement("audio", { controls: true, src: url.current }) : null, type == "text" ? hasCode ? /* @__PURE__ */ BdApi.React.createElement("pre", { dangerouslySetInnerHTML: {
+      __html: highlightModule.highlight(ext, new TextDecoder().decode(buff), true).value
+    } }) : /* @__PURE__ */ BdApi.React.createElement("pre", null, new TextDecoder().decode(buff)) : null, type == "binary" ? /* @__PURE__ */ BdApi.React.createElement("div", null, "Can't preview this file :(", /* @__PURE__ */ BdApi.React.createElement("button", { className: "zp-preview-override", onClick: () => setType("text") }, "Do it anyways")) : null)
+  );
 }
 
 // plugins/ZipPreview/src/ZipPreview.tsx
@@ -1429,16 +1356,16 @@ function ZipPreview({ url }) {
       else if (audio.includes(ext)) type = "audio";
     }
     if (type == "text" && isBinaryFile(buff)) type = "binary";
-    let id = ModalSystem.open((props) => /* @__PURE__ */ BdApi.React.createElement(Modal.Root, { size: "dynamic", ...props }, /* @__PURE__ */ BdApi.React.createElement(Modal.Content, { className: "zp-no-padding" }, /* @__PURE__ */ BdApi.React.createElement(
+    modalMethods.openModal((props) => /* @__PURE__ */ BdApi.React.createElement(
       FilePreview,
       {
         name,
         type,
         blob,
         buff,
-        onClose: () => ModalSystem.close(id)
+        ...props
       }
-    ))));
+    ));
   }
   function formatSize(size) {
     if (size < 1024) return size + " B";

@@ -19,11 +19,17 @@ export const modules: Record<keyof Modules, ModuleDefinition> = {
         id: 147025,
         filter: `(m) => m.type?.toString?.().includes(".isSubmitButtonEnabled")`
     },
-    uploadClasses: {
+    uploadAreaClass: {
+        key: "uploadArea",
         filter: `Filters.byKeys("uploadArea", "chat")`,
     },
-    chatClasses: {
+    chatbarInnerClass: {
+        key: "inner",
         filter: `Filters.byKeys("buttons", "textAreaSlate")`
+    },
+    modalContainerClass: {
+        key: "container",
+        filter: `Filters.byKeys("container", "padding-size-sm")`
     },
     gifDisplay: {
         id: 247683,
@@ -54,14 +60,6 @@ export const modules: Record<keyof Modules, ModuleDefinition> = {
             return str.includes("pendingScheduledMessage") && str.includes(".CHANNEL_TEXT_AREA");
         })`
     },
-    ModalSystem: {
-        id: 192308,
-        demangler: {
-            open: `Filters.byStrings(",instant:")`,
-            close: `Filters.byStrings(".onCloseCallback()")`
-        },
-        filter: `Filters.bySource(".modalKey?")`
-    },
     expressionPicker: {
         id: 151271,
         demangler: {
@@ -70,17 +68,6 @@ export const modules: Record<keyof Modules, ModuleDefinition> = {
             store: `(f) => f.getState`
         },
         filter: `Filters.bySource("lastActiveView", "isSearchSuggestion")`
-    },
-    Modal: {
-        id: 935462,
-        demangler: {
-            Root: `Filters.byStrings(".ImpressionNames.MODAL_ROOT_LEGACY")`,
-            Content: `Filters.byStrings("scrollerRef", "scrollbarType")`,
-            Header: `Filters.byStrings("headerIdIsManaged")`,
-            Close: `Filters.byStrings(".withCircleBackground")`,
-            Footer: `Filters.byStrings("grow:0")`
-        },
-        filter: `Filters.bySource(".MODAL_ROOT_LEGACY,properties")`
     },
     AttachmentSystem: {
         id: 608299,
@@ -94,6 +81,15 @@ export const modules: Record<keyof Modules, ModuleDefinition> = {
         getWithKey: true,
         filter: `(m) => Object.values(m).some(Filters.byStrings("getFrequentlyUsedReactionEmojisWithoutFetchingLatest", "loadIfNecessary"))`
     },
+    Modal: {
+        id: 158954,
+        key: "Modal",
+        filter: `Filters.byKeys("Modal")`
+    },
+    modalMethods: {
+        id: 192308,
+        filter: `Filters.byKeys("openModal")`
+    },
     maxUploadSize: {
         id: 453771,
         getExport: `Filters.byStrings("getUserMaxFileSize", "premiumTier")`,
@@ -106,16 +102,17 @@ export let fileModule: Modules['fileModule'];
 export let CloudUploader: Modules['CloudUploader'];
 export let expressionModule: Modules['expressionModule'];
 export let buttonsModule: Modules['buttonsModule'];
-export let uploadClasses: Modules['uploadClasses'];
-export let chatClasses: Modules['chatClasses'];
+export let uploadAreaClass: Modules['uploadAreaClass'];
+export let chatbarInnerClass: Modules['chatbarInnerClass'];
+export let modalContainerClass: Modules['modalContainerClass'];
 export let gifDisplay: Modules['gifDisplay'];
 export let highlightModule: Modules['highlightModule'];
 export let createSlate: Modules['createSlate'];
 export let attachFiles: Modules['attachFiles'];
 export let chatbox: Modules['chatbox'];
-export let ModalSystem: Modules['ModalSystem'];
 export let expressionPicker: Modules['expressionPicker'];
-export let Modal: Modules['Modal'];
 export let AttachmentSystem: Modules['AttachmentSystem'];
 export let frequentlyUsedEmojis: Modules['frequentlyUsedEmojis'];
+export let Modal: Modules['Modal'];
+export let modalMethods: Modules['modalMethods'];
 export let maxUploadSize: Modules['maxUploadSize'];
