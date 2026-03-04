@@ -28,7 +28,7 @@
     "gif.js": "^0.2.0",
     "gifuct-js": "^2.1.2",
     "lucide": "^0.562.0",
-    "mediabunny": "^1.8.0",
+    "mediabunny": "^1.35.1",
     "unzipit": "^1.4.3"
   },
   "overrides": {
