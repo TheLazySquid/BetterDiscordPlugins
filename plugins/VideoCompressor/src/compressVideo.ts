@@ -4,6 +4,7 @@ import CompressOptions, { type CompressValues } from "./compressOptions";
 import ProgressDisplay from "$shared/util/progress";
 import { Api } from "$shared/bd";
 import { error, success, warning } from "$shared/api/toast";
+import { settings } from "./settings";
 
 const defaultValues: CompressValues = { resolutionFactor: 1, fpsFactor: 1 };
 type Attach = (file: File) => void;
@@ -69,7 +70,7 @@ async function renderVideo(file: File, maxSize: number, values: CompressValues, 
             video: {
                 width,
                 frameRate,
-                codec: "av1"
+                codec: settings.codec
             }
         });
         

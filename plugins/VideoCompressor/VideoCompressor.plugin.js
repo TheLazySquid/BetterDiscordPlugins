@@ -1,7 +1,7 @@
 /**
  * @name VideoCompressor
  * @description Compress videos that are too large to upload normally
- * @version 0.2.7
+ * @version 0.3.0
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -35,6 +35,10 @@ var createCallbackHandler = (callbackName) => {
 var onStart = createCallbackHandler("start");
 var onStop = createCallbackHandler("stop");
 var onSwitch = createCallbackHandler("onSwitch");
+function setSettingsPanel(el) {
+  if (typeof el === "function") plugin.getSettingsPanel = el;
+  plugin.getSettingsPanel = () => el;
+}
 
 // shared/util/modules.ts
 function findExport(module, filter) {
@@ -13612,11 +13616,11 @@ var mfro = () => {
   ]);
 };
 var vtte = () => box("vtte");
-var vttc = (payload, timestamp, identifier, settings, sourceId) => box("vttc", void 0, [
+var vttc = (payload, timestamp, identifier, settings2, sourceId) => box("vttc", void 0, [
   sourceId !== null ? box("vsid", [i32(sourceId)]) : null,
   identifier !== null ? box("iden", [...textEncoder.encode(identifier)]) : null,
   timestamp !== null ? box("ctim", [...textEncoder.encode(formatSubtitleTimestamp(timestamp))]) : null,
-  settings !== null ? box("sttg", [...textEncoder.encode(settings)]) : null,
+  settings2 !== null ? box("sttg", [...textEncoder.encode(settings2)]) : null,
   box("payl", [...textEncoder.encode(payload)])
 ]);
 var vtta = (notes) => box("vtta", [...textEncoder.encode(notes)]);
@@ -18185,6 +18189,52 @@ function error(message) {
   BdApi.UI.showToast(message, { type: "error" });
 }
 
+// shared/util/settings.ts
+function createSettings(panelSettings, defaults) {
+  const settings2 = {};
+  for (let setting of panelSettings) {
+    if (!setting.id) continue;
+    settings2[setting.id] = Api.Data.load(setting.id) ?? defaults[setting.id];
+  }
+  setSettingsPanel(() => {
+    for (let setting of panelSettings) {
+      setting.value = settings2[setting.id];
+    }
+    return BdApi.UI.buildSettingsPanel({
+      settings: panelSettings,
+      onChange: (_, id, value) => {
+        settings2[id] = value;
+        Api.Data.save(id, value);
+      }
+    });
+  });
+  return settings2;
+}
+
+// plugins/VideoCompressor/src/settings.ts
+var settings = createSettings([
+  // @ts-expect-error types are incorrect
+  {
+    type: "radio",
+    id: "codec",
+    name: "Output Video Codec",
+    options: [
+      {
+        name: "AV1",
+        description: "Best compression, may not play on older devices",
+        value: "av1"
+      },
+      {
+        name: "HEVC",
+        description: "Good compression, widely supported",
+        value: "hevc"
+      }
+    ]
+  }
+], {
+  codec: "av1"
+});
+
 // plugins/VideoCompressor/src/compressVideo.ts
 var defaultValues = { resolutionFactor: 1, fpsFactor: 1 };
 var queue = [];
@@ -18235,7 +18285,7 @@ async function renderVideo(file, maxSize, values, attach2) {
       video: {
         width,
         frameRate,
-        codec: "av1"
+        codec: settings.codec
       }
     });
     conversion.onProgress = (amount) => {
