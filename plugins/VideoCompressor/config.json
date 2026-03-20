@@ -1,11 +1,10 @@
 {
     "description": "Compress videos that are too large to upload normally",
-    "version": "0.3.0",
+    "version": "0.3.1",
     "modules": [
         "attachFiles",
         "maxUploadSize",
         "modalMethods",
-        "Modal",
-        "modalContainerClass"
+        "Modal"
     ]
 }

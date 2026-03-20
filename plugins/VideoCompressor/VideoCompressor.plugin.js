@@ -1,7 +1,7 @@
 /**
  * @name VideoCompressor
  * @description Compress videos that are too large to upload normally
- * @version 0.3.0
+ * @version 0.3.1
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -55,14 +55,14 @@ function findExportWithKey(module, filter) {
 
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var [attachFilesModule, maxUploadSizeModule, modalMethods, ModalModule, modalContainerClassModule] = BdApi.Webpack.getBulk(
+var [attachFilesModule, maxUploadSizeModule, modalMethods, ModalModule] = BdApi.Webpack.getBulk(
   {
     filter: (m) => Object.values(m).some(Filters.byStrings("filesMetadata:", "requireConfirm:")),
     firstId: 518960,
     cacheId: "attachFiles"
   },
   {
-    filter: Filters.bySource("getUserMaxFileSize", "premiumTier"),
+    filter: Filters.bySource("getUserMaxFileSize", "reType"),
     firstId: 453771,
     cacheId: "maxUploadSize"
   },
@@ -75,16 +75,11 @@ var [attachFilesModule, maxUploadSizeModule, modalMethods, ModalModule, modalCon
     filter: Filters.byKeys("Modal"),
     firstId: 158954,
     cacheId: "Modal"
-  },
-  {
-    filter: Filters.byKeys("container", "padding-size-sm"),
-    cacheId: "modalContainerClass"
   }
 );
 var attachFiles = findExportWithKey(attachFilesModule, (e) => e.toString().includes("filesMetadata"));
-var maxUploadSize = findExport(maxUploadSizeModule, Filters.byStrings("getUserMaxFileSize", "premiumTier"));
+var maxUploadSize = findExport(maxUploadSizeModule, Filters.byStrings("getUserMaxFileSize"));
 var Modal = ModalModule.Modal;
-var modalContainerClass = modalContainerClassModule.container;
 
 // shared/api/patching.ts
 function check(module, key) {

@@ -92,8 +92,8 @@ export const modules: Record<keyof Modules, ModuleDefinition> = {
     },
     maxUploadSize: {
         id: 453771,
-        getExport: `Filters.byStrings("getUserMaxFileSize", "premiumTier")`,
-        filter: `Filters.bySource("getUserMaxFileSize", "premiumTier")`
+        getExport: `Filters.byStrings("getUserMaxFileSize")`,
+        filter: `Filters.bySource("getUserMaxFileSize", "reType")`
     }
 }
 
