@@ -18363,6 +18363,7 @@ function getMaxFileSize() {
 // plugins/VideoCompressor/src/index.ts
 var attach = attachFiles[0][attachFiles[1]];
 before(...attachFiles, ({ args }) => {
+  console.log(args);
   const maxSize = getMaxFileSize();
   const files = [...args[0]];
   const formats = ["mp4", "mov", "mkv", "webm"];

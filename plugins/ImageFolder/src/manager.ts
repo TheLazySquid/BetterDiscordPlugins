@@ -2,6 +2,7 @@ import { error, success } from '$shared/api/toast';
 import { Api } from '$shared/bd';
 import { getInput } from '$shared/ui/input';
 import { uploadFile } from '$shared/util/upload';
+import { settings } from './settings';
 import type { DirContents, Folder, Media } from './types';
 
 const fs: typeof import('fs') = require("fs");
@@ -192,8 +193,8 @@ export default class Manager {
         Api.Data.save(`used-${path.join(this.dir, media.name)}`, media.lastUsed);
         this.contents?.media.sort((a, b) => b.lastUsed - a.lastUsed);
 
-        const file = new File([ blob ], media.name);
-        await uploadFile(file);
+        const file = new File([ blob ], media.name, { type: media.mime });
+        await uploadFile(file, settings.autoSend);
     }
 
     static createFolder() {

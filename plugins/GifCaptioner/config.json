@@ -1,9 +1,9 @@
 {
     "description": "A BetterDiscord plugin that allows you to add a caption to discord gifs",
-    "version": "2.1.5",
+    "version": "2.2.0",
     "modules": [
-        "chatbox",
-        "CloudUploader",
+        "editorEvents",
+        "attachFiles",
         "expressionPicker",
         "gifDisplay",
         "modalMethods",

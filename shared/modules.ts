@@ -6,11 +6,6 @@ export const modules: Record<keyof Modules, ModuleDefinition> = {
         id: 718468,
         filter: `(m) => m.A?.toString().includes("().filesize(")`
     },
-    CloudUploader: {
-        id: 743445,
-        getExport: `(e) => e.fromJson`,
-        filter: `(m) => Object.values(m).some((e) => e?.UPLOADING === "UPLOADING")`
-    },
     expressionModule: {
         id: 834755,
         filter: `(m) => m.type?.toString?.().includes("onSelectGIF")`
@@ -51,15 +46,6 @@ export const modules: Record<keyof Modules, ModuleDefinition> = {
         getWithKey: true,
         filter: `(m) => Object.values(m).some(Filters.byStrings("filesMetadata:", "requireConfirm:"))`
     },
-    chatbox: {
-        id: 133343,
-        getExport: `(e) => e.type`,
-        filter: `(m) => Object.values(m).some((e) => {
-            let str = e?.type?.render?.toString?.();
-            if(!str) return false;
-            return str.includes("pendingScheduledMessage") && str.includes(".CHANNEL_TEXT_AREA");
-        })`
-    },
     expressionPicker: {
         id: 151271,
         demangler: {
@@ -90,6 +76,13 @@ export const modules: Record<keyof Modules, ModuleDefinition> = {
         id: 192308,
         filter: `Filters.byKeys("openModal")`
     },
+    editorEvents: {
+        id: 919499,
+        getExport: true,
+        getWithKey: true,
+        filter: `Filters.bySource(",submit:","selectPreviousCommandOption")`,
+        defaultExport: false
+    },
     maxUploadSize: {
         id: 453771,
         getExport: `Filters.byStrings("getUserMaxFileSize")`,
@@ -99,7 +92,6 @@ export const modules: Record<keyof Modules, ModuleDefinition> = {
 
 // Needed for typescript
 export let fileModule: Modules['fileModule'];
-export let CloudUploader: Modules['CloudUploader'];
 export let expressionModule: Modules['expressionModule'];
 export let buttonsModule: Modules['buttonsModule'];
 export let uploadAreaClass: Modules['uploadAreaClass'];
@@ -109,10 +101,10 @@ export let gifDisplay: Modules['gifDisplay'];
 export let highlightModule: Modules['highlightModule'];
 export let createSlate: Modules['createSlate'];
 export let attachFiles: Modules['attachFiles'];
-export let chatbox: Modules['chatbox'];
 export let expressionPicker: Modules['expressionPicker'];
 export let AttachmentSystem: Modules['AttachmentSystem'];
 export let frequentlyUsedEmojis: Modules['frequentlyUsedEmojis'];
 export let Modal: Modules['Modal'];
 export let modalMethods: Modules['modalMethods'];
+export let editorEvents: Modules['editorEvents'];
 export let maxUploadSize: Modules['maxUploadSize'];

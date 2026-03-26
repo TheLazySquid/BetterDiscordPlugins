@@ -1,4 +1,3 @@
-import type { CloudUpload } from "@vencord/discord-types";
 import type { ModuleFilter } from "betterdiscord";
 
 export interface ModuleDefinition {
@@ -61,7 +60,6 @@ interface AttachmentSystem {
 
 export interface Modules {
     fileModule: any;
-    CloudUploader: typeof CloudUpload;
     expressionModule: ReactElementModule;
     buttonsModule: ReactElementModule;
     uploadAreaClass: string;
@@ -71,12 +69,12 @@ export interface Modules {
     highlightModule: any;
     createSlate: any;
     attachFiles: [any, string];
-    chatbox: any;
     expressionPicker: ExpressionPicker;
     AttachmentSystem: AttachmentSystem;
     frequentlyUsedEmojis: [any, string];
     Modal: any;
     modalMethods: ModalMethods;
+    editorEvents: [any, string];
     maxUploadSize: (guildId: string | null) => number;
 }
 

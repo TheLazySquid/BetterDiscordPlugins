@@ -1,7 +1,7 @@
 /**
  * @name ImageFolder
  * @description A BetterDiscord plugin that allows you to save and send images from a folder for easy access
- * @version 1.5.5
+ * @version 1.6.0
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -110,28 +110,26 @@ function demangle(module, demangler) {
   }
   return returned;
 }
-function findExport(module, filter) {
-  for (let value of Object.values(module)) {
-    if (filter === true || filter(value)) return value;
+function findExportWithKey(module, filter) {
+  for (let key in module) {
+    if (filter !== true && !filter(module[key])) continue;
+    return [module, key];
   }
 }
 
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var [chatboxModule, CloudUploaderModule, buttonsModule, expressionModule, expressionPickerMangled, uploadAreaClassModule, chatbarInnerClassModule] = BdApi.Webpack.getBulk(
+var [editorEventsModule, attachFilesModule, buttonsModule, expressionModule, expressionPickerMangled, uploadAreaClassModule, chatbarInnerClassModule] = BdApi.Webpack.getBulk(
   {
-    filter: (m) => Object.values(m).some((e) => {
-      let str = e?.type?.render?.toString?.();
-      if (!str) return false;
-      return str.includes("pendingScheduledMessage") && str.includes(".CHANNEL_TEXT_AREA");
-    }),
-    firstId: 133343,
-    cacheId: "chatbox"
+    filter: Filters.bySource(",submit:", "selectPreviousCommandOption"),
+    defaultExport: false,
+    firstId: 919499,
+    cacheId: "editorEvents"
   },
   {
-    filter: (m) => Object.values(m).some((e) => e?.UPLOADING === "UPLOADING"),
-    firstId: 743445,
-    cacheId: "CloudUploader"
+    filter: (m) => Object.values(m).some(Filters.byStrings("filesMetadata:", "requireConfirm:")),
+    firstId: 518960,
+    cacheId: "attachFiles"
   },
   {
     filter: (m) => m.type?.toString?.().includes(".isSubmitButtonEnabled"),
@@ -157,8 +155,8 @@ var [chatboxModule, CloudUploaderModule, buttonsModule, expressionModule, expres
     cacheId: "chatbarInnerClass"
   }
 );
-var chatbox = findExport(chatboxModule, (e) => e.type);
-var CloudUploader = findExport(CloudUploaderModule, (e) => e.fromJson);
+var editorEvents = findExportWithKey(editorEventsModule, true);
+var attachFiles = findExportWithKey(attachFilesModule, (e) => e.toString().includes("filesMetadata"));
 var expressionPicker = demangle(expressionPickerMangled, {
   toggle: (f) => f.toString().includes("activeView==="),
   close: (f) => f.toString().includes("activeView:null"),
@@ -232,24 +230,76 @@ function getInput(title, callback) {
 // shared/stores.ts
 var selectedChannelStore = BdApi.Webpack.getStore("SelectedChannelStore");
 var selectedGuildStore = BdApi.Webpack.getStore("SelectedGuildStore");
+var channelStore = BdApi.Webpack.getStore("ChannelStore");
 
 // shared/util/upload.ts
-var onSubmit = null;
-before(chatbox?.type, "render", ({ args }) => onSubmit = args[0].onSubmit);
-async function uploadFile(file) {
-  const channelId = selectedChannelStore.getCurrentlySelectedChannelId();
-  if (!channelId) return;
-  const upload = new CloudUploader({ file, platform: 1 }, channelId);
-  if (!onSubmit) {
+var submit = null;
+before(...editorEvents, ({ args }) => submit = args[0].submit);
+async function uploadFile(file, autoSend) {
+  if (!submit) {
     error("Failed to send file, try switching channels");
     return;
   }
-  onSubmit({
-    value: "",
-    stickers: [],
-    uploads: [upload]
-  });
+  const channelId = selectedChannelStore.getCurrentlySelectedChannelId();
+  if (!channelId) return;
+  const channel = channelStore.getChannel(channelId);
+  if (!channel) return;
+  const attach = attachFiles[0][attachFiles[1]];
+  await attach([file], channel, 0, { requireConfirm: true, origin: "file_picker" });
+  if (!autoSend) return;
+  submit();
 }
+
+// shared/util/settings.ts
+function createSettings(panelSettings, defaults) {
+  const settings2 = {};
+  for (let setting of panelSettings) {
+    if (!setting.id) continue;
+    settings2[setting.id] = Api.Data.load(setting.id) ?? defaults[setting.id];
+  }
+  setSettingsPanel(() => {
+    for (let setting of panelSettings) {
+      setting.value = settings2[setting.id];
+    }
+    return BdApi.UI.buildSettingsPanel({
+      settings: panelSettings,
+      onChange: (_, id, value) => {
+        settings2[id] = value;
+        Api.Data.save(id, value);
+      }
+    });
+  });
+  return settings2;
+}
+
+// plugins/ImageFolder/src/settings.ts
+var settings = createSettings([
+  {
+    type: "number",
+    min: 1,
+    max: 550,
+    name: "Max preview size (megabytes)",
+    note: "The entire item needs to be loaded into memory to be previewed, so very large previews can cause performance issues",
+    id: "maxPreviewSize",
+    step: 1
+  },
+  {
+    type: "switch",
+    name: "Show image folder button",
+    note: "The image folder tab is still accessible inside of the expression picker menu",
+    id: "showButton"
+  },
+  {
+    type: "switch",
+    name: "Immediately send files",
+    note: "Files will only be attached and can be sent manually later if disabled",
+    id: "autoSend"
+  }
+], {
+  maxPreviewSize: 12,
+  showButton: true,
+  autoSend: true
+});
 
 // plugins/ImageFolder/src/manager.ts
 var fs = __require("fs");
@@ -399,8 +449,8 @@ var Manager = class {
     media.lastUsed = Date.now();
     Api.Data.save(`used-${path.join(this.dir, media.name)}`, media.lastUsed);
     this.contents?.media.sort((a, b) => b.lastUsed - a.lastUsed);
-    const file = new File([blob], media.name);
-    await uploadFile(file);
+    const file = new File([blob], media.name, { type: media.mime });
+    await uploadFile(file, settings.autoSend);
   }
   static createFolder() {
     getInput("Enter folder name", (name) => {
@@ -637,50 +687,6 @@ function Captioner({ media, onCanvas }) {
   )), /* @__PURE__ */ BdApi.React.createElement("canvas", { ref: canvas }));
 }
 
-// shared/util/settings.ts
-function createSettings(panelSettings, defaults) {
-  const settings2 = {};
-  for (let setting of panelSettings) {
-    if (!setting.id) continue;
-    settings2[setting.id] = Api.Data.load(setting.id) ?? defaults[setting.id];
-  }
-  setSettingsPanel(() => {
-    for (let setting of panelSettings) {
-      setting.value = settings2[setting.id];
-    }
-    return BdApi.UI.buildSettingsPanel({
-      settings: panelSettings,
-      onChange: (_, id, value) => {
-        settings2[id] = value;
-        Api.Data.save(id, value);
-      }
-    });
-  });
-  return settings2;
-}
-
-// plugins/ImageFolder/src/settings.ts
-var settings = createSettings([
-  {
-    type: "number",
-    min: 1,
-    max: 550,
-    name: "Max Preview Size (Megabytes)",
-    note: "The entire item needs to be loaded into memory to be previewed, so very large previews can cause performance issues",
-    id: "maxPreviewSize",
-    step: 1
-  },
-  {
-    type: "switch",
-    name: "Show Image Folder Button",
-    note: "The image folder tab is still accessible inside of the expression picker menu",
-    id: "showButton"
-  }
-], {
-  maxPreviewSize: 12,
-  showButton: true
-});
-
 // plugins/ImageFolder/src/ui/mediaDisplay.tsx
 function MediaDisplay({ media }) {
   const React = BdApi.React;
@@ -744,7 +750,7 @@ function MediaDisplay({ media }) {
             if (!blob) return err();
             const name = media.name.split(".").slice(0, -1).join(".") + "-captioned.png";
             let file = new File([blob], name);
-            uploadFile(file);
+            uploadFile(file, settings.autoSend);
             expressionPicker.close();
           });
         }

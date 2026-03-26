@@ -9,6 +9,7 @@ import type { ParsedFrame, ParsedGif } from "gifuct-js";
 import { Api } from "$shared/bd";
 import { renderSpeechbubble } from "./speechbubble";
 import { getMaxFileSize } from "$shared/util/permissions";
+import { settings } from "../settings";
 
 export interface CaptionTransform {
 	text: string;
@@ -148,7 +149,7 @@ export default class GifRenderer {
 	render() {
 		this.gif.once("finished", (blob) => {
 			const file = new File([ blob ], "rendered.gif", { type: "image/gif" });
-			uploadFile(file);
+			uploadFile(file, settings.autoSend);
 			this.progress.close();
 		});
 		

@@ -1,25 +1,26 @@
 import { before } from "$shared/api/patching";
 import { error } from "$shared/api/toast";
-import { selectedChannelStore } from "$shared/stores";
-import { chatbox, CloudUploader } from "$shared/modules";
+import { channelStore, selectedChannelStore } from "$shared/stores";
+import { attachFiles, editorEvents } from "$shared/modules";
 
-let onSubmit: ((args: any) => void) | null = null;
-before(chatbox?.type, "render", ({ args }) => onSubmit = args[0].onSubmit);
+let submit: (() => void) | null = null;
+before(...editorEvents, ({ args }) => submit = args[0].submit);
 
-export async function uploadFile(file: File) {
-	const channelId = selectedChannelStore.getCurrentlySelectedChannelId();
-	if(!channelId) return;
-	
-	const upload = new CloudUploader({ file, platform: 1 }, channelId);
-
-	if(!onSubmit) {
+export async function uploadFile(file: File, autoSend: boolean) {
+	if(!submit) {
 		error("Failed to send file, try switching channels");
 		return;
 	}
 
-	onSubmit({
-		value: "",
-		stickers: [],
-		uploads: [upload]
-	});
+	const channelId = selectedChannelStore.getCurrentlySelectedChannelId();
+	if(!channelId) return;
+	
+	const channel = channelStore.getChannel(channelId);
+	if(!channel) return;
+
+	const attach = attachFiles[0][attachFiles[1]];
+	await attach([ file ], channel, 0, { requireConfirm: true, origin: "file_picker" });
+	
+	if(!autoSend) return;
+	submit();
 }

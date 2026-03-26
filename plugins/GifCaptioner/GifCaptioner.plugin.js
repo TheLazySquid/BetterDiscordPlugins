@@ -1,7 +1,7 @@
 /**
  * @name GifCaptioner
  * @description A BetterDiscord plugin that allows you to add a caption to discord gifs
- * @version 2.1.5
+ * @version 2.2.0
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -1154,6 +1154,10 @@ var createCallbackHandler = (callbackName) => {
 var onStart = createCallbackHandler("start");
 var onStop = createCallbackHandler("stop");
 var onSwitch = createCallbackHandler("onSwitch");
+function setSettingsPanel(el) {
+  if (typeof el === "function") plugin.getSettingsPanel = el;
+  plugin.getSettingsPanel = () => el;
+}
 
 // shared/api/fonts.ts
 function addFont(data, family) {
@@ -1221,23 +1225,26 @@ function findExport(module, filter) {
     if (filter === true || filter(value)) return value;
   }
 }
+function findExportWithKey(module, filter) {
+  for (let key in module) {
+    if (filter !== true && !filter(module[key])) continue;
+    return [module, key];
+  }
+}
 
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var [chatboxModule, CloudUploaderModule, expressionPickerMangled, gifDisplayModule, modalMethods, ModalModule, maxUploadSizeModule, modalContainerClassModule] = BdApi.Webpack.getBulk(
+var [editorEventsModule, attachFilesModule, expressionPickerMangled, gifDisplayModule, modalMethods, ModalModule, maxUploadSizeModule, modalContainerClassModule] = BdApi.Webpack.getBulk(
   {
-    filter: (m) => Object.values(m).some((e) => {
-      let str = e?.type?.render?.toString?.();
-      if (!str) return false;
-      return str.includes("pendingScheduledMessage") && str.includes(".CHANNEL_TEXT_AREA");
-    }),
-    firstId: 133343,
-    cacheId: "chatbox"
+    filter: Filters.bySource(",submit:", "selectPreviousCommandOption"),
+    defaultExport: false,
+    firstId: 919499,
+    cacheId: "editorEvents"
   },
   {
-    filter: (m) => Object.values(m).some((e) => e?.UPLOADING === "UPLOADING"),
-    firstId: 743445,
-    cacheId: "CloudUploader"
+    filter: (m) => Object.values(m).some(Filters.byStrings("filesMetadata:", "requireConfirm:")),
+    firstId: 518960,
+    cacheId: "attachFiles"
   },
   {
     filter: Filters.bySource("lastActiveView", "isSearchSuggestion"),
@@ -1269,8 +1276,8 @@ var [chatboxModule, CloudUploaderModule, expressionPickerMangled, gifDisplayModu
     cacheId: "modalContainerClass"
   }
 );
-var chatbox = findExport(chatboxModule, (e) => e.type);
-var CloudUploader = findExport(CloudUploaderModule, (e) => e.fromJson);
+var editorEvents = findExportWithKey(editorEventsModule, true);
+var attachFiles = findExportWithKey(attachFilesModule, (e) => e.toString().includes("filesMetadata"));
 var expressionPicker = demangle(expressionPickerMangled, {
   toggle: (f) => f.toString().includes("activeView==="),
   close: (f) => f.toString().includes("activeView:null"),
@@ -1328,23 +1335,24 @@ var import_gif = __toESM(require_gif(), 1);
 // shared/stores.ts
 var selectedChannelStore = BdApi.Webpack.getStore("SelectedChannelStore");
 var selectedGuildStore = BdApi.Webpack.getStore("SelectedGuildStore");
+var channelStore = BdApi.Webpack.getStore("ChannelStore");
 
 // shared/util/upload.ts
-var onSubmit = null;
-before(chatbox?.type, "render", ({ args }) => onSubmit = args[0].onSubmit);
-async function uploadFile(file) {
-  const channelId = selectedChannelStore.getCurrentlySelectedChannelId();
-  if (!channelId) return;
-  const upload = new CloudUploader({ file, platform: 1 }, channelId);
-  if (!onSubmit) {
+var submit = null;
+before(...editorEvents, ({ args }) => submit = args[0].submit);
+async function uploadFile(file, autoSend) {
+  if (!submit) {
     error("Failed to send file, try switching channels");
     return;
   }
-  onSubmit({
-    value: "",
-    stickers: [],
-    uploads: [upload]
-  });
+  const channelId = selectedChannelStore.getCurrentlySelectedChannelId();
+  if (!channelId) return;
+  const channel = channelStore.getChannel(channelId);
+  if (!channel) return;
+  const attach = attachFiles[0][attachFiles[1]];
+  await attach([file], channel, 0, { requireConfirm: true, origin: "file_picker" });
+  if (!autoSend) return;
+  submit();
 }
 
 // plugins/GifCaptioner/src/render/speechbubble.ts
@@ -1403,6 +1411,40 @@ function getMaxFileSize() {
   const id = selectedGuildStore.getGuildId();
   return maxUploadSize(id);
 }
+
+// shared/util/settings.ts
+function createSettings(panelSettings, defaults) {
+  const settings2 = {};
+  for (let setting of panelSettings) {
+    if (!setting.id) continue;
+    settings2[setting.id] = Api.Data.load(setting.id) ?? defaults[setting.id];
+  }
+  setSettingsPanel(() => {
+    for (let setting of panelSettings) {
+      setting.value = settings2[setting.id];
+    }
+    return BdApi.UI.buildSettingsPanel({
+      settings: panelSettings,
+      onChange: (_, id, value) => {
+        settings2[id] = value;
+        Api.Data.save(id, value);
+      }
+    });
+  });
+  return settings2;
+}
+
+// plugins/GifCaptioner/src/settings.ts
+var settings = createSettings([
+  {
+    type: "switch",
+    name: "Immediately send files",
+    note: "Files will only be attached and can be sent manually later if disabled",
+    id: "autoSend"
+  }
+], {
+  autoSend: true
+});
 
 // plugins/GifCaptioner/src/render/gifRenderer.ts
 var worker = getUrl(gif_worker_default);
@@ -1501,7 +1543,7 @@ var GifRenderer = class {
   render() {
     this.gif.once("finished", (blob) => {
       const file = new File([blob], "rendered.gif", { type: "image/gif" });
-      uploadFile(file);
+      uploadFile(file, settings.autoSend);
       this.progress.close();
     });
     this.gif.on("progress", (amount) => {
@@ -11911,7 +11953,7 @@ async function captionGif(url, width, height, transform) {
 }
 
 // plugins/GifCaptioner/src/ui/captioner.tsx
-function Captioner({ width, element, onSubmit: onSubmit2 }) {
+function Captioner({ width, element, onSubmit }) {
   const React = BdApi.React;
   const [text, setText] = React.useState("");
   const [size, setSize] = React.useState(width / 10);
@@ -11919,7 +11961,7 @@ function Captioner({ width, element, onSubmit: onSubmit2 }) {
   const wrapper = React.useRef(null);
   const canvas = React.useRef(null);
   const ctx = React.useRef(null);
-  onSubmit2(() => ({
+  onSubmit(() => ({
     text,
     size,
     type: "caption"
@@ -11968,7 +12010,7 @@ function Captioner({ width, element, onSubmit: onSubmit2 }) {
 }
 
 // plugins/GifCaptioner/src/ui/speechBubbler.tsx
-function SpeechBubbler({ width, height, element, onSubmit: onSubmit2 }) {
+function SpeechBubbler({ width, height, element, onSubmit }) {
   const React = BdApi.React;
   const [tipX, setTipX] = React.useState(width / 3);
   const [tipY, setTipY] = React.useState(height / 3);
@@ -11976,7 +12018,7 @@ function SpeechBubbler({ width, height, element, onSubmit: onSubmit2 }) {
   const wrapper = React.useRef(null);
   const canvas = React.useRef(null);
   const ctx = React.useRef(null);
-  onSubmit2(() => ({
+  onSubmit(() => ({
     type: "speechbubble",
     tipX,
     tipY,
@@ -12019,7 +12061,7 @@ var tabs = [
   { key: "caption", label: "Caption" },
   { key: "speechbubble", label: "Speech Bubble" }
 ];
-function Modal2({ width, height, element, onSubmit: onSubmit2 }) {
+function Modal2({ width, height, element, onSubmit }) {
   const React = BdApi.React;
   const [activeTab, setTab] = React.useState(Api.Data.load("tab") || "caption");
   return /* @__PURE__ */ BdApi.React.createElement("div", { className: "gc-modal" }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "gc-tabs" }, tabs.map((tab) => /* @__PURE__ */ BdApi.React.createElement(
@@ -12030,7 +12072,7 @@ function Modal2({ width, height, element, onSubmit: onSubmit2 }) {
       className: activeTab === tab.key ? "active" : ""
     },
     tab.label
-  ))), activeTab === "caption" ? /* @__PURE__ */ BdApi.React.createElement(Captioner, { width, element, onSubmit: onSubmit2 }) : /* @__PURE__ */ BdApi.React.createElement(SpeechBubbler, { width, height, element, onSubmit: onSubmit2 }));
+  ))), activeTab === "caption" ? /* @__PURE__ */ BdApi.React.createElement(Captioner, { width, element, onSubmit }) : /* @__PURE__ */ BdApi.React.createElement(SpeechBubbler, { width, height, element, onSubmit }));
 }
 
 // shared/ui/icons.tsx

@@ -81,7 +81,7 @@ export default function MediaDisplay({ media }: { media: Media }) {
                     
                     const name = media.name.split(".").slice(0, -1).join(".") + "-captioned.png";
                     let file = new File([ blob ], name);
-                    uploadFile(file);
+                    uploadFile(file, settings.autoSend);
                     expressionPicker.close();
                 });
             }
