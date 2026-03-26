@@ -83,6 +83,13 @@ export const modules: Record<keyof Modules, ModuleDefinition> = {
         filter: `Filters.bySource(",submit:","selectPreviousCommandOption")`,
         defaultExport: false
     },
+    scrollerWrapper: {
+        id: 258024,
+        getExport: true,
+        getWithKey: true,
+        filter: `Filters.bySource("mergePropsAndUpdate")`,
+        defaultExport: false
+    },
     maxUploadSize: {
         id: 453771,
         getExport: `Filters.byStrings("getUserMaxFileSize")`,
@@ -107,4 +114,5 @@ export let frequentlyUsedEmojis: Modules['frequentlyUsedEmojis'];
 export let Modal: Modules['Modal'];
 export let modalMethods: Modules['modalMethods'];
 export let editorEvents: Modules['editorEvents'];
+export let scrollerWrapper: Modules['scrollerWrapper'];
 export let maxUploadSize: Modules['maxUploadSize'];
