@@ -1,4 +1,4 @@
-import { categoryNames, fetchSnippets, type Snippet } from "../fetch";
+import { categoryOrder, fetchSnippets, type Snippet } from "../fetch";
 import SnippetCard from "./SnippetCard";
 
 interface Category {
@@ -18,12 +18,26 @@ export default function Snippets() {
 
         for(const snippet of snippets) {
             if(snippet.name.toLowerCase().includes(searched)) {
-                categoriesMap[snippet.type] ??= { name: snippet.type, snippets: [] };
-                categoriesMap[snippet.type].snippets.push(snippet);
+                categoriesMap[snippet.category] ??= { name: snippet.category, snippets: [] };
+                categoriesMap[snippet.category].snippets.push(snippet);
             }
         }
 
-        setCategories(Object.values(categoriesMap));
+        const order = [...categoryOrder];
+        
+        for(const snippet of snippets) {
+            if(order.includes(snippet.category)) continue;
+            order.push(snippet.category);
+        }
+
+        const categories: Category[] = [];  
+        for(const category of order) {
+            if(categoriesMap[category]) {
+                categories.push(categoriesMap[category]);
+            }
+        }
+
+        setCategories(categories);
     }, [snippets, search]);
 
     React.useEffect(() => {
@@ -44,7 +58,7 @@ export default function Snippets() {
             )}
             {categories.map(category => (
                 <>
-                    <h2 className="sr-category-header">{categoryNames[category.name] ?? category.name}</h2>
+                    <h2 className="sr-category-header">{category.name}</h2>
                     <div className="sr-snippets">
                         {category.snippets.map(snippet => (
                             <SnippetCard key={snippet.name} snippet={snippet} />

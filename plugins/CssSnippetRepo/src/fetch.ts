@@ -3,15 +3,16 @@ export interface Snippet {
     description: string[];
     author: string;
     preview?: string;
-    type: string;
+    category: string;
 }
 
 export const baseUrl = "https://thelazysquid.github.io/DiscordCssSnippets/";
 
-export const categoryNames: Record<string, string> = {
-    declutter: "Declutter",
-    improvement: "Improvement"
-};
+export const categoryOrder = [
+    "Declutter",
+    "Improvement",
+    "Stylize"
+]
 
 let lastFetch = 0;
 let cachedSnippets: Snippet[] = [];

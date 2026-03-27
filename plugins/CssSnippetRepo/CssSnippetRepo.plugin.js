@@ -151,10 +151,11 @@ addStyle(`.sr-card {
 
 // plugins/CssSnippetRepo/src/fetch.ts
 var baseUrl = "https://thelazysquid.github.io/DiscordCssSnippets/";
-var categoryNames = {
-  declutter: "Declutter",
-  improvement: "Improvement"
-};
+var categoryOrder = [
+  "Declutter",
+  "Improvement",
+  "Stylize"
+];
 var lastFetch = 0;
 var cachedSnippets = [];
 var cacheDuration = 1e3 * 60 * 30;
@@ -273,11 +274,22 @@ function Snippets() {
     const categoriesMap = {};
     for (const snippet of snippets) {
       if (snippet.name.toLowerCase().includes(searched)) {
-        categoriesMap[snippet.type] ??= { name: snippet.type, snippets: [] };
-        categoriesMap[snippet.type].snippets.push(snippet);
+        categoriesMap[snippet.category] ??= { name: snippet.category, snippets: [] };
+        categoriesMap[snippet.category].snippets.push(snippet);
       }
     }
-    setCategories(Object.values(categoriesMap));
+    const order = [...categoryOrder];
+    for (const snippet of snippets) {
+      if (order.includes(snippet.category)) continue;
+      order.push(snippet.category);
+    }
+    const categories2 = [];
+    for (const category of order) {
+      if (categoriesMap[category]) {
+        categories2.push(categoriesMap[category]);
+      }
+    }
+    setCategories(categories2);
   }, [snippets, search]);
   React.useEffect(() => {
     fetchSnippets().then(setSnippets);
@@ -290,7 +302,7 @@ function Snippets() {
       value: search,
       onChange: (e) => setSearch(e.currentTarget.value)
     }
-  )), categories.length === 0 && /* @__PURE__ */ BdApi.React.createElement("div", { className: "sr-no-results" }, "No snippets match your search"), categories.map((category) => /* @__PURE__ */ BdApi.React.createElement(React.Fragment, null, /* @__PURE__ */ BdApi.React.createElement("h2", { className: "sr-category-header" }, categoryNames[category.name] ?? category.name), /* @__PURE__ */ BdApi.React.createElement("div", { className: "sr-snippets" }, category.snippets.map((snippet) => /* @__PURE__ */ BdApi.React.createElement(SnippetCard, { key: snippet.name, snippet }))))));
+  )), categories.length === 0 && /* @__PURE__ */ BdApi.React.createElement("div", { className: "sr-no-results" }, "No snippets match your search"), categories.map((category) => /* @__PURE__ */ BdApi.React.createElement(React.Fragment, null, /* @__PURE__ */ BdApi.React.createElement("h2", { className: "sr-category-header" }, category.name), /* @__PURE__ */ BdApi.React.createElement("div", { className: "sr-snippets" }, category.snippets.map((snippet) => /* @__PURE__ */ BdApi.React.createElement(SnippetCard, { key: snippet.name, snippet }))))));
 }
 
 // shared/api/patching.ts
