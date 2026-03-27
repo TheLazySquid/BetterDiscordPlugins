@@ -76,6 +76,8 @@ export interface Modules {
     modalMethods: ModalMethods;
     editorEvents: [any, string];
     scrollerWrapper: [any, string];
+    toolbar: [any, string];
+    toolbarClass: string;
     maxUploadSize: (guildId: string | null) => number;
 }
 

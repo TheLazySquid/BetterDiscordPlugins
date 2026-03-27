@@ -90,6 +90,18 @@ export const modules: Record<keyof Modules, ModuleDefinition> = {
         filter: `Filters.bySource("mergePropsAndUpdate")`,
         defaultExport: false
     },
+    toolbar: {
+        id: 71855,
+        getExport: `Filters.byStrings("PlatformTypes.WINDOWS")`,
+        getWithKey: true,
+        filter: `Filters.bySource("showDivider", "WINDOWS")`,
+        defaultExport: false
+    },
+    toolbarClass: {
+        id: 450295,
+        getExport: `(c) => c.startsWith("trailing_")`,
+        filter: `Filters.byKeys("trailing", "winButton")`
+    },
     maxUploadSize: {
         id: 453771,
         getExport: `Filters.byStrings("getUserMaxFileSize")`,
@@ -115,4 +127,6 @@ export let Modal: Modules['Modal'];
 export let modalMethods: Modules['modalMethods'];
 export let editorEvents: Modules['editorEvents'];
 export let scrollerWrapper: Modules['scrollerWrapper'];
+export let toolbar: Modules['toolbar'];
+export let toolbarClass: Modules['toolbarClass'];
 export let maxUploadSize: Modules['maxUploadSize'];

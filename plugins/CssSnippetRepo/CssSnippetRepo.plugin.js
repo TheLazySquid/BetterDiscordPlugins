@@ -116,14 +116,15 @@ addStyle(`.sr-card {
   margin-bottom: 8px;
   border-bottom: 2px solid #99a1af;
   font-weight: bold;
+  margin-top: 24px;
 }
 
 .sr-search {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 18px;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .sr-search-input {
@@ -140,6 +141,12 @@ addStyle(`.sr-card {
   font-size: 22px;
   font-weight: bold;
   margin-top: 40px;
+}
+
+.sr-toolbar-button {
+  color: var(--icon-muted);
+  cursor: pointer;
+  margin-bottom: -2px;
 }`);
 
 // plugins/CssSnippetRepo/src/fetch.ts
@@ -178,6 +185,20 @@ var ChevronDown = [["path", { d: "m6 9 6 6 6-6" }]];
 
 // node_modules/lucide/dist/esm/icons/chevron-up.js
 var ChevronUp = [["path", { d: "m18 15-6-6-6 6" }]];
+
+// node_modules/lucide/dist/esm/icons/palette.js
+var Palette = [
+  [
+    "path",
+    {
+      d: "M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z"
+    }
+  ],
+  ["circle", { cx: "13.5", cy: "6.5", r: ".5", fill: "currentColor" }],
+  ["circle", { cx: "17.5", cy: "10.5", r: ".5", fill: "currentColor" }],
+  ["circle", { cx: "6.5", cy: "12.5", r: ".5", fill: "currentColor" }],
+  ["circle", { cx: "8.5", cy: "7.5", r: ".5", fill: "currentColor" }]
+];
 
 // plugins/CssSnippetRepo/src/snippets.ts
 var enabledSnippets = {};
@@ -272,9 +293,102 @@ function Snippets() {
   )), categories.length === 0 && /* @__PURE__ */ BdApi.React.createElement("div", { className: "sr-no-results" }, "No snippets match your search"), categories.map((category) => /* @__PURE__ */ BdApi.React.createElement(React.Fragment, null, /* @__PURE__ */ BdApi.React.createElement("h2", { className: "sr-category-header" }, categoryNames[category.name] ?? category.name), /* @__PURE__ */ BdApi.React.createElement("div", { className: "sr-snippets" }, category.snippets.map((snippet) => /* @__PURE__ */ BdApi.React.createElement(SnippetCard, { key: snippet.name, snippet }))))));
 }
 
-// plugins/CssSnippetRepo/src/index.ts
-setSettingsPanel(() => BdApi.React.createElement(Snippets));
-onStart(() => loadSnippets());
-onStop(() => unloadSnippets());
+// shared/api/patching.ts
+function check(module, key) {
+  if (!module || !key) {
+    Api.Logger.warn("Missing module or key", module, key);
+    return false;
+  }
+  return true;
+}
+function before(module, key, callback) {
+  if (!check(module, key)) return;
+  onStart(() => {
+    Api.Patcher.before(module, key, (thisVal, args) => {
+      callback({ thisVal, args });
+    });
+  });
+}
+onStop(() => {
+  Api.Patcher.unpatchAll();
+});
+
+// shared/util/modules.ts
+function findExport(module, filter) {
+  for (let value of Object.values(module)) {
+    if (filter === true || filter(value)) return value;
+  }
+}
+function findExportWithKey(module, filter) {
+  for (let key in module) {
+    if (filter !== true && !filter(module[key])) continue;
+    return [module, key];
+  }
+}
+
+// modules-ns:$shared/modules
+var Filters = BdApi.Webpack.Filters;
+var [toolbarModule, toolbarClassModule, modalMethods, ModalModule] = BdApi.Webpack.getBulk(
+  {
+    filter: Filters.bySource("showDivider", "WINDOWS"),
+    defaultExport: false,
+    firstId: 71855,
+    cacheId: "toolbar"
+  },
+  {
+    filter: Filters.byKeys("trailing", "winButton"),
+    firstId: 450295,
+    cacheId: "toolbarClass"
+  },
+  {
+    filter: Filters.byKeys("openModal"),
+    firstId: 192308,
+    cacheId: "modalMethods"
+  },
+  {
+    filter: Filters.byKeys("Modal"),
+    firstId: 158954,
+    cacheId: "Modal"
+  }
+);
+var toolbar = findExportWithKey(toolbarModule, Filters.byStrings("PlatformTypes.WINDOWS"));
+var toolbarClass = findExport(toolbarClassModule, (c) => c.startsWith("trailing_"));
+var Modal = ModalModule.Modal;
+
+// shared/util/react.ts
+function forceUpdate(selector) {
+  const target = document.querySelector(selector)?.parentElement;
+  if (!target) return;
+  const instance = BdApi.ReactUtils.getOwnerInstance(target);
+  if (!instance) return;
+  const unpatch = Api.Patcher.instead(instance, "render", () => unpatch());
+  instance.forceUpdate(() => instance.forceUpdate());
+}
+
+// plugins/CssSnippetRepo/src/index.tsx
+setSettingsPanel(() => /* @__PURE__ */ BdApi.React.createElement(Snippets, null));
+onStop(() => {
+  unloadSnippets();
+  forceUpdate("." + toolbarClass);
+});
+onStart(() => {
+  loadSnippets();
+  forceUpdate("." + toolbarClass);
+});
+before(...toolbar, ({ args }) => {
+  const element = /* @__PURE__ */ BdApi.React.createElement("div", { className: "sr-toolbar-button", onClick: openSettings }, /* @__PURE__ */ BdApi.React.createElement(LucideIcon, { icon: Palette, size: 18 }));
+  args[0]?.trailing?.props?.children?.splice(3, 0, element);
+});
+function openSettings() {
+  modalMethods.openModal((props) => /* @__PURE__ */ BdApi.React.createElement(
+    Modal,
+    {
+      ...props,
+      title: "CSS Snippets",
+      size: "xl"
+    },
+    /* @__PURE__ */ BdApi.React.createElement(Snippets, null)
+  ));
+}
   }
 }
