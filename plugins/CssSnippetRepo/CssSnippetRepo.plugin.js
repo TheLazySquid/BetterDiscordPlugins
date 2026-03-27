@@ -55,7 +55,7 @@ onStop(() => {
 
 // plugins/CssSnippetRepo/src/styles.css
 addStyle(`.sr-card {
-  background-color: #282828;
+  background-color: var(--background-accent);
   border-radius: 6px;
   padding: 16px;
   min-width: 0;
@@ -133,6 +133,13 @@ addStyle(`.sr-card {
   width: 100%;
   border: none;
   border-bottom: 1px solid #99a1af;
+}
+
+.sr-no-results {
+  text-align: center;
+  font-size: 22px;
+  font-weight: bold;
+  margin-top: 40px;
 }`);
 
 // plugins/CssSnippetRepo/src/fetch.ts
@@ -141,10 +148,20 @@ var categoryNames = {
   declutter: "Declutter",
   improvement: "Improvement"
 };
+var lastFetch = 0;
+var cachedSnippets = [];
+var cacheDuration = 1e3 * 60 * 30;
 async function fetchSnippets() {
+  const now = Date.now();
+  if (now - lastFetch < cacheDuration && cachedSnippets.length > 0) {
+    return cachedSnippets;
+  }
   const url = `${baseUrl}snippets.json`;
   const res = await fetch(url);
-  return res.json();
+  const snippets = await res.json();
+  cachedSnippets = snippets;
+  lastFetch = now;
+  return snippets;
 }
 
 // shared/ui/icons.tsx
@@ -252,7 +269,7 @@ function Snippets() {
       value: search,
       onChange: (e) => setSearch(e.currentTarget.value)
     }
-  )), categories.map((category) => /* @__PURE__ */ BdApi.React.createElement(React.Fragment, null, /* @__PURE__ */ BdApi.React.createElement("h2", { className: "sr-category-header" }, categoryNames[category.name] ?? category.name), /* @__PURE__ */ BdApi.React.createElement("div", { className: "sr-snippets" }, category.snippets.map((snippet) => /* @__PURE__ */ BdApi.React.createElement(SnippetCard, { key: snippet.name, snippet }))))));
+  )), categories.length === 0 && /* @__PURE__ */ BdApi.React.createElement("div", { className: "sr-no-results" }, "No snippets match your search"), categories.map((category) => /* @__PURE__ */ BdApi.React.createElement(React.Fragment, null, /* @__PURE__ */ BdApi.React.createElement("h2", { className: "sr-category-header" }, categoryNames[category.name] ?? category.name), /* @__PURE__ */ BdApi.React.createElement("div", { className: "sr-snippets" }, category.snippets.map((snippet) => /* @__PURE__ */ BdApi.React.createElement(SnippetCard, { key: snippet.name, snippet }))))));
 }
 
 // plugins/CssSnippetRepo/src/index.ts

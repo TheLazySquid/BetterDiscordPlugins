@@ -37,6 +37,11 @@ export default function Snippets() {
                 <input className="sr-search-input" placeholder="Search snippets" value={search}
                     onChange={e => setSearch(e.currentTarget.value)} />
             </div>
+            {categories.length === 0 && (
+                <div className="sr-no-results">
+                    No snippets match your search
+                </div>
+            )}
             {categories.map(category => (
                 <>
                     <h2 className="sr-category-header">{categoryNames[category.name] ?? category.name}</h2>
