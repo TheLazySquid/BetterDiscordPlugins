@@ -98,6 +98,7 @@ addStyle(`.sr-card {
 .sr-description {
   display: flex;
   align-items: flex-end;
+  justify-content: space-between;
   font-size: 14px;
 }
 
@@ -147,6 +148,11 @@ addStyle(`.sr-card {
   color: var(--icon-muted);
   cursor: pointer;
   margin-bottom: -2px;
+}
+
+.sr-arrow {
+  float: right;
+  cursor: pointer;
 }`);
 
 // plugins/CssSnippetRepo/src/fetch.ts
@@ -260,7 +266,7 @@ function SnippetCard({ snippet }) {
       src: `${baseUrl}previews/${snippet.name}/${snippet.preview}`,
       alt: `A preview of ${snippet.name}`
     }
-  )), /* @__PURE__ */ BdApi.React.createElement("div", { className: "sr-description" }, expanded ? /* @__PURE__ */ BdApi.React.createElement(React.Fragment, null, /* @__PURE__ */ BdApi.React.createElement("div", null, snippet.description.map((line) => /* @__PURE__ */ BdApi.React.createElement("p", null, line))), /* @__PURE__ */ BdApi.React.createElement("div", { onClick: () => setExpanded(false) }, /* @__PURE__ */ BdApi.React.createElement(LucideIcon, { icon: ChevronUp }))) : /* @__PURE__ */ BdApi.React.createElement(React.Fragment, null, /* @__PURE__ */ BdApi.React.createElement("p", null, snippet.description[0]), snippet.description.length > 1 && /* @__PURE__ */ BdApi.React.createElement("div", { onClick: () => setExpanded(true) }, /* @__PURE__ */ BdApi.React.createElement(LucideIcon, { icon: ChevronDown })))));
+  )), /* @__PURE__ */ BdApi.React.createElement("div", { className: "sr-description" }, expanded ? /* @__PURE__ */ BdApi.React.createElement(React.Fragment, null, /* @__PURE__ */ BdApi.React.createElement("div", null, snippet.description.map((line) => /* @__PURE__ */ BdApi.React.createElement("p", null, line))), /* @__PURE__ */ BdApi.React.createElement("div", { className: "sr-arrow", onClick: () => setExpanded(false) }, /* @__PURE__ */ BdApi.React.createElement(LucideIcon, { icon: ChevronUp }))) : /* @__PURE__ */ BdApi.React.createElement(React.Fragment, null, /* @__PURE__ */ BdApi.React.createElement("p", null, snippet.description[0]), snippet.description.length > 1 && /* @__PURE__ */ BdApi.React.createElement("div", { className: "sr-arrow", onClick: () => setExpanded(true) }, /* @__PURE__ */ BdApi.React.createElement(LucideIcon, { icon: ChevronDown })))));
 }
 
 // plugins/CssSnippetRepo/src/ui/Snippets.tsx

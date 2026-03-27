@@ -57,7 +57,7 @@ export default function SnippetCard({ snippet }: { snippet: Snippet }) {
                                 <p>{line}</p>
                             ))}
                         </div>
-                        <div onClick={() => setExpanded(false)}>
+                        <div className="sr-arrow" onClick={() => setExpanded(false)}>
                             <LucideIcon icon={ChevronUp} />
                         </div>
                     </>
@@ -65,7 +65,7 @@ export default function SnippetCard({ snippet }: { snippet: Snippet }) {
                     <>
                         <p>{snippet.description[0]}</p>
                         {snippet.description.length > 1 && (
-                            <div onClick={() => setExpanded(true)}>
+                            <div className="sr-arrow" onClick={() => setExpanded(true)}>
                                 <LucideIcon icon={ChevronDown} />
                             </div>
                         )}
