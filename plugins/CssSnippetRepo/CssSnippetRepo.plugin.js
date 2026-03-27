@@ -1,6 +1,6 @@
 /**
  * @name CssSnippetRepo
- * @description Easily manage css snippets that tweak how Discord looks
+ * @description Easily manage CSS snippets that tweak how Discord looks
  * @version 1.0.0
  * @author TheLazySquid
  * @authorId 619261917352951815

@@ -26,3 +26,7 @@ Easily compress videos that would otherwise be too large to send.
 ## MoreQuickReacts [Page](https://betterdiscord.app/plugin/MoreQuickReacts) [Source](/plugins/MoreQuickReacts/)
 
 Adds more quick reacts to the message hover popover.
+
+## CssSnippetRepo [Source](/plugins/CssSnippetRepo/)
+
+Lets you easily manage CSS snippets which tweak how discord looks.
