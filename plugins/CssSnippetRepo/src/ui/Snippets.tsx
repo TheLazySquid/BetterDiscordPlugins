@@ -9,10 +9,9 @@ interface Category {
 export default function Snippets() {
     const React = BdApi.React;
     const [snippets, setSnippets] = React.useState<Snippet[]>([]);
-    const [categories, setCategories] = React.useState<Category[]>([]);
     const [search, setSearch] = React.useState("");
 
-    React.useEffect(() => {
+    const categories = React.useMemo(() => {
         const searched = search.toLowerCase();
         const categoriesMap: Record<string, Category> = {};
 
@@ -37,7 +36,7 @@ export default function Snippets() {
             }
         }
 
-        setCategories(categories);
+        return categories;
     }, [snippets, search]);
 
     React.useEffect(() => {

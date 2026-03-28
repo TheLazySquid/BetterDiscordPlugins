@@ -273,9 +273,8 @@ function SnippetCard({ snippet }) {
 function Snippets() {
   const React = BdApi.React;
   const [snippets, setSnippets] = React.useState([]);
-  const [categories, setCategories] = React.useState([]);
   const [search, setSearch] = React.useState("");
-  React.useEffect(() => {
+  const categories = React.useMemo(() => {
     const searched = search.toLowerCase();
     const categoriesMap = {};
     for (const snippet of snippets) {
@@ -295,7 +294,7 @@ function Snippets() {
         categories2.push(categoriesMap[category]);
       }
     }
-    setCategories(categories2);
+    return categories2;
   }, [snippets, search]);
   React.useEffect(() => {
     fetchSnippets().then(setSnippets);
