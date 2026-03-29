@@ -34,7 +34,6 @@ var createCallbackHandler = (callbackName) => {
 };
 var onStart = createCallbackHandler("start");
 var onStop = createCallbackHandler("stop");
-var onSwitch = createCallbackHandler("onSwitch");
 function setSettingsPanel(el) {
   if (typeof el === "function") plugin.getSettingsPanel = el;
   plugin.getSettingsPanel = () => el;
@@ -137,6 +136,14 @@ addStyle(`.sr-card {
   border-bottom: 1px solid #99a1af;
 }
 
+.sr-search > .bd-select > .bd-select-value {
+  padding-right: 25px;
+}
+
+.sr-search > .bd-select-options {
+  overflow: auto;
+}
+
 .sr-no-results {
   text-align: center;
   font-size: 22px;
@@ -178,35 +185,6 @@ async function fetchSnippets() {
   return snippets;
 }
 
-// shared/ui/icons.tsx
-function LucideIcon({ icon, size = 24, color, className }) {
-  const stroke = color ?? "currentColor";
-  return /* @__PURE__ */ BdApi.React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke, "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", className }, icon.map(([tag, attrs]) => BdApi.React.createElement(tag, attrs)));
-}
-
-// node_modules/lucide/dist/esm/icons/check.js
-var Check = [["path", { d: "M20 6 9 17l-5-5" }]];
-
-// node_modules/lucide/dist/esm/icons/chevron-down.js
-var ChevronDown = [["path", { d: "m6 9 6 6 6-6" }]];
-
-// node_modules/lucide/dist/esm/icons/chevron-up.js
-var ChevronUp = [["path", { d: "m18 15-6-6-6 6" }]];
-
-// node_modules/lucide/dist/esm/icons/palette.js
-var Palette = [
-  [
-    "path",
-    {
-      d: "M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z"
-    }
-  ],
-  ["circle", { cx: "13.5", cy: "6.5", r: ".5", fill: "currentColor" }],
-  ["circle", { cx: "17.5", cy: "10.5", r: ".5", fill: "currentColor" }],
-  ["circle", { cx: "6.5", cy: "12.5", r: ".5", fill: "currentColor" }],
-  ["circle", { cx: "8.5", cy: "7.5", r: ".5", fill: "currentColor" }]
-];
-
 // plugins/CssSnippetRepo/src/snippets.ts
 var enabledSnippets = {};
 function loadSnippets() {
@@ -236,6 +214,35 @@ function setSnippetEnabled(name, enabled) {
     Api.DOM.removeStyle(`sr-${name}`);
   }
 }
+
+// shared/ui/icons.tsx
+function LucideIcon({ icon, size = 24, color, className }) {
+  const stroke = color ?? "currentColor";
+  return /* @__PURE__ */ BdApi.React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke, "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", className }, icon.map(([tag, attrs]) => BdApi.React.createElement(tag, attrs)));
+}
+
+// node_modules/lucide/dist/esm/icons/check.js
+var Check = [["path", { d: "M20 6 9 17l-5-5" }]];
+
+// node_modules/lucide/dist/esm/icons/chevron-down.js
+var ChevronDown = [["path", { d: "m6 9 6 6 6-6" }]];
+
+// node_modules/lucide/dist/esm/icons/chevron-up.js
+var ChevronUp = [["path", { d: "m18 15-6-6-6 6" }]];
+
+// node_modules/lucide/dist/esm/icons/palette.js
+var Palette = [
+  [
+    "path",
+    {
+      d: "M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z"
+    }
+  ],
+  ["circle", { cx: "13.5", cy: "6.5", r: ".5", fill: "currentColor" }],
+  ["circle", { cx: "17.5", cy: "10.5", r: ".5", fill: "currentColor" }],
+  ["circle", { cx: "6.5", cy: "12.5", r: ".5", fill: "currentColor" }],
+  ["circle", { cx: "8.5", cy: "7.5", r: ".5", fill: "currentColor" }]
+];
 
 // plugins/CssSnippetRepo/src/ui/SnippetCard.tsx
 function SnippetCard({ snippet }) {
@@ -270,18 +277,25 @@ function SnippetCard({ snippet }) {
 }
 
 // plugins/CssSnippetRepo/src/ui/Snippets.tsx
+var filters = [
+  { label: "All", value: "all" },
+  { label: "Enabled", value: "enabled" },
+  { label: "Disabled", value: "disabled" }
+];
 function Snippets() {
   const React = BdApi.React;
   const [snippets, setSnippets] = React.useState([]);
   const [search, setSearch] = React.useState("");
+  const [filter, setFilter] = React.useState("all");
   const categories = React.useMemo(() => {
     const searched = search.toLowerCase();
     const categoriesMap = {};
     for (const snippet of snippets) {
-      if (snippet.name.toLowerCase().includes(searched)) {
-        categoriesMap[snippet.category] ??= { name: snippet.category, snippets: [] };
-        categoriesMap[snippet.category].snippets.push(snippet);
-      }
+      if (!snippet.name.toLowerCase().includes(searched)) continue;
+      if (filter === "enabled" && !enabledSnippets[snippet.name]) continue;
+      if (filter === "disabled" && enabledSnippets[snippet.name]) continue;
+      categoriesMap[snippet.category] ??= { name: snippet.category, snippets: [] };
+      categoriesMap[snippet.category].snippets.push(snippet);
     }
     const order = [...categoryOrder];
     for (const snippet of snippets) {
@@ -295,7 +309,7 @@ function Snippets() {
       }
     }
     return categories2;
-  }, [snippets, search]);
+  }, [snippets, search, filter]);
   React.useEffect(() => {
     fetchSnippets().then(setSnippets);
   }, []);
@@ -307,7 +321,7 @@ function Snippets() {
       value: search,
       onChange: (e) => setSearch(e.currentTarget.value)
     }
-  )), categories.length === 0 && /* @__PURE__ */ BdApi.React.createElement("div", { className: "sr-no-results" }, "No snippets match your search"), categories.map((category) => /* @__PURE__ */ BdApi.React.createElement(React.Fragment, null, /* @__PURE__ */ BdApi.React.createElement("h2", { className: "sr-category-header" }, category.name), /* @__PURE__ */ BdApi.React.createElement("div", { className: "sr-snippets" }, category.snippets.map((snippet) => /* @__PURE__ */ BdApi.React.createElement(SnippetCard, { key: snippet.name, snippet }))))));
+  ), /* @__PURE__ */ BdApi.React.createElement(BdApi.Components.DropdownInput, { options: filters, value: filter, onChange: setFilter })), categories.length === 0 && /* @__PURE__ */ BdApi.React.createElement("div", { className: "sr-no-results" }, "No snippets match your search"), categories.map((category) => /* @__PURE__ */ BdApi.React.createElement(React.Fragment, null, /* @__PURE__ */ BdApi.React.createElement("h2", { className: "sr-category-header" }, category.name), /* @__PURE__ */ BdApi.React.createElement("div", { className: "sr-snippets" }, category.snippets.map((snippet) => /* @__PURE__ */ BdApi.React.createElement(SnippetCard, { key: snippet.name, snippet }))))));
 }
 
 // shared/api/patching.ts

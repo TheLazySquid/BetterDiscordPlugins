@@ -1,4 +1,5 @@
 import { categoryOrder, fetchSnippets, type Snippet } from "../fetch";
+import { enabledSnippets } from "../snippets";
 import SnippetCard from "./SnippetCard";
 
 interface Category {
@@ -6,20 +7,29 @@ interface Category {
     snippets: Snippet[];
 }
 
+const filters = [
+    { label: "All", value: "all" },
+    { label: "Enabled", value: "enabled" },
+    { label: "Disabled", value: "disabled" }
+]
+
 export default function Snippets() {
     const React = BdApi.React;
     const [snippets, setSnippets] = React.useState<Snippet[]>([]);
     const [search, setSearch] = React.useState("");
+    const [filter, setFilter] = React.useState("all");
 
     const categories = React.useMemo(() => {
         const searched = search.toLowerCase();
         const categoriesMap: Record<string, Category> = {};
 
         for(const snippet of snippets) {
-            if(snippet.name.toLowerCase().includes(searched)) {
-                categoriesMap[snippet.category] ??= { name: snippet.category, snippets: [] };
-                categoriesMap[snippet.category].snippets.push(snippet);
-            }
+            if(!snippet.name.toLowerCase().includes(searched)) continue;
+            if(filter === "enabled" && !enabledSnippets[snippet.name]) continue;
+            if(filter === "disabled" && enabledSnippets[snippet.name]) continue;
+
+            categoriesMap[snippet.category] ??= { name: snippet.category, snippets: [] };
+            categoriesMap[snippet.category].snippets.push(snippet);
         }
 
         const order = [...categoryOrder];
@@ -37,7 +47,7 @@ export default function Snippets() {
         }
 
         return categories;
-    }, [snippets, search]);
+    }, [snippets, search, filter]);
 
     React.useEffect(() => {
         fetchSnippets().then(setSnippets);
@@ -49,6 +59,7 @@ export default function Snippets() {
                 <div>Search:</div>
                 <input className="sr-search-input" placeholder="Search snippets" value={search}
                     onChange={e => setSearch(e.currentTarget.value)} />
+                <BdApi.Components.DropdownInput options={filters} value={filter} onChange={setFilter} />
             </div>
             {categories.length === 0 && (
                 <div className="sr-no-results">

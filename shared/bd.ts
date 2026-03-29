@@ -44,7 +44,7 @@ export const onStop = createCallbackHandler("stop");
  * @param callback - The callback to be fired
  * @param once - If true, the callback will be deleted after use
  */
-export const onSwitch = createCallbackHandler("onSwitch");
+export const onSwitch = /** @__PURE__ */ createCallbackHandler("onSwitch");
 
 type El = HTMLElement | ReactElement;
 /**

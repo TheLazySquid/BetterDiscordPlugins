@@ -81,6 +81,14 @@
     border-bottom: 1px solid #99a1af;
 }
 
+.sr-search > .bd-select > .bd-select-value {
+    padding-right: 25px;
+}
+
+.sr-search > .bd-select-options {
+    overflow: auto;
+}
+
 .sr-no-results {
     text-align: center;
     font-size: 22px;

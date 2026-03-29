@@ -1,7 +1,7 @@
 import { Api } from "$shared/bd";
 import { baseUrl } from "./fetch";
 
-let enabledSnippets: Record<string, boolean> = {};
+export let enabledSnippets: Record<string, boolean> = {};
 export function loadSnippets() {
     enabledSnippets = Api.Data.load("enabled") ?? {};
 
