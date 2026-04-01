@@ -34,7 +34,7 @@ var createCallbackHandler = (callbackName) => {
 };
 var onStart = createCallbackHandler("start");
 var onStop = createCallbackHandler("stop");
-var onSwitch = createCallbackHandler("onSwitch");
+var onSwitch = /* @__PURE__ */ createCallbackHandler("onSwitch");
 
 // shared/api/patching.ts
 function check(module2, key) {
@@ -136,6 +136,7 @@ addStyle(`.zp-wrap {
   transition: max-height 0.3s ease;
   color: var(--text-default);
   padding-left: 16px;
+  scrollbar-color: var(--scrollbar-thin-thumb) transparent;
 }
 
 .zp-zip-preview.expanded {
@@ -1374,7 +1375,7 @@ function ZipPreview({ url }) {
     return (size / 1024 / 1024 / 1024).toFixed(2) + " GB";
   }
   return /* @__PURE__ */ BdApi.React.createElement("div", null, /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-zip-preview " + (expanded ? "expanded" : "") }, folderContents ? [
-    /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-path" }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-folderReturn", onClick: () => {
+    /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-path" }, folderContents.path !== "/" && /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-folderReturn", onClick: () => {
       if (folderContents.parent) {
         setFolderContents(folderContents.parent);
       }

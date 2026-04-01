@@ -101,13 +101,15 @@ function ZipPreview({ url }: { url: string }) {
             <div className={"zp-zip-preview " + (expanded ? "expanded" : "")}>
                 {folderContents ? [
                     <div className="zp-path">
-                        <div className="zp-folderReturn" onClick={() => {
-                            if(folderContents.parent) {
-                                setFolderContents(folderContents.parent)
-                            }
-                        }}>
-                            <LucideIcon icon={FolderOutput} />
-                        </div>
+                        {folderContents.path !== "/" && (
+                            <div className="zp-folderReturn" onClick={() => {
+                                if(folderContents.parent) {
+                                    setFolderContents(folderContents.parent)
+                                }
+                            }}>
+                                <LucideIcon icon={FolderOutput} />
+                            </div>
+                        )}
                         <div>
                             {folderContents.path}
                         </div>
