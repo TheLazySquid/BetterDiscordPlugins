@@ -8,6 +8,8 @@ declare module "*.otf" {
     export default content;
 }
 
+declare module "*.css" {}
+
 declare module "meta" {
     export const pluginName: string;
 }

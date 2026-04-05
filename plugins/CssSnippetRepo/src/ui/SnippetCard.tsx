@@ -24,7 +24,7 @@ export default function SnippetCard({ snippet }: { snippet: Snippet }) {
             <div className="sr-toggle" onClick={() => setEnabled(!enabled)}>
                 {snippet.name}
                 <div className="sr-checkbox">
-                    {enabled && <LucideIcon icon={Check} color="#d1d5dc" size={24} />}
+                    {enabled && <LucideIcon icon={Check} color="var(--icon-strong)" size={24} />}
                 </div>
             </div>
             <div className="sr-author">

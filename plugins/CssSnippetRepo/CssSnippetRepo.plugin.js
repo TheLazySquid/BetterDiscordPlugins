@@ -67,7 +67,7 @@ addStyle(`.sr-card {
   font-size: 18px;
   font-weight: bold;
   margin-bottom: 8px;
-  border-bottom: 1px solid #99a1af;
+  border-bottom: 1px solid var(--icon-muted);
   width: 100%;
   cursor: pointer;
 }
@@ -78,7 +78,7 @@ addStyle(`.sr-card {
   justify-content: space-between;
   width: 24px;
   height: 24px;
-  background-color: #18181B;
+  background-color: var(--background-base-lower);
   border-radius: 4px;
 }
 
@@ -114,7 +114,7 @@ addStyle(`.sr-card {
 .sr-category-header {
   font-size: 24px;
   margin-bottom: 8px;
-  border-bottom: 2px solid #99a1af;
+  border-bottom: 2px solid var(--icon-muted);
   font-weight: bold;
   margin-top: 24px;
 }
@@ -133,7 +133,7 @@ addStyle(`.sr-card {
   background-color: transparent;
   width: 100%;
   border: none;
-  border-bottom: 1px solid #99a1af;
+  border-bottom: 1px solid var(--icon-muted);
 }
 
 .sr-search > .bd-select > .bd-select-value {
@@ -257,7 +257,7 @@ function SnippetCard({ snippet }) {
     }
     setSnippetEnabled(snippet.name, enabled);
   }, [enabled]);
-  return /* @__PURE__ */ BdApi.React.createElement("div", { className: "sr-card" }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "sr-toggle", onClick: () => setEnabled(!enabled) }, snippet.name, /* @__PURE__ */ BdApi.React.createElement("div", { className: "sr-checkbox" }, enabled && /* @__PURE__ */ BdApi.React.createElement(LucideIcon, { icon: Check, color: "#d1d5dc", size: 24 }))), /* @__PURE__ */ BdApi.React.createElement("div", { className: "sr-author" }, "By ", snippet.author), snippet.preview && /* @__PURE__ */ BdApi.React.createElement("div", null, snippet.preview.endsWith(".mp4") ? /* @__PURE__ */ BdApi.React.createElement(
+  return /* @__PURE__ */ BdApi.React.createElement("div", { className: "sr-card" }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "sr-toggle", onClick: () => setEnabled(!enabled) }, snippet.name, /* @__PURE__ */ BdApi.React.createElement("div", { className: "sr-checkbox" }, enabled && /* @__PURE__ */ BdApi.React.createElement(LucideIcon, { icon: Check, color: "var(--icon-strong)", size: 24 }))), /* @__PURE__ */ BdApi.React.createElement("div", { className: "sr-author" }, "By ", snippet.author), snippet.preview && /* @__PURE__ */ BdApi.React.createElement("div", null, snippet.preview.endsWith(".mp4") ? /* @__PURE__ */ BdApi.React.createElement(
     "video",
     {
       className: "sr-preview",

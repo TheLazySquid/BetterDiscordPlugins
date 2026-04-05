@@ -12,7 +12,7 @@
     font-size: 18px;
     font-weight: bold;
     margin-bottom: 8px;
-    border-bottom: 1px solid #99a1af;
+    border-bottom: 1px solid var(--icon-muted);
     width: 100%;
     cursor: pointer;
 }
@@ -23,7 +23,7 @@
     justify-content: space-between;
     width: 24px;
     height: 24px;
-    background-color: #18181B;
+    background-color: var(--background-base-lower);
     border-radius: 4px;
 }
 
@@ -59,7 +59,7 @@
 .sr-category-header {
     font-size: 24px;
     margin-bottom: 8px;
-    border-bottom: 2px solid #99a1af;
+    border-bottom: 2px solid var(--icon-muted);
     font-weight: bold;
     margin-top: 24px;
 }
@@ -78,7 +78,7 @@
     background-color: transparent;
     width: 100%;
     border: none;
-    border-bottom: 1px solid #99a1af;
+    border-bottom: 1px solid var(--icon-muted);
 }
 
 .sr-search > .bd-select > .bd-select-value {
