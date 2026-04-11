@@ -24,6 +24,7 @@
         "noUnusedLocals": false,
         "noUnusedParameters": false,
         "noPropertyAccessFromIndexSignature": false,
+        "types": ["bun"],
         "paths": {
             "$assets/*": ["./assets/*"],
             "$shared/*": ["./shared/*"],

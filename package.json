@@ -11,7 +11,7 @@
     "esbuild": "^0.24.2"
   },
   "peerDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^6.0.2"
   },
   "scripts": {
     "GifCaptioner": "bun run bundler/index.ts --plugin GifCaptioner",
