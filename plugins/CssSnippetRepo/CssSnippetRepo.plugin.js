@@ -1,7 +1,7 @@
 /**
  * @name CssSnippetRepo
  * @description Easily manage CSS snippets that tweak how Discord looks
- * @version 1.0.0
+ * @version 1.0.1
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -287,6 +287,7 @@ function Snippets() {
   const [snippets, setSnippets] = React.useState([]);
   const [search, setSearch] = React.useState("");
   const [filter, setFilter] = React.useState("all");
+  const input = React.useRef(null);
   const categories = React.useMemo(() => {
     const searched = search.toLowerCase();
     const categoriesMap = {};
@@ -313,13 +314,25 @@ function Snippets() {
   React.useEffect(() => {
     fetchSnippets().then(setSnippets);
   }, []);
+  React.useEffect(() => {
+    input.current?.focus();
+    const onKeyDown = (e) => {
+      if (e.key === "f" && e.ctrlKey) {
+        e.preventDefault();
+        input.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
   return /* @__PURE__ */ BdApi.React.createElement("div", null, /* @__PURE__ */ BdApi.React.createElement("div", { className: "sr-search" }, /* @__PURE__ */ BdApi.React.createElement("div", null, "Search:"), /* @__PURE__ */ BdApi.React.createElement(
     "input",
     {
       className: "sr-search-input",
       placeholder: "Search snippets",
       value: search,
-      onChange: (e) => setSearch(e.currentTarget.value)
+      onChange: (e) => setSearch(e.currentTarget.value),
+      ref: input
     }
   ), /* @__PURE__ */ BdApi.React.createElement(BdApi.Components.DropdownInput, { options: filters, value: filter, onChange: setFilter })), categories.length === 0 && /* @__PURE__ */ BdApi.React.createElement("div", { className: "sr-no-results" }, "No snippets match your search"), categories.map((category) => /* @__PURE__ */ BdApi.React.createElement(React.Fragment, null, /* @__PURE__ */ BdApi.React.createElement("h2", { className: "sr-category-header" }, category.name), /* @__PURE__ */ BdApi.React.createElement("div", { className: "sr-snippets" }, category.snippets.map((snippet) => /* @__PURE__ */ BdApi.React.createElement(SnippetCard, { key: snippet.name, snippet }))))));
 }

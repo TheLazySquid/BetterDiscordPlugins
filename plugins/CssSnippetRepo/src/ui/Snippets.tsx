@@ -18,6 +18,7 @@ export default function Snippets() {
     const [snippets, setSnippets] = React.useState<Snippet[]>([]);
     const [search, setSearch] = React.useState("");
     const [filter, setFilter] = React.useState("all");
+    const input = React.useRef<HTMLInputElement>(null);
 
     const categories = React.useMemo(() => {
         const searched = search.toLowerCase();
@@ -53,12 +54,26 @@ export default function Snippets() {
         fetchSnippets().then(setSnippets);
     }, []);
 
+    React.useEffect(() => {
+        input.current?.focus();
+
+        const onKeyDown = (e: KeyboardEvent) => {
+            if(e.key === "f" && e.ctrlKey) {
+                e.preventDefault();
+                input.current?.focus();
+            }
+        }
+
+        window.addEventListener("keydown", onKeyDown);
+        return () => window.removeEventListener("keydown", onKeyDown);
+    }, []);
+
     return (
         <div>
             <div className="sr-search">
                 <div>Search:</div>
                 <input className="sr-search-input" placeholder="Search snippets" value={search}
-                    onChange={e => setSearch(e.currentTarget.value)} />
+                    onChange={e => setSearch(e.currentTarget.value)} ref={input} />
                 <BdApi.Components.DropdownInput options={filters} value={filter} onChange={setFilter} />
             </div>
             {categories.length === 0 && (
