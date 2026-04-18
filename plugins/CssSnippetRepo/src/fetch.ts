@@ -33,6 +33,7 @@ export async function fetchSnippets(): Promise<SnippetsResponse> {
     }
 
     const { promise, resolve } = Promise.withResolvers<SnippetsResponse>();
+    lastRequest = promise;
 
     // Fetch snippets.json
     const url = `${baseUrl}snippets.json`;
@@ -50,7 +51,6 @@ export async function fetchSnippets(): Promise<SnippetsResponse> {
         snippets = response;
     }
     
-    lastRequest = promise;
     lastFetch = now;
     setRemaps(snippets.remaps);
     resolve(snippets);

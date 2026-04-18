@@ -252,6 +252,7 @@ async function fetchSnippets() {
     return lastRequest;
   }
   const { promise, resolve } = Promise.withResolvers();
+  lastRequest = promise;
   const url = `${baseUrl}snippets.json`;
   const res = await fetch(url);
   const response = await res.json();
@@ -264,7 +265,6 @@ async function fetchSnippets() {
   } else {
     snippets = response;
   }
-  lastRequest = promise;
   lastFetch = now;
   setRemaps(snippets.remaps);
   resolve(snippets);
