@@ -51,7 +51,7 @@ export default function Snippets() {
     }, [snippets, search, filter]);
 
     React.useEffect(() => {
-        fetchSnippets().then(setSnippets);
+        fetchSnippets().then(({ snippets }) => setSnippets(snippets));
     }, []);
 
     React.useEffect(() => {

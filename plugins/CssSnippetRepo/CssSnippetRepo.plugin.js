@@ -1,7 +1,7 @@
 /**
  * @name CssSnippetRepo
  * @description Easily manage CSS snippets that tweak how Discord looks
- * @version 1.0.1
+ * @version 1.0.2
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -162,6 +162,79 @@ addStyle(`.sr-card {
   cursor: pointer;
 }`);
 
+// plugins/CssSnippetRepo/src/snippets.ts
+var enabledSnippets = {};
+var remaps = [["AutohideSidebar", "SleepyDiscord"]];
+function setRemaps(newRemaps) {
+  Api.Data.save("remaps", remaps);
+}
+var loaded = /* @__PURE__ */ new Set();
+function loadSnippet(name) {
+  if (loaded.has(name)) return;
+  loaded.add(name);
+  const css = `@import url(${baseUrl}css/${name}.css);`;
+  Api.DOM.addStyle(`sr-${name}`, css);
+  Api.Logger.info(`Loading snippet ${name}`);
+}
+function loadSnippets() {
+  enabledSnippets = Api.Data.load("enabled") ?? {};
+  remaps = Api.Data.load("remaps") ?? [];
+  const remapped = /* @__PURE__ */ new Set();
+  for (const remap of remaps) {
+    if (!remap.every((name) => enabledSnippets[name])) continue;
+    for (const name of remap) remapped.add(name);
+    loadSnippet(remap.join("+"));
+  }
+  for (const name in enabledSnippets) {
+    if (!enabledSnippets[name] || remapped.has(name)) continue;
+    loadSnippet(name);
+  }
+}
+function unloadSnippet(name) {
+  Api.DOM.removeStyle(`sr-${name}`);
+  loaded.delete(name);
+  Api.Logger.info(`Unloading snippet ${name}`);
+}
+function unloadSnippets() {
+  for (const name of loaded) {
+    unloadSnippet(name);
+  }
+}
+function getSnippetEnabled(name) {
+  return enabledSnippets[name] ?? false;
+}
+function setSnippetEnabled(name, enabled) {
+  Api.Data.save("enabled", enabledSnippets);
+  if (enabled) {
+    enabledSnippets[name] = true;
+    for (const remap of remaps) {
+      if (!remap.includes(name)) continue;
+      if (!remap.every((n) => enabledSnippets[n])) continue;
+      for (const other of remap) {
+        if (other === name) continue;
+        unloadSnippet(other);
+      }
+      loadSnippet(remap.join("+"));
+      return;
+    }
+    loadSnippet(name);
+  } else {
+    for (const remap of remaps) {
+      if (!remap.includes(name)) continue;
+      if (!remap.every((n) => enabledSnippets[n])) continue;
+      unloadSnippet(remap.join("+"));
+      for (const other of remap) {
+        if (other === name) continue;
+        loadSnippet(other);
+      }
+      enabledSnippets[name] = false;
+      return;
+    }
+    enabledSnippets[name] = false;
+    unloadSnippet(name);
+  }
+}
+
 // plugins/CssSnippetRepo/src/fetch.ts
 var baseUrl = "https://thelazysquid.github.io/DiscordCssSnippets/";
 var categoryOrder = [
@@ -170,49 +243,29 @@ var categoryOrder = [
   "Stylize"
 ];
 var lastFetch = 0;
-var cachedSnippets = [];
+var lastResponse = null;
 var cacheDuration = 1e3 * 60 * 30;
 async function fetchSnippets() {
   const now = Date.now();
-  if (now - lastFetch < cacheDuration && cachedSnippets.length > 0) {
-    return cachedSnippets;
+  if (now - lastFetch < cacheDuration && lastResponse) {
+    return lastResponse;
   }
   const url = `${baseUrl}snippets.json`;
   const res = await fetch(url);
-  const snippets = await res.json();
-  cachedSnippets = snippets;
+  const response = await res.json();
+  let snippets;
+  if (Array.isArray(response)) {
+    snippets = {
+      snippets: response,
+      remaps: []
+    };
+  } else {
+    snippets = response;
+  }
+  setRemaps(snippets.remaps);
+  lastResponse = snippets;
   lastFetch = now;
   return snippets;
-}
-
-// plugins/CssSnippetRepo/src/snippets.ts
-var enabledSnippets = {};
-function loadSnippets() {
-  enabledSnippets = Api.Data.load("enabled") ?? {};
-  for (const name in enabledSnippets) {
-    if (!enabledSnippets[name]) continue;
-    const css = `@import url(${baseUrl}css/${name}.css);`;
-    Api.DOM.addStyle(`sr-${name}`, css);
-  }
-}
-function unloadSnippets() {
-  for (const name in enabledSnippets) {
-    if (!enabledSnippets[name]) continue;
-    Api.DOM.removeStyle(`sr-${name}`);
-  }
-}
-function getSnippetEnabled(name) {
-  return enabledSnippets[name] ?? false;
-}
-function setSnippetEnabled(name, enabled) {
-  enabledSnippets[name] = enabled;
-  Api.Data.save("enabled", enabledSnippets);
-  if (enabled) {
-    const css = `@import url(${baseUrl}css/${name}.css);`;
-    Api.DOM.addStyle(`sr-${name}`, css);
-  } else {
-    Api.DOM.removeStyle(`sr-${name}`);
-  }
 }
 
 // shared/ui/icons.tsx
@@ -312,7 +365,7 @@ function Snippets() {
     return categories2;
   }, [snippets, search, filter]);
   React.useEffect(() => {
-    fetchSnippets().then(setSnippets);
+    fetchSnippets().then(({ snippets: snippets2 }) => setSnippets(snippets2));
   }, []);
   React.useEffect(() => {
     input.current?.focus();
