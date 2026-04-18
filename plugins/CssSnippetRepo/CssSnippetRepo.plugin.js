@@ -166,6 +166,7 @@ addStyle(`.sr-card {
 var enabledSnippets = {};
 var remaps = [["AutohideSidebar", "SleepyDiscord"]];
 function setRemaps(newRemaps) {
+  remaps = newRemaps;
   Api.Data.save("remaps", remaps);
 }
 var loaded = /* @__PURE__ */ new Set();
@@ -243,13 +244,14 @@ var categoryOrder = [
   "Stylize"
 ];
 var lastFetch = 0;
-var lastResponse = null;
+var lastRequest = null;
 var cacheDuration = 1e3 * 60 * 30;
 async function fetchSnippets() {
   const now = Date.now();
-  if (now - lastFetch < cacheDuration && lastResponse) {
-    return lastResponse;
+  if (now - lastFetch < cacheDuration && lastRequest) {
+    return lastRequest;
   }
+  const { promise, resolve } = Promise.withResolvers();
   const url = `${baseUrl}snippets.json`;
   const res = await fetch(url);
   const response = await res.json();
@@ -262,10 +264,11 @@ async function fetchSnippets() {
   } else {
     snippets = response;
   }
-  setRemaps(snippets.remaps);
-  lastResponse = snippets;
+  lastRequest = promise;
   lastFetch = now;
-  return snippets;
+  setRemaps(snippets.remaps);
+  resolve(snippets);
+  return promise;
 }
 
 // shared/ui/icons.tsx

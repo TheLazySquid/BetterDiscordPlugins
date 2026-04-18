@@ -23,15 +23,18 @@ export const categoryOrder = [
 ]
 
 let lastFetch = 0;
-let lastResponse: SnippetsResponse | null = null;
+let lastRequest: Promise<SnippetsResponse> | null = null;
 const cacheDuration = 1000 * 60 * 30; // 30 minutes
 
 export async function fetchSnippets(): Promise<SnippetsResponse> {
     const now = Date.now();
-    if(now - lastFetch < cacheDuration && lastResponse) {
-        return lastResponse;
+    if(now - lastFetch < cacheDuration && lastRequest) {
+        return lastRequest;
     }
 
+    const { promise, resolve } = Promise.withResolvers<SnippetsResponse>();
+
+    // Fetch snippets.json
     const url = `${baseUrl}snippets.json`;
     const res = await fetch(url);
     const response = await res.json();
@@ -46,10 +49,11 @@ export async function fetchSnippets(): Promise<SnippetsResponse> {
     } else {
         snippets = response;
     }
-
-    setRemaps(snippets.remaps);
-
-    lastResponse = snippets;
+    
+    lastRequest = promise;
     lastFetch = now;
-    return snippets;
+    setRemaps(snippets.remaps);
+    resolve(snippets);
+
+    return promise;
 }

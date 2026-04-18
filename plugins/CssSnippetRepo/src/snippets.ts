@@ -5,7 +5,7 @@ export let enabledSnippets: Record<string, boolean> = {};
 let remaps: string[][] = [["AutohideSidebar", "SleepyDiscord"]];
 
 export function setRemaps(newRemaps: string[][]) {
-    // remaps = newRemaps;
+    remaps = newRemaps;
     Api.Data.save("remaps", remaps);
 }
 
