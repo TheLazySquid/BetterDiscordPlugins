@@ -1,17 +1,16 @@
 
-import { Input, Output, Conversion, BlobSource, BufferTarget, MP4, QTFF, MATROSKA, WEBM, Mp4OutputFormat } from "mediabunny";
-import CompressOptions, { type CompressValues } from "./compressOptions";
+import { Input, Output, Conversion, BlobSource, BufferTarget, MP4, QTFF, MATROSKA, WEBM, Mp4OutputFormat, type ConversionVideoOptions } from "mediabunny";
+import CompressOptions from "./compressOptions";
 import ProgressDisplay from "$shared/util/progress";
 import { Api } from "$shared/bd";
 import { error, success, warning } from "$shared/api/toast";
 import { settings } from "./settings";
-
-const defaultValues: CompressValues = { resolutionFactor: 1, fpsFactor: 1 };
-type Attach = (file: File) => void;
+import { defaultValues, qualities, type CompressValues } from "./consts";
 
 let queue: File[] = [];
 let editing = false;
 
+type Attach = (file: File) => void;
 export function addFile(file: File, maxSize: number, attach: Attach) {
     if(editing) {
         queue.push(file);
@@ -59,19 +58,20 @@ async function renderVideo(file: File, maxSize: number, values: CompressValues, 
             format: new Mp4OutputFormat(),
             target: new BufferTarget()
         });
-        
-        const width = Math.floor(video.displayWidth * values.resolutionFactor);
-        const frameRate = Math.floor(stats.averagePacketRate * values.fpsFactor);
-        Api.Logger.info("Width:", width, "Frame Rate:", frameRate);
+
+        const options: ConversionVideoOptions = {
+            codec: settings.codec,
+            width: Math.floor(video.displayWidth * values.resolutionFactor),
+            frameRate: Math.floor(stats.averagePacketRate * values.fpsFactor),
+            bitrate: qualities[values.quality].bitrate
+        };
+
+        Api.Logger.info("Beginning conversion", options);
 
         const conversion = await Conversion.init({
             input,
             output,
-            video: {
-                width,
-                frameRate,
-                codec: settings.codec
-            }
+            video: options
         });
         
         conversion.onProgress = (amount) => {
@@ -94,7 +94,7 @@ async function renderVideo(file: File, maxSize: number, values: CompressValues, 
 
         if(output.target.buffer.byteLength > maxSize) {
             warning(`Compressed video is still too large (${sizeString}). Size estimate has been updated.`);
-            const newFullSize = size / values.fpsFactor / (values.resolutionFactor ** 2);
+            const newFullSize = size / values.fpsFactor / (values.resolutionFactor ** 2) / qualities[values.quality].factor;
             Api.Logger.info("Reopening popup with new base size estimate:", newFullSize);
 
             showPopup(file, newFullSize, maxSize, attach, values);

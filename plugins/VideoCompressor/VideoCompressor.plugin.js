@@ -1,7 +1,7 @@
 /**
  * @name VideoCompressor
  * @description Compress videos that are too large to upload normally
- * @version 0.3.1
+ * @version 0.4.0
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -34,7 +34,6 @@ var createCallbackHandler = (callbackName) => {
 };
 var onStart = createCallbackHandler("start");
 var onStop = createCallbackHandler("stop");
-var onSwitch = createCallbackHandler("onSwitch");
 function setSettingsPanel(el) {
   if (typeof el === "function") plugin.getSettingsPanel = el;
   plugin.getSettingsPanel = () => el;
@@ -15492,6 +15491,9 @@ var Quality = class {
     return Math.round(finalBitrate / 1e3) * 1e3;
   }
 };
+var QUALITY_VERY_LOW = /* @__PURE__ */ new Quality(0.3);
+var QUALITY_LOW = /* @__PURE__ */ new Quality(0.6);
+var QUALITY_MEDIUM = /* @__PURE__ */ new Quality(1);
 var QUALITY_HIGH = /* @__PURE__ */ new Quality(2);
 var canEncodeVideo = async (codec, options = {}) => {
   const { width = 1280, height = 720, bitrate = 1e6, ...restOptions } = options;
@@ -18050,6 +18052,27 @@ if (globalThis[MEDIABUNNY_LOADED_SYMBOL]) {
 }
 globalThis[MEDIABUNNY_LOADED_SYMBOL] = true;
 
+// plugins/VideoCompressor/src/consts.ts
+var defaultValues = {
+  resolutionFactor: 1,
+  fpsFactor: 1,
+  quality: "UNCHANGED"
+};
+var qualities = {
+  UNCHANGED: { bitrate: void 0, factor: 1 },
+  VERY_LOW: { bitrate: QUALITY_VERY_LOW, factor: 0.25 },
+  LOW: { bitrate: QUALITY_LOW, factor: 0.5 },
+  MEDIUM: { bitrate: QUALITY_MEDIUM, factor: 0.75 },
+  HIGH: { bitrate: QUALITY_HIGH, factor: 1 }
+};
+var qualityOptions = [
+  { label: "Unchanged", value: "UNCHANGED" },
+  { label: "Very Low", value: "VERY_LOW" },
+  { label: "Low", value: "LOW" },
+  { label: "Medium", value: "MEDIUM" },
+  { label: "High", value: "HIGH" }
+];
+
 // plugins/VideoCompressor/src/compressOptions.tsx
 var mb = 1024 * 1024;
 function formatSize(bytes2) {
@@ -18059,12 +18082,13 @@ function CompressOptions({ fullSize, maxSize, onChange, values }) {
   const React = BdApi.React;
   const [resolutionFactor, setResolutionFactor] = React.useState(values.resolutionFactor);
   const [fpsFactor, setFpsFactor] = React.useState(values.fpsFactor);
+  const [quality, setQuality] = React.useState(values.quality);
   const [newSize, setNewSize] = React.useState(fullSize);
   React.useEffect(() => {
-    let size = fullSize * fpsFactor * resolutionFactor ** 2;
+    let size = fullSize * fpsFactor * resolutionFactor ** 2 * qualities[quality].factor;
     setNewSize(size);
-    onChange({ resolutionFactor, fpsFactor });
-  }, [resolutionFactor, fpsFactor]);
+    onChange({ resolutionFactor, fpsFactor, quality });
+  }, [resolutionFactor, fpsFactor, quality]);
   return /* @__PURE__ */ BdApi.React.createElement("div", { className: "vc-options" }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "estimate" }, "Rough Size Estimate:", /* @__PURE__ */ BdApi.React.createElement("span", { className: newSize > maxSize ? "big" : "small" }, formatSize(newSize)), "/ ", formatSize(maxSize)), /* @__PURE__ */ BdApi.React.createElement("div", null, "Resolution: ", Math.floor(resolutionFactor * 100), "%"), /* @__PURE__ */ BdApi.React.createElement(
     "input",
     {
@@ -18085,7 +18109,7 @@ function CompressOptions({ fullSize, maxSize, onChange, values }) {
       step: 0.01,
       onChange: (e) => setFpsFactor(parseFloat(e.target.value))
     }
-  ));
+  ), /* @__PURE__ */ BdApi.React.createElement("div", null, "Video quality:"), /* @__PURE__ */ BdApi.React.createElement(BdApi.Components.DropdownInput, { options: qualityOptions, value: quality, onChange: setQuality }));
 }
 
 // shared/api/styles.ts
@@ -18231,7 +18255,6 @@ var settings = createSettings([
 });
 
 // plugins/VideoCompressor/src/compressVideo.ts
-var defaultValues = { resolutionFactor: 1, fpsFactor: 1 };
 var queue = [];
 var editing = false;
 function addFile(file, maxSize, attach2) {
@@ -18271,17 +18294,17 @@ async function renderVideo(file, maxSize, values, attach2) {
       format: new Mp4OutputFormat(),
       target: new BufferTarget()
     });
-    const width = Math.floor(video.displayWidth * values.resolutionFactor);
-    const frameRate = Math.floor(stats.averagePacketRate * values.fpsFactor);
-    Api.Logger.info("Width:", width, "Frame Rate:", frameRate);
+    const options = {
+      codec: settings.codec,
+      width: Math.floor(video.displayWidth * values.resolutionFactor),
+      frameRate: Math.floor(stats.averagePacketRate * values.fpsFactor),
+      bitrate: qualities[values.quality].bitrate
+    };
+    Api.Logger.info("Beginning conversion", options);
     const conversion = await Conversion.init({
       input,
       output,
-      video: {
-        width,
-        frameRate,
-        codec: settings.codec
-      }
+      video: options
     });
     conversion.onProgress = (amount) => {
       progress.update("Rendering", amount);
@@ -18298,7 +18321,7 @@ async function renderVideo(file, maxSize, values, attach2) {
     Api.Logger.info("Final size:", sizeString);
     if (output.target.buffer.byteLength > maxSize) {
       warning(`Compressed video is still too large (${sizeString}). Size estimate has been updated.`);
-      const newFullSize = size / values.fpsFactor / values.resolutionFactor ** 2;
+      const newFullSize = size / values.fpsFactor / values.resolutionFactor ** 2 / qualities[values.quality].factor;
       Api.Logger.info("Reopening popup with new base size estimate:", newFullSize);
       showPopup(file, newFullSize, maxSize, attach2, values);
       return;
@@ -18351,8 +18374,7 @@ addStyle(`.vc-options {
 }`);
 
 // shared/stores.ts
-var selectedChannelStore = BdApi.Webpack.getStore("SelectedChannelStore");
-var selectedGuildStore = BdApi.Webpack.getStore("SelectedGuildStore");
+var selectedGuildStore = /* @__PURE__ */ BdApi.Webpack.getStore("SelectedGuildStore");
 
 // shared/util/permissions.ts
 function getMaxFileSize() {
@@ -18363,7 +18385,6 @@ function getMaxFileSize() {
 // plugins/VideoCompressor/src/index.ts
 var attach = attachFiles[0][attachFiles[1]];
 before(...attachFiles, ({ args }) => {
-  console.log(args);
   const maxSize = getMaxFileSize();
   const files = [...args[0]];
   const formats = ["mp4", "mov", "mkv", "webm"];
