@@ -1,6 +1,6 @@
 {
     "description": "Easily manage CSS snippets that tweak how Discord looks",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "modules": [
         "toolbar",
         "toolbarClass",

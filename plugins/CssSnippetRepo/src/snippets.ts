@@ -58,10 +58,9 @@ export function getSnippetEnabled(name: string): boolean {
 }
 
 export function setSnippetEnabled(name: string, enabled: boolean) {
-    Api.Data.save("enabled", enabledSnippets);
-
     if(enabled) {
         enabledSnippets[name] = true;
+        Api.Data.save("enabled", enabledSnippets);
         
         // Check if this snippet is now part of a remap
         for(const remap of remaps) {
@@ -98,6 +97,7 @@ export function setSnippetEnabled(name: string, enabled: boolean) {
         }
 
         enabledSnippets[name] = false;
+        Api.Data.save("enabled", enabledSnippets);
         unloadSnippet(name);
     }
 }

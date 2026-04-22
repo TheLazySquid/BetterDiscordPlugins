@@ -1,7 +1,7 @@
 /**
  * @name CssSnippetRepo
  * @description Easily manage CSS snippets that tweak how Discord looks
- * @version 1.0.2
+ * @version 1.0.3
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -205,9 +205,9 @@ function getSnippetEnabled(name) {
   return enabledSnippets[name] ?? false;
 }
 function setSnippetEnabled(name, enabled) {
-  Api.Data.save("enabled", enabledSnippets);
   if (enabled) {
     enabledSnippets[name] = true;
+    Api.Data.save("enabled", enabledSnippets);
     for (const remap of remaps) {
       if (!remap.includes(name)) continue;
       if (!remap.every((n) => enabledSnippets[n])) continue;
@@ -232,6 +232,7 @@ function setSnippetEnabled(name, enabled) {
       return;
     }
     enabledSnippets[name] = false;
+    Api.Data.save("enabled", enabledSnippets);
     unloadSnippet(name);
   }
 }
