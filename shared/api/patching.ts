@@ -35,6 +35,22 @@ export function tempAfter<T = any>(module: T, key: keyof T | undefined, callback
     });
 }
 
+export function afterClass(module: any, key: string, callback: (instance: any) => void) {
+    if(!check(module, key)) return;
+    onStart(() => {
+        const baseClass = module[key];
+        const newClass = class extends baseClass {
+            constructor(...args: any[]) {
+                super(...args);
+                callback(this);
+            }
+        };
+
+        module[key] = newClass;
+        onStop(() => module[key] = baseClass, true);
+    });
+}
+
 export function before<T = any>(module: T, key: keyof T | undefined, callback: (args: BeforeArgs) => void) {
     if(!check(module, key)) return;
     onStart(() => {

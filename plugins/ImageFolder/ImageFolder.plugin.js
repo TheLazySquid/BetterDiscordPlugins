@@ -1,7 +1,7 @@
 /**
  * @name ImageFolder
  * @description A BetterDiscord plugin that allows you to save and send images from a folder for easy access
- * @version 1.6.1
+ * @version 1.6.2
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -55,7 +55,6 @@ var createCallbackHandler = (callbackName) => {
 };
 var onStart = createCallbackHandler("start");
 var onStop = createCallbackHandler("stop");
-var onSwitch = createCallbackHandler("onSwitch");
 function setSettingsPanel(el) {
   if (typeof el === "function") plugin.getSettingsPanel = el;
   plugin.getSettingsPanel = () => el;
@@ -84,12 +83,18 @@ function tempAfter(module, key, callback) {
     return callback({ thisVal, args, returnVal });
   });
 }
-function before(module, key, callback) {
+function afterClass(module, key, callback) {
   if (!check(module, key)) return;
   onStart(() => {
-    Api.Patcher.before(module, key, (thisVal, args) => {
-      callback({ thisVal, args });
-    });
+    const baseClass = module[key];
+    const newClass = class extends baseClass {
+      constructor(...args) {
+        super(...args);
+        callback(this);
+      }
+    };
+    module[key] = newClass;
+    onStop(() => module[key] = baseClass, true);
   });
 }
 onStop(() => {
@@ -235,15 +240,16 @@ function getInput(title, callback) {
 }
 
 // shared/stores.ts
-var selectedChannelStore = BdApi.Webpack.getStore("SelectedChannelStore");
-var selectedGuildStore = BdApi.Webpack.getStore("SelectedGuildStore");
-var channelStore = BdApi.Webpack.getStore("ChannelStore");
+var selectedChannelStore = /* @__PURE__ */ BdApi.Webpack.getStore("SelectedChannelStore");
+var channelStore = /* @__PURE__ */ BdApi.Webpack.getStore("ChannelStore");
 
 // shared/util/upload.ts
 var submit = null;
-before(...editorEvents, ({ args }) => submit = args[0].submit);
+afterClass(...editorEvents, (instance) => {
+  submit = instance.submit.bind(instance);
+});
 var scroller = null;
-after(...scrollerWrapper, ({ returnVal }) => scroller = returnVal);
+after(...scrollerWrapper, ({ returnVal }) => console.log(returnVal));
 async function uploadFile(file, autoSend) {
   if (!submit) {
     error("Failed to send file, try switching channels");

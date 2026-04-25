@@ -1,13 +1,15 @@
-import { after, before } from "$shared/api/patching";
+import { after, afterClass } from "$shared/api/patching";
 import { error } from "$shared/api/toast";
 import { channelStore, selectedChannelStore } from "$shared/stores";
 import { attachFiles, editorEvents, scrollerWrapper } from "$shared/modules";
 
 let submit: (() => void) | null = null;
-before(...editorEvents, ({ args }) => submit = args[0].submit);
+afterClass(...editorEvents, (instance) => {
+	submit = instance.submit.bind(instance);
+});
 
 let scroller: any = null;
-after(...scrollerWrapper, ({ returnVal }) => scroller = returnVal);
+after(...scrollerWrapper, ({ returnVal }) => console.log(returnVal));
 
 export async function uploadFile(file: File, autoSend: boolean) {
 	if(!submit) {
