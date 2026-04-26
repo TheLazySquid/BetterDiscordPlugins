@@ -1,7 +1,7 @@
 /**
  * @name ImageFolder
  * @description A BetterDiscord plugin that allows you to save and send images from a folder for easy access
- * @version 1.6.2
+ * @version 1.6.3
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -124,7 +124,7 @@ function findExportWithKey(module, filter) {
 
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var [editorEventsModule, attachFilesModule, scrollerWrapperModule, buttonsModule, expressionModule, expressionPickerMangled, uploadAreaClassModule, chatbarInnerClassModule] = BdApi.Webpack.getBulk(
+var [editorEventsModule, attachFilesModule, scrollerModule, buttonsModule, expressionModule, expressionPickerMangled, uploadAreaClassModule, chatbarInnerClassModule] = BdApi.Webpack.getBulk(
   {
     filter: Filters.bySource(",submit:", "selectPreviousCommandOption"),
     defaultExport: false,
@@ -137,10 +137,10 @@ var [editorEventsModule, attachFilesModule, scrollerWrapperModule, buttonsModule
     cacheId: "attachFiles"
   },
   {
-    filter: Filters.bySource("mergePropsAndUpdate"),
+    filter: Filters.bySource("isScrolledToBottom()", "shouldScrollToStart:"),
     defaultExport: false,
-    firstId: 258024,
-    cacheId: "scrollerWrapper"
+    firstId: 584648,
+    cacheId: "scroller"
   },
   {
     filter: (m) => m.type?.toString?.().includes(".isSubmitButtonEnabled"),
@@ -168,7 +168,7 @@ var [editorEventsModule, attachFilesModule, scrollerWrapperModule, buttonsModule
 );
 var editorEvents = findExportWithKey(editorEventsModule, true);
 var attachFiles = findExportWithKey(attachFilesModule, (e) => e.toString().includes("filesMetadata"));
-var scrollerWrapper = findExportWithKey(scrollerWrapperModule, true);
+var scroller = findExportWithKey(scrollerModule, true);
 var expressionPicker = demangle(expressionPickerMangled, {
   toggle: (f) => f.toString().includes("activeView==="),
   close: (f) => f.toString().includes("activeView:null"),
@@ -248,8 +248,8 @@ var submit = null;
 afterClass(...editorEvents, (instance) => {
   submit = instance.submit.bind(instance);
 });
-var scroller = null;
-after(...scrollerWrapper, ({ returnVal }) => console.log(returnVal));
+var scrollerInstance = null;
+after(...scroller, ({ returnVal }) => scrollerInstance = returnVal);
 async function uploadFile(file, autoSend) {
   if (!submit) {
     error("Failed to send file, try switching channels");
@@ -263,7 +263,7 @@ async function uploadFile(file, autoSend) {
   await attach([file], channel, 0, { requireConfirm: true, origin: "file_picker" });
   if (!autoSend) return;
   submit();
-  setTimeout(() => scroller?.setScrollToBottom?.(), 0);
+  setTimeout(() => scrollerInstance?.scrollToBottom?.(), 0);
 }
 
 // shared/util/settings.ts

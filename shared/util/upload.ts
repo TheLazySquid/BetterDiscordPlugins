@@ -1,15 +1,15 @@
 import { after, afterClass } from "$shared/api/patching";
 import { error } from "$shared/api/toast";
 import { channelStore, selectedChannelStore } from "$shared/stores";
-import { attachFiles, editorEvents, scrollerWrapper } from "$shared/modules";
+import { attachFiles, editorEvents, scroller } from "$shared/modules";
 
 let submit: (() => void) | null = null;
 afterClass(...editorEvents, (instance) => {
 	submit = instance.submit.bind(instance);
 });
 
-let scroller: any = null;
-after(...scrollerWrapper, ({ returnVal }) => console.log(returnVal));
+let scrollerInstance: any = null;
+after(...scroller, ({ returnVal }) => scrollerInstance = returnVal);
 
 export async function uploadFile(file: File, autoSend: boolean) {
 	if(!submit) {
@@ -28,5 +28,5 @@ export async function uploadFile(file: File, autoSend: boolean) {
 	
 	if(!autoSend) return;
 	submit();
-	setTimeout(() => scroller?.setScrollToBottom?.(), 0);
+	setTimeout(() => scrollerInstance?.scrollToBottom?.(), 0);
 }

@@ -83,11 +83,11 @@ export const modules: Record<keyof Modules, ModuleDefinition> = {
         filter: `Filters.bySource(",submit:","selectPreviousCommandOption")`,
         defaultExport: false
     },
-    scrollerWrapper: {
-        id: 258024,
+    scroller: {
+        id: 584648,
         getExport: true,
         getWithKey: true,
-        filter: `Filters.bySource("mergePropsAndUpdate")`,
+        filter: `Filters.bySource("isScrolledToBottom()", "shouldScrollToStart:")`,
         defaultExport: false
     },
     toolbar: {
@@ -126,7 +126,7 @@ export let frequentlyUsedEmojis: Modules['frequentlyUsedEmojis'];
 export let Modal: Modules['Modal'];
 export let modalMethods: Modules['modalMethods'];
 export let editorEvents: Modules['editorEvents'];
-export let scrollerWrapper: Modules['scrollerWrapper'];
+export let scroller: Modules['scroller'];
 export let toolbar: Modules['toolbar'];
 export let toolbarClass: Modules['toolbarClass'];
 export let maxUploadSize: Modules['maxUploadSize'];
