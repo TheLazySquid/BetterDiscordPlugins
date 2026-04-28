@@ -36,9 +36,10 @@ export const modules: Record<keyof Modules, ModuleDefinition> = {
         filter: `Filters.byKeys("highlight", "hasLanguage")`
     },
     createSlate: {
-        id: 913728,
-        filter: `Filters.byStrings("insertText=", "onChange=")`,
-        defaultExport: false
+        id: 154283,
+        filter: `Filters.bySource("iterations!", "insertFragment")`,
+        getExport: `Filters.byStrings("iterations!", "insertFragment")`,
+        getWithKey: true
     },
     attachFiles: {
         id: 518960,

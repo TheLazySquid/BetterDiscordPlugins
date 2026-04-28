@@ -23,6 +23,8 @@ export interface ModuleLocator {
     defaultExport?: boolean;
 }
 
+type WithKey<T> = [T, string];
+
 interface ReactElementModule {
     type: (...args: any[]) => any;
 }
@@ -67,16 +69,16 @@ export interface Modules {
     modalContainerClass: string;
     gifDisplay: any;
     highlightModule: any;
-    createSlate: any;
-    attachFiles: [any, string];
+    createSlate: WithKey<any>;
+    attachFiles: WithKey<any>;
     expressionPicker: ExpressionPicker;
     AttachmentSystem: AttachmentSystem;
-    frequentlyUsedEmojis: [any, string];
+    frequentlyUsedEmojis: WithKey<any>;
     Modal: any;
     modalMethods: ModalMethods;
-    editorEvents: [any, string];
-    scroller: [any, string];
-    toolbar: [any, string];
+    editorEvents: WithKey<any>;
+    scroller: WithKey<any>;
+    toolbar: WithKey<any>;
     toolbarClass: string;
     maxUploadSize: (guildId: string | null) => number;
 }

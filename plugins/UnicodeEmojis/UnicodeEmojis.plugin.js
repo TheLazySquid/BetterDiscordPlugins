@@ -1,7 +1,7 @@
 /**
  * @name UnicodeEmojis
  * @description Replaces discord emojis that you send with their unicode equivalent
- * @version 1.1.6
+ * @version 1.1.7
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -34,7 +34,6 @@ var createCallbackHandler = (callbackName) => {
 };
 var onStart = createCallbackHandler("start");
 var onStop = createCallbackHandler("stop");
-var onSwitch = createCallbackHandler("onSwitch");
 
 // shared/api/patching.ts
 function check(module, key) {
@@ -56,19 +55,29 @@ onStop(() => {
   Api.Patcher.unpatchAll();
 });
 
+// shared/util/modules.ts
+function findExportWithKey(module, filter) {
+  for (let key in module) {
+    if (filter !== true && !filter(module[key])) continue;
+    return [module, key];
+  }
+}
+
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var [createSlate] = BdApi.Webpack.getBulk(
+var [createSlateModule] = BdApi.Webpack.getBulk(
   {
-    filter: Filters.byStrings("insertText=", "onChange="),
-    defaultExport: false,
-    firstId: 913728,
+    filter: Filters.bySource("iterations!", "insertFragment"),
+    firstId: 154283,
     cacheId: "createSlate"
   }
 );
+var createSlate = findExportWithKey(createSlateModule, Filters.byStrings("iterations!", "insertFragment"));
 
 // plugins/UnicodeEmojis/src/index.ts
-after(createSlate, "A", ({ returnVal: editor }) => {
+console.log(createSlate);
+after(...createSlate, ({ returnVal: editor }) => {
+  console.log(editor);
   let waitingToUpdate = false;
   function onChange() {
     for (let lineIndex = editor.children.length - 1; lineIndex >= 0; lineIndex--) {
@@ -88,16 +97,18 @@ after(createSlate, "A", ({ returnVal: editor }) => {
     }
     waitingToUpdate = false;
   }
-  const editorOnChange = editor.onChange;
-  editor.onChange = function() {
-    editorOnChange.apply(this, arguments);
-    if (waitingToUpdate) return;
-    let operation = arguments?.[0]?.operation;
-    if (!operation) return;
-    if (operation.type !== "insert_text" && operation.type !== "remove_text") return;
-    if (!operation.text.includes(":")) return;
-    onChange();
-  };
+  setTimeout(() => {
+    const editorOnChange = editor.onChange;
+    editor.onChange = function() {
+      editorOnChange.apply(this, arguments);
+      if (waitingToUpdate) return;
+      let operation = arguments?.[0]?.operation;
+      if (!operation) return;
+      if (operation.type !== "insert_text" && operation.type !== "remove_text") return;
+      if (!operation.text.includes(":")) return;
+      onChange();
+    };
+  }, 0);
 });
   }
 }
