@@ -1,9 +1,7 @@
 import { after } from "$shared/api/patching";
 import { createSlate } from "$shared/modules";
 
-console.log(createSlate);
 after(...createSlate, ({ returnVal: editor }) => {
-    console.log(editor);
     let waitingToUpdate = false;
 
     function onChange() {

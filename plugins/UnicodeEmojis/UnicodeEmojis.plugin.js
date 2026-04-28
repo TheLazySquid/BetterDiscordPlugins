@@ -75,9 +75,7 @@ var [createSlateModule] = BdApi.Webpack.getBulk(
 var createSlate = findExportWithKey(createSlateModule, Filters.byStrings("iterations!", "insertFragment"));
 
 // plugins/UnicodeEmojis/src/index.ts
-console.log(createSlate);
 after(...createSlate, ({ returnVal: editor }) => {
-  console.log(editor);
   let waitingToUpdate = false;
   function onChange() {
     for (let lineIndex = editor.children.length - 1; lineIndex >= 0; lineIndex--) {
