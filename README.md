@@ -27,6 +27,10 @@ Easily compress videos that would otherwise be too large to send.
 
 Adds more quick reacts to the message hover popover.
 
-## CssSnippetRepo [Source](/plugins/CssSnippetRepo/)
+## CssSnippetRepo [Page](https://betterdiscord.app/plugin/CssSnippetRepo) [Source](/plugins/CssSnippetRepo/)
 
 Lets you easily manage CSS snippets which tweak how discord looks.
+
+## PasteAndSend [Source](/plugins/PasteAndSend/)
+
+Adds a "Paste and Send" button for easy pasting and sending without using the keyboard.

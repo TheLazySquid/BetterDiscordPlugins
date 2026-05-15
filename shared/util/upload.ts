@@ -1,22 +1,12 @@
-import { after, afterClass } from "$shared/api/patching";
-import { error } from "$shared/api/toast";
+import { after } from "$shared/api/patching";
 import { channelStore, selectedChannelStore } from "$shared/stores";
-import { attachFiles, editorEvents, scroller } from "$shared/modules";
-
-let submit: (() => void) | null = null;
-afterClass(...editorEvents, (instance) => {
-	submit = instance.submit.bind(instance);
-});
+import { attachFiles, scroller } from "$shared/modules";
+import { submitMessage } from "./submitMessage";
 
 let scrollerInstance: any = null;
 after(...scroller, ({ returnVal }) => scrollerInstance = returnVal);
 
 export async function uploadFile(file: File, autoSend: boolean) {
-	if(!submit) {
-		error("Failed to send file, try switching channels");
-		return;
-	}
-
 	const channelId = selectedChannelStore.getCurrentlySelectedChannelId();
 	if(!channelId) return;
 	
@@ -27,6 +17,6 @@ export async function uploadFile(file: File, autoSend: boolean) {
 	await attach([ file ], channel, 0, { requireConfirm: true, origin: "file_picker" });
 	
 	if(!autoSend) return;
-	submit();
+	submitMessage();
 	setTimeout(() => scrollerInstance?.scrollToBottom?.(), 0);
 }

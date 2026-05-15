@@ -81,6 +81,7 @@ export interface Modules {
     toolbar: WithKey<any>;
     toolbarClass: string;
     maxUploadSize: (guildId: string | null) => number;
+    paste: () => void;
 }
 
 export interface PluginConfig {

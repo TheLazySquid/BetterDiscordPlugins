@@ -107,6 +107,11 @@ export const modules: Record<keyof Modules, ModuleDefinition> = {
         id: 453771,
         getExport: `Filters.byStrings("getUserMaxFileSize")`,
         filter: `Filters.bySource("getUserMaxFileSize", "reType")`
+    },
+    paste: {
+        id: 19575,
+        getExport: `"paste"`,
+        filter: `Filters.byKeys("paste", "getSetting")`
     }
 }
 
@@ -131,3 +136,4 @@ export let scroller: Modules['scroller'];
 export let toolbar: Modules['toolbar'];
 export let toolbarClass: Modules['toolbarClass'];
 export let maxUploadSize: Modules['maxUploadSize'];
+export let paste: Modules['paste'];

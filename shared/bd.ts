@@ -2,7 +2,7 @@ declare let plugin: any;
 import type { ReactElement } from "react";
 import { pluginName } from "meta";
 
-export const Api = new BdApi(pluginName);
+export const Api = /* @__PURE__ */ new BdApi(pluginName);
 
 interface Callback {
     callback: () => void;

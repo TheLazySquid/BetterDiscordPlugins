@@ -19,7 +19,11 @@ export function demangle(module: Record<string, any>, demangler: Record<string, 
 }
 
 type ExportFilter = ((value: any) => boolean) | true;
-export function findExport(module: Record<string, any>, filter: ExportFilter): any {
+export function findExport(module: Record<string, any>, filter: ExportFilter | string): any {
+    if(typeof filter === "string") {
+        return module[filter];
+    }
+
     for(let value of Object.values(module)) {
         if(filter === true || filter(value)) return value;
     }
