@@ -1,4 +1,5 @@
 {
+    "$schema": "../schema.json",
     "description": "Easily manage CSS snippets that tweak how Discord looks",
     "version": "1.0.3",
     "modules": [

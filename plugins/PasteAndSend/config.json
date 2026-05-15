@@ -1,4 +1,5 @@
 {
+    "$schema": "../schema.json",
     "description": "Adds a \"Paste and Send\" button the message box's right click menu. Remake of the original by ak-tr.",
     "version": "1.0.0",
     "modules": [

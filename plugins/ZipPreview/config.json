@@ -1,4 +1,5 @@
 {
+    "$schema": "../schema.json",
     "description": "Lets you see inside zips and preview/download files without ever downloading/extracting the zip",
     "version": "0.6.4",
     "modules": [

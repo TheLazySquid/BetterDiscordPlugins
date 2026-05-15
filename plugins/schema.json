@@ -1,0 +1,26 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://thelazysquid.github.io/BetterDiscordPlugins/plugin.schema.json",
+    "title": "Plugin",
+    "description": "Metadata about a BetterDiscord plugin",
+    "type": "object",
+    "required": ["description", "version"],
+    "properties": {
+        "description": {
+            "type": "string",
+            "description": "A summary of what the plugin does"
+        },
+        "version": {
+            "type": "string",
+            "description": "The version of the plugin, in the format x.y.z"
+        },
+        "modules": {
+            "type": "array",
+            "description": "An array of module names that the plugin uses",
+            "items": {
+                "type": "string",
+                "description": "The name of a module that the plugin uses"
+            }
+        }
+    }
+}
