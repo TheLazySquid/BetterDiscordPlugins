@@ -1,6 +1,6 @@
 /**
  * @name PasteAndSend
- * @description Adds a "Paste and Send" button the message box's right click menu. Remake of the original by ak-tr.
+ * @description Adds a "Paste and Send" button to the message box's right click menu. Remake of the original by ak-tr.
  * @version 1.0.0
  * @author TheLazySquid
  * @authorId 619261917352951815
