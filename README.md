@@ -31,6 +31,6 @@ Adds more quick reacts to the message hover popover.
 
 Lets you easily manage CSS snippets which tweak how discord looks.
 
-## PasteAndSend [Source](/plugins/PasteAndSend/)
+## PasteAndSend [Page](https://betterdiscord.app/plugin/PasteAndSend) [Source](/plugins/PasteAndSend/)
 
 Adds a "Paste and Send" button for easy pasting and sending without using the keyboard.
