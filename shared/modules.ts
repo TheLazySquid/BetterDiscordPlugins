@@ -6,19 +6,19 @@ function defineModule<const T extends ModuleLocator>(locator: T): Modules[T["nam
 
 export const fileModule = defineModule({
     name: "fileModule",
-    id: 718468,
+    id: 564771,
     filter: `(m) => m.A?.toString().includes("().filesize(")`
 });
 
 export const expressionModule = defineModule({
     name: "expressionModule",
-    id: 834755,
+    id: 731231,
     filter: `(m) => m.type?.toString?.().includes("onSelectGIF")`
 });
 
 export const buttonsModule = defineModule({
     name: "buttonsModule",
-    id: 147025,
+    id: 729666,
     filter: `(m) => m.type?.toString?.().includes(".isSubmitButtonEnabled")`
 });
 
@@ -42,17 +42,17 @@ export const modalContainerClass = defineModule({
 
 export const gifDisplay = defineModule({
     name: "gifDisplay",
-    id: 247683,
+    id: 285961,
     getExport: `(e) => e.prototype?.renderGIF`,
     filter: `(m) => Object.values(m).some(Filters.byStrings("renderGIF()", "imagePool"))`
 });
 
 export const highlightModule = defineModule({
     name: "highlightModule",
-    id: 752238,
+    id: 981776,
     filter: `Filters.byKeys("highlight", "hasLanguage")`,
     lazyImporter: {
-        id: 34337,
+        id: 981776,
         filter: `Filters.bySource("location:\\"PlaintextFilePreview\\"")`
     }
 });
@@ -88,8 +88,7 @@ export const AttachmentSystem = defineModule({
     name: "AttachmentSystem",
     id: 608299,
     getExport: true,
-    filter: `(m) => m?.setUploads?.name === "setUploads"`,
-    defaultExport: false
+    filter: `(m) => m?.setUploads?.name === "setUploads"`
 });
 
 export const frequentlyUsedEmojis = defineModule({
@@ -102,7 +101,7 @@ export const frequentlyUsedEmojis = defineModule({
 
 export const Modal = defineModule({
     name: "Modal",
-    id: 158954,
+    id: 189213,
     key: "Modal",
     filter: `Filters.byKeys("Modal")`
 });
@@ -115,7 +114,7 @@ export const modalMethods = defineModule({
 
 export const editorEvents = defineModule({
     name: "editorEvents",
-    id: 919499,
+    id: 112541,
     getExport: true,
     getWithKey: true,
     filter: `Filters.bySource(",submit:","selectPreviousCommandOption")`,
@@ -142,7 +141,7 @@ export const toolbar = defineModule({
 
 export const toolbarClass = defineModule({
     name: "toolbarClass",
-    id: 450295,
+    id: 666044,
     getExport: `(c) => c.startsWith("trailing_")`,
     filter: `Filters.byKeys("trailing", "winButton")`
 });
