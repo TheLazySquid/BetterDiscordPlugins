@@ -1,4 +1,3 @@
-import type { ContextMenuSetup } from "betterdiscord";
 import type { Media } from "../types";
 import { expressionPicker } from "$shared/modules";
 import Manager from "../manager";
@@ -89,14 +88,16 @@ export default function MediaDisplay({ media }: { media: Media }) {
     }
 
     const openContextMenu = (e: React.MouseEvent) => {
-        const setup: ContextMenuSetup = [
+        const setup: BetterDiscord.MenuItem[] = [
             {
-                type: "text",
+                id: "rename",
+                type: "item",
                 label: "Rename",
                 onClick: () => Manager.renameMedia(media)
             },
             {
-                type: "text",
+                id: "delete",
+                type: "item",
                 label: "Delete",
                 onClick: deleteMedia
             }
@@ -104,7 +105,8 @@ export default function MediaDisplay({ media }: { media: Media }) {
 
         if(media.type === "image") {
             setup.push({
-                type: "text",
+                id: "caption",
+                type: "item",
                 label: "Send with Caption",
                 onClick: showCaptioner
             });
@@ -112,7 +114,7 @@ export default function MediaDisplay({ media }: { media: Media }) {
 
         const menu = BdApi.ContextMenu.buildMenu(setup);
 
-        BdApi.ContextMenu.open(e, menu);
+        BdApi.ContextMenu.open(e.nativeEvent, menu);
     }
 
     return (<button ref={wrap} onClick={send} onContextMenu={openContextMenu}>

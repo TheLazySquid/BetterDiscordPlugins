@@ -4,8 +4,9 @@ import { pluginName } from "meta";
 let count = 0;
 
 export function addStyle(css: string) {
+	let styleId = count++;
 	onStart(() => {
-		Api.DOM.addStyle(`${pluginName}-${count++}`, css);
+		Api.DOM.addStyle(`${pluginName}-${styleId}`, css);
 	});
 }
 

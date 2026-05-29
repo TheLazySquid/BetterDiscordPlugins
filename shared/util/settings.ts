@@ -1,8 +1,7 @@
-import type { Setting } from "betterdiscord";
 import { Api, setSettingsPanel } from "$shared/bd";
 
 type UnionOmit<T, K extends string | number | symbol> = T extends unknown ? Omit<T, K> : never;
-type SettingDescriptor = UnionOmit<Setting, "value">;
+type SettingDescriptor = UnionOmit<BetterDiscord.Setting, "value">;
 
 export function createSettings<T extends Record<string, any>>(panelSettings: SettingDescriptor[], defaults: T): T {
     const settings: Record<string, any> = {};
@@ -15,11 +14,11 @@ export function createSettings<T extends Record<string, any>>(panelSettings: Set
     
     setSettingsPanel(() => {
         for(let setting of panelSettings) {
-            (setting as any).value = settings[setting.id];
+            (setting as BetterDiscord.Setting).value = settings[setting.id];
         }
 
         return BdApi.UI.buildSettingsPanel({
-            settings: panelSettings as Setting[],
+            settings: panelSettings as BetterDiscord.Setting[],
             onChange: (_, id, value) => {
                 settings[id] = value;
                 Api.Data.save(id, value);

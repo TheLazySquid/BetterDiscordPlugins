@@ -11,7 +11,8 @@ patchContextMenu("textarea-context", (element) => {
     const items = element.props.children;
 
     items.push(BdApi.ContextMenu.buildItem({
-        type: "text",
+        id: "pasteAndSend",
+        type: "item",
         label: "Paste and Send",
         onClick: pasteAndSend
     }));

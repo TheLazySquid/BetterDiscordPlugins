@@ -16,6 +16,15 @@ export default function FilePreview({ name, type: startType, blob, buff, ...prop
     const [type, setType] = React.useState(startType);
     const url = React.useRef(URL.createObjectURL(blob));
     React.useEffect(() => () => URL.revokeObjectURL(url.current), []);
+    
+    const ext = name.split(".").at(-1);
+    const [hasCode, setHasCode] = React.useState(highlightModule.value?.hasLanguage(ext));
+    React.useEffect(() => {
+        if(hasCode || highlightModule.value) return;
+        highlightModule.load().then(mod => {
+            setHasCode(mod.hasLanguage(ext));
+        });
+    }, []);
 
     function downloadFile() {
         // create a link and click it
@@ -39,9 +48,6 @@ export default function FilePreview({ name, type: startType, blob, buff, ...prop
             type: "success"
         });
     }
-
-    const ext = name.split(".").at(-1);
-    const hasCode = highlightModule.hasLanguage(ext);
 
     return (
         <DynamicModal
@@ -71,7 +77,7 @@ export default function FilePreview({ name, type: startType, blob, buff, ...prop
                 {type == "audio" ? <audio controls src={url.current} /> : null}
                 {type == "text" ? hasCode ?
                     <pre dangerouslySetInnerHTML={{
-                        __html: highlightModule.highlight(ext, new TextDecoder().decode(buff), true).value
+                        __html: highlightModule.value?.highlight(ext, new TextDecoder().decode(buff), true).value
                     }}></pre>
                     : <pre>{new TextDecoder().decode(buff)}</pre>   
                 : null}

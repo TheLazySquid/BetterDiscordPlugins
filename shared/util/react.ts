@@ -13,6 +13,6 @@ export function forceUpdate(selector: string) {
     const instance = BdApi.ReactUtils.getOwnerInstance(target);
     if(!instance) return;
 
-    const unpatch = Api.Patcher.instead(instance, "render", () => unpatch());
+    const unpatch = Api.Patcher.instead(instance, "render", () => unpatch?.());
     instance.forceUpdate(() => instance.forceUpdate());
 }

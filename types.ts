@@ -1,25 +1,31 @@
-import type { ModuleFilter } from "betterdiscord";
+import type { LazyModule } from "$shared/util/modules";
 
-export interface ModuleDefinition {
+export type ExportFilter = ((value: any) => boolean) | true;
+
+type ModuleFilterInfo<Runtime extends boolean> = Runtime extends true ? BetterDiscord.ModuleFilter : string;
+type ExportFilterInfo<Runtime extends boolean> = Runtime extends true ? ExportFilter : string;
+
+interface LazyImporter<Runtime extends boolean> {
     id?: number;
-    demangler?: Record<string, string>;
+    filter: ModuleFilterInfo<Runtime>;
+}
+
+export interface ModuleLocator<Runtime extends boolean = false> {
+    name: keyof Modules;
+
+    id?: number;
+    demangler?: Record<string, Runtime extends true ? BetterDiscord.ExportedOnlyFilter : string>;
+    lazyImporter?: LazyImporter<Runtime>;
 
     // getExport overrides key
-    getExport?: string | true;
+    getExport?: ExportFilterInfo<Runtime> | boolean;
     key?: string;
 
     // getExport required
     getWithKey?: boolean;
 
     // Fallback
-    filter: string;
-    defaultExport?: boolean;
-}
-
-export interface ModuleLocator {
-    id?: number;
-    filter: ModuleFilter;
-    cacheId: string;
+    filter: ModuleFilterInfo<Runtime>;
     defaultExport?: boolean;
 }
 
@@ -68,7 +74,7 @@ export interface Modules {
     chatbarInnerClass: string;
     modalContainerClass: string;
     gifDisplay: any;
-    highlightModule: any;
+    highlightModule: LazyModule<any>;
     createSlate: WithKey<any>;
     attachFiles: WithKey<any>;
     expressionPicker: ExpressionPicker;

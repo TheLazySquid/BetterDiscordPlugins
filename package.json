@@ -3,7 +3,6 @@
   "author": "TheLazySquid",
   "module": "index.ts",
   "devDependencies": {
-    "@types/betterdiscord": "github:Zerthox/betterdiscord-types",
     "@types/bun": "latest",
     "@types/gif.js": "^0.2.5",
     "@types/react": "19.0.0",

@@ -1,5 +1,5 @@
 import type { Plugin } from "esbuild";
-import { modules } from "$shared/modules";
+import * as ModuleLocators from "$shared/modules";
 import type { Modules } from "../../types";
 
 export function modulesPlugin(ids: (keyof Modules)[]): Plugin {
@@ -20,46 +20,59 @@ export function modulesPlugin(ids: (keyof Modules)[]): Plugin {
     }
 }
 
-function createModulesFile(ids: (keyof Modules)[]): string {
-    if(ids.length === 0) return "";
+function createModulesFile(ids: (keyof typeof ModuleLocators)[]): string {
+    const syncIds = ids.filter(id => !ModuleLocators[id].lazyImporter);
+    const lazyIds = ids.filter(id => ModuleLocators[id].lazyImporter);
 
-    let contents = `import { demangle, findExport, findExportWithKey } from "$shared/util/modules";\n`
-        + "const Filters = BdApi.Webpack.Filters;\n\n";
+    let content = `import { getSyncModules, getLazyModules } from "$shared/util/modules";\n\n` +
+        `const Filters = BdApi.Webpack.Filters;\n`;
+
+    if(syncIds.length > 0) {
+        content += `const { ${syncIds.join(", ")} } = getSyncModules([\n`;
     
-    // Get all the modules
-    const moduleIds = ids.map(id => modules[id].demangler ? `${id}Mangled` : (modules[id].getExport || modules[id].key) ? `${id}Module` : id);
-    contents += `const [${moduleIds.join(",")}] = BdApi.Webpack.getBulk(\n`;
-    for(let i = 0; i < ids.length; i++) {
-        let definition = modules[ids[i]];
-        contents += "  {\n"
-        contents += `    filter: ${definition.filter},\n`;
-        if(definition.defaultExport !== undefined) contents += `    defaultExport: ${definition.defaultExport},\n`;
-        if(definition.id) contents += `    firstId: ${definition.id},\n`;
-        contents += `    cacheId: "${ids[i]}",\n`;
-        contents += "  },\n";
-    }
-    contents += `);\n\n`;
-
-    // Get the modules into their final form
-    for(let i = 0; i < ids.length; i++) {
-        let module = modules[ids[i]];
-        if(module.demangler) {
-            // Add demanglers
-            contents += `const ${ids[i]} = demangle(${ids[i]}Mangled, {\n`;
-            for(let id in module.demangler) {
-                contents += `  ${id}: ${module.demangler[id]},\n`;
-            }
-            contents += `});\n`
-        } else if(module.getExport) {
-            // Add getExport calls
-            const finder = module.getWithKey ? "findExportWithKey" : "findExport";
-            contents += `const ${ids[i]} = ${finder}(${ids[i]}Module, ${module.getExport});\n`;
-        } else if(module.key) {
-            contents += `const ${ids[i]} = ${ids[i]}Module.${module.key};\n`;
+        for(const id of syncIds) {
+            const locator = ModuleLocators[id];
+            content += createRuntimeLocator(locator);
         }
+
+        content += `]);\n`;
     }
 
-    contents += `\nexport {${ids.join(",")}}`;
+    if(lazyIds.length > 0) {
+        content += `const { ${lazyIds.join(", ")} } = getLazyModules([\n`;
+    
+        for(const id of lazyIds) {
+            const locator = ModuleLocators[id];
+            content += createRuntimeLocator(locator);
+        }
 
-    return contents;
+        content += `]);\n`;
+    }
+
+    content += `export { ${ids.join(", ")} };\n`;
+
+    return content;
+}
+
+function createRuntimeLocator(locator: Record<string, any>) {
+    let string = `  {\n`;
+
+    for(const key in locator) {
+        // leave the name/key property as an actual string
+        if(key === "key" || key === "name") string += `    ${key}: "${locator[key]}",\n`;
+        else if(key === "demangler" || key === "lazyImporter") string += `    ${key}: ${objectPropertyString(locator[key])}\n`;
+        else string += `    ${key}: ${locator[key]},\n`;
+    }
+
+    string += `  },\n`;
+
+    return string;
+}
+
+function objectPropertyString(object: Record<string, any>) {
+    let string = "  {\n";
+    for(const key in object) string += `    ${key}: ${object[key]},\n`;
+    string += "  },";
+
+    return string;
 }

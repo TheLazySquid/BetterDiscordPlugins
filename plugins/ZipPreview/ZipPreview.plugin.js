@@ -1,7 +1,7 @@
 /**
  * @name ZipPreview
  * @description Lets you see inside zips and preview/download files without ever downloading/extracting the zip
- * @version 0.6.4
+ * @version 0.7.0
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -16,7 +16,7 @@ module.exports = class {
 var pluginName = "ZipPreview";
 
 // shared/bd.ts
-var Api = new BdApi(pluginName);
+var Api = /* @__PURE__ */ new BdApi(pluginName);
 var createCallbackHandler = (callbackName) => {
   let callbacks = [];
   plugin[callbackName] = () => {
@@ -56,42 +56,138 @@ onStop(() => {
   Api.Patcher.unpatchAll();
 });
 
+// shared/util/modules.ts
+function getSyncModules(locators) {
+  let returned = {};
+  const queries = locators.map(createQuery);
+  const modules = BdApi.Webpack.getBulk(...queries);
+  for (let i = 0; i < locators.length; i++) {
+    const locator = locators[i];
+    const module2 = modules[i];
+    if (!module2) {
+      Api.Logger.warn(`Could not find module for ${locator.name}`);
+      continue;
+    }
+    returned[locator.name] = finalizeModule(locator, module2);
+  }
+  return returned;
+}
+function getLazyModules(locators) {
+  let returned = {};
+  for (let locator of locators) {
+    returned[locator.name] = new LazyModule(locator);
+  }
+  return returned;
+}
+var LazyModule = class {
+  constructor(locator) {
+    this.locator = locator;
+    const { promise, resolve } = Promise.withResolvers();
+    BdApi.Webpack.waitForModule(locator.filter, {
+      firstId: locator.id,
+      cacheId: locator.name,
+      defaultExport: locator.defaultExport ?? true
+    })?.then((module2) => {
+      this.value = module2;
+      resolve(finalizeModule(locator, module2));
+    });
+    this.loaded = promise;
+  }
+  value = null;
+  loaded;
+  loading = false;
+  load() {
+    if (this.loading) return this.loaded;
+    this.loading = true;
+    const importer = this.locator.lazyImporter;
+    const importerModule = BdApi.Webpack.getModule(importer.filter, {
+      firstId: importer.id,
+      cacheId: `${this.locator.name}-importer`,
+      raw: true
+    });
+    BdApi.Utils.forceLoad(importerModule.id);
+    return this.loaded;
+  }
+};
+function createQuery(locator) {
+  return {
+    filter: locator.filter,
+    firstId: locator.id,
+    defaultExport: locator.defaultExport,
+    cacheId: locator.name
+  };
+}
+function finalizeModule(locator, module2) {
+  if (locator.demangler) {
+    return BdApi.Utils.mapObject(module2, locator.demangler);
+  }
+  if (locator.getExport) {
+    if (locator.getWithKey) {
+      return findExportWithKey(module2, locator.getExport);
+    } else {
+      return findExport(module2, locator.getExport);
+    }
+  }
+  if (locator.key) {
+    return module2[locator.key];
+  }
+  return module2;
+}
+function findExport(module2, filter) {
+  for (let value of Object.values(module2)) {
+    if (filter === true || filter(value)) return value;
+  }
+}
+function findExportWithKey(module2, filter) {
+  for (let key in module2) {
+    if (filter !== true && !filter(module2[key])) continue;
+    return [module2, key];
+  }
+}
+
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var [fileModule, highlightModule, ModalModule, modalMethods, modalContainerClassModule] = BdApi.Webpack.getBulk(
+var { fileModule, Modal, modalMethods, modalContainerClass } = getSyncModules([
   {
-    filter: (m) => m.A?.toString().includes("().filesize("),
-    firstId: 718468,
-    cacheId: "fileModule"
+    name: "fileModule",
+    id: 718468,
+    filter: (m) => m.A?.toString().includes("().filesize(")
   },
   {
-    filter: Filters.byKeys("highlight", "hasLanguage"),
-    firstId: 752238,
-    cacheId: "highlightModule"
+    name: "Modal",
+    id: 158954,
+    key: "Modal",
+    filter: Filters.byKeys("Modal")
   },
   {
-    filter: Filters.byKeys("Modal"),
-    firstId: 158954,
-    cacheId: "Modal"
+    name: "modalMethods",
+    id: 192308,
+    filter: Filters.byKeys("openModal")
   },
   {
-    filter: Filters.byKeys("openModal"),
-    firstId: 192308,
-    cacheId: "modalMethods"
-  },
-  {
-    filter: Filters.byKeys("container", "padding-size-sm"),
-    cacheId: "modalContainerClass"
+    name: "modalContainerClass",
+    key: "container",
+    filter: Filters.byKeys("container", "padding-size-sm")
   }
-);
-var Modal = ModalModule.Modal;
-var modalContainerClass = modalContainerClassModule.container;
+]);
+var { highlightModule } = getLazyModules([
+  {
+    name: "highlightModule",
+    id: 752238,
+    filter: Filters.byKeys("highlight", "hasLanguage"),
+    lazyImporter: {
+      id: 34337,
+      filter: Filters.bySource('location:"PlaintextFilePreview"')
+    }
+  }
+]);
 
 // shared/api/styles.ts
 var count = 0;
 function addStyle(css) {
+  let styleId = count++;
   onStart(() => {
-    Api.DOM.addStyle(`${pluginName}-${count++}`, css);
+    Api.DOM.addStyle(`${pluginName}-${styleId}`, css);
   });
 }
 onStop(() => {
@@ -1262,6 +1358,14 @@ function FilePreview({ name, type: startType, blob, buff, ...props }) {
   const [type, setType] = React.useState(startType);
   const url = React.useRef(URL.createObjectURL(blob));
   React.useEffect(() => () => URL.revokeObjectURL(url.current), []);
+  const ext = name.split(".").at(-1);
+  const [hasCode, setHasCode] = React.useState(highlightModule.value?.hasLanguage(ext));
+  React.useEffect(() => {
+    if (hasCode || highlightModule.value) return;
+    highlightModule.load().then((mod) => {
+      setHasCode(mod.hasLanguage(ext));
+    });
+  }, []);
   function downloadFile() {
     let a = document.createElement("a");
     document.body.appendChild(a);
@@ -1280,8 +1384,6 @@ function FilePreview({ name, type: startType, blob, buff, ...props }) {
       type: "success"
     });
   }
-  const ext = name.split(".").at(-1);
-  const hasCode = highlightModule.hasLanguage(ext);
   return /* @__PURE__ */ BdApi.React.createElement(
     DynamicModal,
     {
@@ -1306,7 +1408,7 @@ function FilePreview({ name, type: startType, blob, buff, ...props }) {
       ]
     },
     /* @__PURE__ */ BdApi.React.createElement("div", { className: "zp-preview" }, type == "image" ? /* @__PURE__ */ BdApi.React.createElement("img", { src: url.current }) : null, type == "video" ? /* @__PURE__ */ BdApi.React.createElement("video", { controls: true, src: url.current }) : null, type == "audio" ? /* @__PURE__ */ BdApi.React.createElement("audio", { controls: true, src: url.current }) : null, type == "text" ? hasCode ? /* @__PURE__ */ BdApi.React.createElement("pre", { dangerouslySetInnerHTML: {
-      __html: highlightModule.highlight(ext, new TextDecoder().decode(buff), true).value
+      __html: highlightModule.value?.highlight(ext, new TextDecoder().decode(buff), true).value
     } }) : /* @__PURE__ */ BdApi.React.createElement("pre", null, new TextDecoder().decode(buff)) : null, type == "binary" ? /* @__PURE__ */ BdApi.React.createElement("div", null, "Can't preview this file :(", /* @__PURE__ */ BdApi.React.createElement("button", { className: "zp-preview-override", onClick: () => setType("text") }, "Do it anyways")) : null)
   );
 }

@@ -6,7 +6,6 @@ interface VideoCompressorSettings {
 }
 
 export const settings = createSettings<VideoCompressorSettings>([
-    // @ts-expect-error types are incorrect
     {
         type: "radio",
         id: "codec",

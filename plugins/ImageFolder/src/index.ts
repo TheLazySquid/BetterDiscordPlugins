@@ -103,7 +103,8 @@ patchContextMenu("message", (element, props) => {
     element.props.children.props.children.push(
         BdApi.ContextMenu.buildItem({ type: "separator"}),
         BdApi.ContextMenu.buildItem({
-            type: "text",
+            id: "addToImageFolder",
+            type: "item",
             label: "Add to ImageFolder",
             onClick: () => Manager.saveImage(props.mediaItem.url)
         })

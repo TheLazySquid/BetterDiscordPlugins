@@ -7,14 +7,16 @@ export default function FolderDisplay({ folder, onClick }: { folder: Folder, onC
 	const React = BdApi.React;
 
     const onContextMenu = (e: React.MouseEvent) => {
-		BdApi.ContextMenu.open(e, BdApi.ContextMenu.buildMenu([
+		BdApi.ContextMenu.open(e.nativeEvent, BdApi.ContextMenu.buildMenu([
 			{
-				type: "text",
+				id: "rename",
+				type: "item",
 				label: "Rename",
 				onClick: () => Manager.renameFolder(folder)
 			},
 			{
-				type: "text",
+				id: "delete",
+				type: "item",
 				label: "Delete",
 				onClick: () => {
 					BdApi.UI.showConfirmationModal("Deletion confirmation", `Are you sure you want to delete ${folder.name}?`, {

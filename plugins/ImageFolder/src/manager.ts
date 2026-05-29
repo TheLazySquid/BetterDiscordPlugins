@@ -29,8 +29,8 @@ export const types: Record<string, [Media["type"], string]> = {
 
 export default class Manager {
     static base = path.join(__dirname, "imageFolder");
-    static dir = Api.Data.load("dir") ?? "";
-    static saveDir = Api.Data.load("saveDir") ?? this.base;
+    static dir = Api.Data.load<string>("dir") ?? "";
+    static saveDir = Api.Data.load<string>("saveDir") ?? this.base;
     static contents?: DirContents;
     static update?: (contents: DirContents) => void;
 

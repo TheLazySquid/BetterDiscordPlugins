@@ -21,6 +21,7 @@ function check(module: any, key: any) {
 export function after<T = any>(module: T, key: keyof T | undefined, callback: (args: AfterArgs) => any) {
     if(!check(module, key)) return;
     onStart(() => {
+        // @ts-expect-error do later
         Api.Patcher.after(module, key!, (thisVal, args, returnVal) => {
             return callback({ thisVal, args: args as any, returnVal });
         });
@@ -29,8 +30,9 @@ export function after<T = any>(module: T, key: keyof T | undefined, callback: (a
 
 export function tempAfter<T = any>(module: T, key: keyof T | undefined, callback: (args: AfterArgs) => any) {
     if(!check(module, key)) return;
+    // @ts-expect-error do later
     let unpatch = Api.Patcher.after(module, key!, (thisVal, args, returnVal) => {
-        unpatch();
+        unpatch?.();
         return callback({ thisVal, args: args as any, returnVal });
     });
 }
@@ -54,6 +56,7 @@ export function afterClass(module: any, key: string, callback: (instance: any) =
 export function before<T = any>(module: T, key: keyof T | undefined, callback: (args: BeforeArgs) => void) {
     if(!check(module, key)) return;
     onStart(() => {
+        // @ts-expect-error do later
         Api.Patcher.before(module, key!, (thisVal, args) => {
             callback({ thisVal, args: args as any });
         });
@@ -63,6 +66,7 @@ export function before<T = any>(module: T, key: keyof T | undefined, callback: (
 export function instead<T = any>(module: T, key: keyof T | undefined, callback: (args: BeforeArgs) => void) {
     if(!check(module, key)) return;
     onStart(() => {
+        // @ts-expect-error do later
         Api.Patcher.instead(module, key!, (thisVal, args) => {
             callback({ thisVal, args: args as any });
         });
