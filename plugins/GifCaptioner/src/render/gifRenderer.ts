@@ -1,11 +1,10 @@
+import type ProgressDisplay from "$shared/util/progress";
 import GifWorker from "../gif.worker.txt";
 import { getUrl } from "$shared/util/blob";
 import { getLines } from "$shared/util/canvas";
 import GIF from "gif.js";
 import { error } from "$shared/api/toast";
 import { uploadFile } from "$shared/util/upload";
-import type ProgressDisplay from "$shared/util/progress";
-import type { ParsedFrame, ParsedGif } from "gifuct-js";
 import { Api } from "$shared/bd";
 import { renderSpeechbubble } from "./speechbubble";
 import { getMaxFileSize } from "$shared/util/permissions";
@@ -46,6 +45,7 @@ export default class GifRenderer {
 		this.height = height;
 		this.transform = transform;
 
+		Api.Logger.info(`Creating ${width}x${height} gif renderer with ${frames} frames`);
 		if(!worker.url) {
 			progress.close();
 			error("Attempted to encode gif while GifCaptioner is disabled");
@@ -91,50 +91,15 @@ export default class GifRenderer {
 		}
 	}
 
-	tempCanvas?: HTMLCanvasElement;
-	tempCtx?: CanvasRenderingContext2D;
-	gifCanvas?: HTMLCanvasElement;
-	gifCtx?: CanvasRenderingContext2D;
-	needsDisposal = false;
-	frameImageData?: ImageData;
-	addGifFrame(source: ParsedFrame, parsed: ParsedGif) {
-		if(!this.tempCanvas) this.tempCanvas = document.createElement("canvas");
-		if(!this.tempCtx) this.tempCtx = this.tempCanvas.getContext("2d")!;
-		if(!this.gifCanvas) {
-			this.gifCanvas = document.createElement("canvas");
-			this.gifCanvas.width = parsed.lsd.width;
-			this.gifCanvas.height = parsed.lsd.height;
-		}
-		if(!this.gifCtx) this.gifCtx = this.gifCanvas.getContext("2d")!;
-
-		if(this.needsDisposal) {
-			this.gifCtx.clearRect(0, this.topOffset, this.width, this.height);
-			this.needsDisposal = false;
-		}
-
-		if(source.disposalType == 2) this.needsDisposal = true;
-
-		if(
-			!this.frameImageData ||
-			source.dims.width !== this.frameImageData.width ||
-			source.dims.height !== this.frameImageData.height
-		) {
-			this.tempCanvas.width = source.dims.width;
-			this.tempCanvas.height = source.dims.height;
-			this.frameImageData = this.tempCtx.createImageData(source.dims.width, source.dims.height);
-		}
-
-		// Do all the nonsense to copy it to the real canvas
-		this.frameImageData.data.set(source.patch);
-		this.tempCtx.putImageData(this.frameImageData, 0, 0);
-		this.gifCtx.drawImage(this.tempCanvas, source.dims.left, source.dims.top);
-		this.ctx.drawImage(this.gifCanvas, 0, this.topOffset, this.width, this.height);
-		this.addFrameToGif(source.delay);
-	}
-
-	addVideoFrame(canvas: HTMLCanvasElement | OffscreenCanvas, delay: number) {
+	addCanvasFrame(canvas: HTMLCanvasElement | OffscreenCanvas, delay: number) {
 		this.ctx.drawImage(canvas, 0, this.topOffset, this.width, this.height);		
 		this.addFrameToGif(delay * 1000); // convert to ms
+	}
+
+	addVideoFrame(frame: VideoFrame) {
+		if(!frame.duration) return;
+		this.ctx.drawImage(frame, 0, this.topOffset, this.width, this.height);
+		this.addFrameToGif(frame.duration / 1000); // convert to ms
 	}
 
 	addFrameToGif(delay: number) {

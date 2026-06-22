@@ -1,3 +1,4 @@
+import "./styles.css";
 import type { GifTransform } from "./render/gifRenderer";
 import futura from "$assets/Futura Condensed Extra Bold.otf";
 import { addFont } from "$shared/api/fonts";
@@ -5,8 +6,7 @@ import { after } from "$shared/api/patching";
 import { error } from "$shared/api/toast";
 import { expressionPicker, gifDisplay } from "$shared/modules";
 import captionMp4 from "./render/video";
-import "./styles.css";
-import captionGif from "./render/gif";
+import captionImage from "./render/image";
 import Modal from "./ui/modal";
 import { CCIcon } from "$shared/ui/icons";
 import { Api } from "$shared/bd";
@@ -18,26 +18,28 @@ after(gifDisplay.prototype, "render", ({ thisVal, returnVal }) => {
         className: "gc-trigger",
         onClick: (e) => {
             e.stopPropagation();
-            const isGif = thisVal.props.format === 1;
-            const rawUrl = thisVal.props.src;
-            const url = formatUrl(rawUrl);
-            Api.Logger.info("URL formatted to", url);
+            const isImage = thisVal.props.format === 1;
+            const url = formatUrl(thisVal.props.src);
+            const urlString = url.toString();
+            const isWebp = url.pathname.endsWith(".webp");
+            Api.Logger.info("URL formatted to", urlString);
 
-            if(isGif) {
+            if(isImage) {
                 let image = document.createElement("img");
-                image.src = url;
+                image.src = urlString;
                 
                 image.addEventListener("load", () => {
                     // For some reason the height and width change once added to the dom
                     let { width, height } = image;
                     showCaptioner(width, height, image, (transform) => {
-                        captionGif(url, width, height, transform);
+                        const mime = isWebp ? "image/webp" : "image/gif";
+                        captionImage(urlString, width, height, transform, mime);
                     });
                 });
                 image.addEventListener("error", () => error("Failed to load gif"));
             } else {
                 let video = document.createElement("video");
-                video.src = url;
+                video.src = urlString;
                 video.autoplay = true;
                 video.loop = true;
                 video.muted = true;
@@ -46,7 +48,7 @@ after(gifDisplay.prototype, "render", ({ thisVal, returnVal }) => {
                 video.addEventListener("canplaythrough", () => {
                     let { videoWidth, videoHeight } = video;
                     showCaptioner(videoWidth, videoHeight, video, (transform) => {
-                        captionMp4(url, videoWidth, videoHeight, transform);
+                        captionMp4(urlString, videoWidth, videoHeight, transform);
                     });
                 }, { once: true });
                 video.addEventListener("error", () => error("Failed to load gif"));
@@ -89,11 +91,16 @@ function formatUrl(rawUrl: string) {
 
     // Prefer using mp4 from tenor for higher quality
     // For some reason tenor denotes this by ending the id with an o
-    if(url.hostname.endsWith("tenor.com")) {
+    if(url.hostname.endsWith("tenor.com") && !url.pathname.endsWith(".gif")) {
         const path = url.pathname;
         const typeIndex = path.lastIndexOf("/") - 1;
         url.pathname = path.slice(0, typeIndex) + "o" + path.slice(typeIndex + 1);
     }
 
-    return url.toString();
+    // Make sure webps are animated
+    if(url.pathname.endsWith(".webp")) {
+        url.searchParams.set("animated", "true");
+    }
+
+    return url;
 }

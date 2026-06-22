@@ -37,7 +37,7 @@ export default async function captionMp4(url: string, width: number, height: num
 		let i = 0;
 		for await (const frame of getCanvases(canvasSink)) {
 			progress.update("Rendering", i / frames);
-			renderer.addVideoFrame(frame.canvas, frame.delay);
+			renderer.addCanvasFrame(frame.canvas, frame.delay);
 			i++;
 		}
 	
