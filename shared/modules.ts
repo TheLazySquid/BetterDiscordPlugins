@@ -1,4 +1,4 @@
-import type { ModuleLocator, Modules } from "../types";
+import type { ModuleLocator, Modules } from "./moduleTypes";
 
 function defineModule<const T extends ModuleLocator>(locator: T): Modules[T["name"]] {
     return locator;

@@ -1,4 +1,4 @@
-import type { ModuleLocator } from "../types";
+import type { ModuleLocator } from "../shared/moduleTypes";
 import * as Modules from "$shared/modules";
 
 let code = `const Filters = BdApi.Webpack.Filters;

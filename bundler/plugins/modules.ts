@@ -1,6 +1,6 @@
 import type { Plugin } from "esbuild";
 import * as ModuleLocators from "$shared/modules";
-import type { Modules } from "../../types";
+import type { Modules } from "../../shared/moduleTypes";
 
 export function modulesPlugin(ids: (keyof Modules)[]): Plugin {
     return {

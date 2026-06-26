@@ -1,17 +1,15 @@
+import type { ImageCompressValues, VideoCompressValues } from "./types";
 import { QUALITY_VERY_LOW, QUALITY_LOW, QUALITY_MEDIUM, QUALITY_HIGH } from "mediabunny";
 
-export type Quality = "VERY_LOW" | "LOW" | "MEDIUM" | "HIGH" | "UNCHANGED";
-
-export interface CompressValues {
-    resolutionFactor: number;
-    fpsFactor: number;
-    quality: Quality;
-}
-
-export const defaultValues: CompressValues = {
+export const defaultVideoValues: VideoCompressValues = {
     resolutionFactor: 1,
     fpsFactor: 1,
     quality: "UNCHANGED"
+};
+
+export const defaultImageValues: ImageCompressValues = {
+    resolutionFactor: 1,
+    quality: 1
 };
 
 export const qualities = {
@@ -29,3 +27,8 @@ export const qualityOptions = [
     { label: "Medium", value: "MEDIUM" },
     { label: "High", value: "HIGH" }
 ];
+
+const mb = 1024 * 1024;
+export function formatSize(bytes: number) {
+    return (bytes / mb).toFixed(2) + " MB";
+}

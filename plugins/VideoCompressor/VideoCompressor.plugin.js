@@ -1,7 +1,7 @@
 /**
  * @name VideoCompressor
- * @description Compress videos that are too large to upload normally
- * @version 0.4.0
+ * @description Compress videos that are too large to upload normally. Supports images as well.
+ * @version 0.5.0
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -16,7 +16,7 @@ module.exports = class {
 var pluginName = "VideoCompressor";
 
 // shared/bd.ts
-var Api = new BdApi(pluginName);
+var Api = /* @__PURE__ */ new BdApi(pluginName);
 var createCallbackHandler = (callbackName) => {
   let callbacks = [];
   plugin[callbackName] = () => {
@@ -40,6 +40,45 @@ function setSettingsPanel(el) {
 }
 
 // shared/util/modules.ts
+function getSyncModules(locators) {
+  let returned = {};
+  const queries = locators.map(createQuery);
+  const modules = BdApi.Webpack.getBulk(...queries);
+  for (let i = 0; i < locators.length; i++) {
+    const locator = locators[i];
+    const module = modules[i];
+    if (!module) {
+      Api.Logger.warn(`Could not find module for ${locator.name}`);
+      continue;
+    }
+    returned[locator.name] = finalizeModule(locator, module);
+  }
+  return returned;
+}
+function createQuery(locator) {
+  return {
+    filter: locator.filter,
+    firstId: locator.id,
+    defaultExport: locator.defaultExport,
+    cacheId: locator.name
+  };
+}
+function finalizeModule(locator, module) {
+  if (locator.demangler) {
+    return BdApi.Utils.mapObject(module, locator.demangler);
+  }
+  if (locator.getExport) {
+    if (locator.getWithKey) {
+      return findExportWithKey(module, locator.getExport);
+    } else {
+      return findExport(module, locator.getExport);
+    }
+  }
+  if (locator.key) {
+    return module[locator.key];
+  }
+  return module;
+}
 function findExport(module, filter) {
   for (let value of Object.values(module)) {
     if (filter === true || filter(value)) return value;
@@ -54,31 +93,32 @@ function findExportWithKey(module, filter) {
 
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var [attachFilesModule, maxUploadSizeModule, modalMethods, ModalModule] = BdApi.Webpack.getBulk(
+var { attachFiles, maxUploadSize, modalMethods, Modal } = getSyncModules([
   {
-    filter: (m) => Object.values(m).some(Filters.byStrings("filesMetadata:", "requireConfirm:")),
-    firstId: 518960,
-    cacheId: "attachFiles"
+    name: "attachFiles",
+    id: 518960,
+    getExport: (e) => e.toString().includes("filesMetadata"),
+    getWithKey: true,
+    filter: (m) => Object.values(m).some(Filters.byStrings("filesMetadata:", "requireConfirm:"))
   },
   {
-    filter: Filters.bySource("getUserMaxFileSize", "reType"),
-    firstId: 453771,
-    cacheId: "maxUploadSize"
+    name: "maxUploadSize",
+    id: 453771,
+    getExport: Filters.byStrings("getUserMaxFileSize"),
+    filter: Filters.bySource("getUserMaxFileSize", "reType")
   },
   {
-    filter: Filters.byKeys("openModal"),
-    firstId: 192308,
-    cacheId: "modalMethods"
+    name: "modalMethods",
+    id: 192308,
+    filter: Filters.byKeys("openModal")
   },
   {
-    filter: Filters.byKeys("Modal"),
-    firstId: 158954,
-    cacheId: "Modal"
+    name: "Modal",
+    id: 189213,
+    key: "Modal",
+    filter: Filters.byKeys("Modal")
   }
-);
-var attachFiles = findExportWithKey(attachFilesModule, (e) => e.toString().includes("filesMetadata"));
-var maxUploadSize = findExport(maxUploadSizeModule, Filters.byStrings("getUserMaxFileSize"));
-var Modal = ModalModule.Modal;
+]);
 
 // shared/api/patching.ts
 function check(module, key) {
@@ -18053,10 +18093,14 @@ if (globalThis[MEDIABUNNY_LOADED_SYMBOL]) {
 globalThis[MEDIABUNNY_LOADED_SYMBOL] = true;
 
 // plugins/VideoCompressor/src/consts.ts
-var defaultValues = {
+var defaultVideoValues = {
   resolutionFactor: 1,
   fpsFactor: 1,
   quality: "UNCHANGED"
+};
+var defaultImageValues = {
+  resolutionFactor: 1,
+  quality: 1
 };
 var qualities = {
   UNCHANGED: { bitrate: void 0, factor: 1 },
@@ -18072,24 +18116,32 @@ var qualityOptions = [
   { label: "Medium", value: "MEDIUM" },
   { label: "High", value: "HIGH" }
 ];
-
-// plugins/VideoCompressor/src/compressOptions.tsx
 var mb = 1024 * 1024;
 function formatSize(bytes2) {
   return (bytes2 / mb).toFixed(2) + " MB";
 }
-function CompressOptions({ fullSize, maxSize, onChange, values }) {
+
+// plugins/VideoCompressor/src/ui/videoOptions.tsx
+function VideoOptions({ item }) {
   const React = BdApi.React;
-  const [resolutionFactor, setResolutionFactor] = React.useState(values.resolutionFactor);
-  const [fpsFactor, setFpsFactor] = React.useState(values.fpsFactor);
-  const [quality, setQuality] = React.useState(values.quality);
-  const [newSize, setNewSize] = React.useState(fullSize);
+  const [resolutionFactor, setResolutionFactor] = React.useState(item.values.resolutionFactor);
+  const [fpsFactor, setFpsFactor] = React.useState(item.values.fpsFactor);
+  const [quality, setQuality] = React.useState(item.values.quality);
+  const [newSize, setNewSize] = React.useState(item.fullSize);
   React.useEffect(() => {
-    let size = fullSize * fpsFactor * resolutionFactor ** 2 * qualities[quality].factor;
+    item.values.resolutionFactor = resolutionFactor;
+  }, [resolutionFactor]);
+  React.useEffect(() => {
+    item.values.fpsFactor = fpsFactor;
+  }, [fpsFactor]);
+  React.useEffect(() => {
+    item.values.quality = quality;
+  }, [quality]);
+  React.useEffect(() => {
+    let size = item.fullSize * fpsFactor * resolutionFactor ** 2 * qualities[quality].factor;
     setNewSize(size);
-    onChange({ resolutionFactor, fpsFactor, quality });
   }, [resolutionFactor, fpsFactor, quality]);
-  return /* @__PURE__ */ BdApi.React.createElement("div", { className: "vc-options" }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "estimate" }, "Rough Size Estimate:", /* @__PURE__ */ BdApi.React.createElement("span", { className: newSize > maxSize ? "big" : "small" }, formatSize(newSize)), "/ ", formatSize(maxSize)), /* @__PURE__ */ BdApi.React.createElement("div", null, "Resolution: ", Math.floor(resolutionFactor * 100), "%"), /* @__PURE__ */ BdApi.React.createElement(
+  return /* @__PURE__ */ BdApi.React.createElement("div", { className: "vc-options" }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "estimate" }, "Rough Size Estimate:", /* @__PURE__ */ BdApi.React.createElement("span", { className: newSize > item.maxSize ? "big" : "small" }, formatSize(newSize)), "/ ", formatSize(item.maxSize)), /* @__PURE__ */ BdApi.React.createElement("div", null, "Resolution: ", Math.floor(resolutionFactor * 100), "%"), /* @__PURE__ */ BdApi.React.createElement(
     "input",
     {
       type: "range",
@@ -18112,11 +18164,55 @@ function CompressOptions({ fullSize, maxSize, onChange, values }) {
   ), /* @__PURE__ */ BdApi.React.createElement("div", null, "Video quality:"), /* @__PURE__ */ BdApi.React.createElement(BdApi.Components.DropdownInput, { options: qualityOptions, value: quality, onChange: setQuality }));
 }
 
+// plugins/VideoCompressor/src/ui/imageOptions.tsx
+var mb2 = 1024 * 1024;
+function formatSize2(bytes2) {
+  return (bytes2 / mb2).toFixed(2) + " MB";
+}
+function ImageOptions({ item }) {
+  const React = BdApi.React;
+  const [resolutionFactor, setResolutionFactor] = React.useState(item.values.resolutionFactor);
+  const [quality, setQuality] = React.useState(item.values.quality);
+  const [newSize, setNewSize] = React.useState(item.fullSize);
+  React.useEffect(() => {
+    item.values.resolutionFactor = resolutionFactor;
+  }, [resolutionFactor]);
+  React.useEffect(() => {
+    item.values.quality = quality;
+  }, [quality]);
+  React.useEffect(() => {
+    let size = item.fullSize * resolutionFactor ** 2 * quality;
+    setNewSize(size);
+  }, [resolutionFactor, quality]);
+  return /* @__PURE__ */ BdApi.React.createElement("div", { className: "vc-options" }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "estimate" }, "Rough Size Estimate:", /* @__PURE__ */ BdApi.React.createElement("span", { className: newSize > item.maxSize ? "big" : "small" }, formatSize2(newSize)), "/ ", formatSize2(item.maxSize)), /* @__PURE__ */ BdApi.React.createElement("div", null, "Resolution: ", Math.floor(resolutionFactor * 100), "%"), /* @__PURE__ */ BdApi.React.createElement(
+    "input",
+    {
+      type: "range",
+      value: resolutionFactor,
+      min: 0.1,
+      max: 1,
+      step: 0.01,
+      onChange: (e) => setResolutionFactor(parseFloat(e.target.value))
+    }
+  ), /* @__PURE__ */ BdApi.React.createElement("div", null, "Quality: ", Math.floor(quality * 100), "%"), /* @__PURE__ */ BdApi.React.createElement(
+    "input",
+    {
+      type: "range",
+      value: quality,
+      min: 0.1,
+      max: 1,
+      step: 0.01,
+      onChange: (e) => setQuality(parseFloat(e.target.value))
+    }
+  ));
+}
+
 // shared/api/styles.ts
 var count = 0;
 function addStyle(css) {
+  let styleId = count++;
   onStart(() => {
-    Api.DOM.addStyle(`${pluginName}-${count++}`, css);
+    Api.DOM.addStyle(`${pluginName}-${styleId}`, css);
   });
 }
 onStop(() => {
@@ -18232,7 +18328,6 @@ function createSettings(panelSettings, defaults) {
 
 // plugins/VideoCompressor/src/settings.ts
 var settings = createSettings([
-  // @ts-expect-error types are incorrect
   {
     type: "radio",
     id: "codec",
@@ -18254,38 +18349,15 @@ var settings = createSettings([
   codec: "av1"
 });
 
-// plugins/VideoCompressor/src/compressVideo.ts
-var queue = [];
-var editing = false;
-function addFile(file, maxSize, attach2) {
-  if (editing) {
-    queue.push(file);
-    return;
-  }
-  editing = true;
-  showPopup(file, file.size, maxSize, attach2, defaultValues);
-}
-function showPopup(file, fullSize, maxSize, attach2, values = defaultValues) {
-  const Options = BdApi.React.createElement(CompressOptions, {
-    fullSize,
-    maxSize,
-    values,
-    onChange: (newValues) => values = newValues
-  });
-  BdApi.UI.showConfirmationModal(`Video ${file.name} is too large`, Options, {
-    onConfirm: () => renderVideo(file, maxSize, values, attach2),
-    onClose: () => advanceQueue(maxSize, attach2),
-    onCancel: () => advanceQueue(maxSize, attach2)
-  });
-}
-async function renderVideo(file, maxSize, values, attach2) {
+// plugins/VideoCompressor/src/compress/video.ts
+async function renderVideo(item) {
   const progress = new ProgressDisplay("Rendering video", "Preparing", true);
-  Api.Logger.info("Compressing video", file.name, "with values", values);
-  const next = () => advanceQueue(maxSize, attach2);
+  const filename = item.file.name;
+  Api.Logger.info("Compressing video", filename, "with values", item.values);
   try {
     const input = new Input({
       formats: [MP4, QTFF, MATROSKA, WEBM],
-      source: new BlobSource(file)
+      source: new BlobSource(item.file)
     });
     const video = await input.getPrimaryVideoTrack();
     if (!video) throw new Error("No video track found");
@@ -18296,9 +18368,9 @@ async function renderVideo(file, maxSize, values, attach2) {
     });
     const options = {
       codec: settings.codec,
-      width: Math.floor(video.displayWidth * values.resolutionFactor),
-      frameRate: Math.floor(stats.averagePacketRate * values.fpsFactor),
-      bitrate: qualities[values.quality].bitrate
+      width: Math.floor(video.displayWidth * item.values.resolutionFactor),
+      frameRate: Math.floor(stats.averagePacketRate * item.values.fpsFactor),
+      bitrate: qualities[item.values.quality].bitrate
     };
     Api.Logger.info("Beginning conversion", options);
     const conversion = await Conversion.init({
@@ -18309,42 +18381,114 @@ async function renderVideo(file, maxSize, values, attach2) {
     conversion.onProgress = (amount) => {
       progress.update("Rendering", amount);
     };
-    if (progress.canceled) return next();
+    if (progress.canceled) return advanceQueue();
     progress.onCancel(() => {
       conversion.cancel();
-      next();
+      advanceQueue();
     });
     await conversion.execute();
     if (!output.target.buffer) throw new Error("No output buffer found");
     const size = output.target.buffer.byteLength;
-    const sizeString = `${(output.target.buffer.byteLength / 1024 / 1024).toFixed(2)} MB`;
+    const sizeString = formatSize(size);
     Api.Logger.info("Final size:", sizeString);
-    if (output.target.buffer.byteLength > maxSize) {
+    if (output.target.buffer.byteLength > item.maxSize) {
       warning(`Compressed video is still too large (${sizeString}). Size estimate has been updated.`);
-      const newFullSize = size / values.fpsFactor / values.resolutionFactor ** 2 / qualities[values.quality].factor;
+      const newFullSize = size / item.values.fpsFactor / item.values.resolutionFactor ** 2 / qualities[item.values.quality].factor;
       Api.Logger.info("Reopening popup with new base size estimate:", newFullSize);
-      showPopup(file, newFullSize, maxSize, attach2, values);
+      item.fullSize = newFullSize;
+      showPopup(item);
       return;
     }
     success(`Video compressed successfully (now ${sizeString})`);
-    const newName = file.name.slice(0, file.name.lastIndexOf(".")) + `-compressed.mp4`;
+    const newName = filename.slice(0, filename.lastIndexOf(".")) + `-compressed.mp4`;
     const newFile = new File([output.target.buffer], newName, { type: "video/mp4" });
-    attach2(newFile);
+    item.attach(newFile);
   } catch (err) {
     Api.Logger.error("Error compressing video", err);
     error("An error occured while compressing the video.");
   } finally {
     progress.close();
-    next();
+    advanceQueue();
   }
 }
-function advanceQueue(maxSize, attach2) {
-  const next = queue.shift();
-  if (!next) {
-    editing = false;
+
+// plugins/VideoCompressor/src/compress/image.ts
+async function renderImage(item) {
+  const progress = new ProgressDisplay("Rendering image", "Preparing");
+  const filename = item.file.name;
+  Api.Logger.info("Compressing image", filename, "with values", item.values);
+  try {
+    const bitmap = await createImageBitmap(item.file);
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.floor(bitmap.width * item.values.resolutionFactor);
+    canvas.height = Math.floor(bitmap.height * item.values.resolutionFactor);
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    progress.update("Rendering");
+    const blob = await new Promise((res, rej) => {
+      canvas.toBlob((blob2) => {
+        if (!blob2) return rej(new Error("No blob returned from canvas"));
+        res(blob2);
+      }, "image/webp", item.values.quality);
+    });
+    const size = blob.size;
+    const sizeString = formatSize(size);
+    Api.Logger.info("Final size:", sizeString);
+    if (blob.size > item.maxSize) {
+      warning(`Compressed image is still too large (${sizeString}). Size estimate has been updated.`);
+      const newFullSize = size / item.values.resolutionFactor ** 2 / item.values.quality;
+      item.fullSize = newFullSize;
+      showPopup(item);
+      return;
+    }
+    success(`Image compressed successfully (now ${sizeString})`);
+    const newName = filename.slice(0, filename.lastIndexOf(".")) + `-compressed.webp`;
+    const newFile = new File([blob], newName, { type: "image/webp" });
+    item.attach(newFile);
+  } catch (err) {
+    Api.Logger.error("Error compressing image", err);
+    error("An error occured while compressing the image.");
+  } finally {
+    progress.close();
+    advanceQueue();
+  }
+}
+
+// plugins/VideoCompressor/src/showPopup.ts
+var queue = [];
+var popupOpen = false;
+function addFile(item) {
+  if (popupOpen) {
+    queue.push(item);
     return;
   }
-  showPopup(next, next.size, maxSize, attach2);
+  popupOpen = true;
+  showPopup(item);
+}
+function showPopup(item) {
+  if (item.type === "video") {
+    const Options = BdApi.React.createElement(VideoOptions, { item });
+    BdApi.UI.showConfirmationModal(`Video ${item.file.name} is too large`, Options, {
+      onConfirm: () => renderVideo(item),
+      onClose: () => advanceQueue(),
+      onCancel: () => advanceQueue()
+    });
+  } else {
+    const Options = BdApi.React.createElement(ImageOptions, { item });
+    BdApi.UI.showConfirmationModal(`Image ${item.file.name} is too large`, Options, {
+      onConfirm: () => renderImage(item),
+      onClose: () => advanceQueue(),
+      onCancel: () => advanceQueue()
+    });
+  }
+}
+function advanceQueue() {
+  const next = queue.shift();
+  if (!next) {
+    popupOpen = false;
+    return;
+  }
+  showPopup(next);
 }
 
 // plugins/VideoCompressor/src/styles.css
@@ -18387,18 +18531,37 @@ var attach = attachFiles[0][attachFiles[1]];
 before(...attachFiles, ({ args }) => {
   const maxSize = getMaxFileSize();
   const files = [...args[0]];
-  const formats = ["mp4", "mov", "mkv", "webm"];
+  const videoFormats = ["mp4", "mov", "mkv", "webm"];
+  const imageFormats = ["png", "jpg", "jpeg", "webp", "avif"];
   for (let i = 0; i < files.length; i++) {
     if (files[i].size < maxSize) continue;
     const parts = files[i].name.split(".");
     if (parts.length === 1) continue;
     const ext = parts[parts.length - 1];
-    if (!formats.includes(ext)) continue;
-    addFile(files[i], maxSize, (file) => {
-      attach([file], args[1], args[2], args[3]);
-    });
-    files.splice(i, 1);
-    i--;
+    const attachFile = (file) => attach([file], args[1], args[2], args[3]);
+    if (videoFormats.includes(ext)) {
+      addFile({
+        file: files[i],
+        type: "video",
+        attach: attachFile,
+        fullSize: files[i].size,
+        maxSize,
+        values: defaultVideoValues
+      });
+      files.splice(i, 1);
+      i--;
+    } else if (imageFormats.includes(ext)) {
+      addFile({
+        file: files[i],
+        type: "image",
+        attach: attachFile,
+        fullSize: files[i].size,
+        maxSize,
+        values: defaultImageValues
+      });
+      files.splice(i, 1);
+      i--;
+    }
   }
   args[0] = files;
 });

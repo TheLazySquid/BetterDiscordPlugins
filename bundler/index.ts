@@ -1,4 +1,4 @@
-import type { PluginConfig } from "../types.ts";
+import type { PluginConfig } from "../shared/moduleTypes.ts";
 import { build, context, type BuildOptions } from "esbuild";
 import waitForEnter, { write } from "./util.ts";
 import { join } from "node:path";

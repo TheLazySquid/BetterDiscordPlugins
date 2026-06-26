@@ -1,5 +1,5 @@
 import { Api } from "$shared/bd";
-import type { ExportFilter, ModuleLocator } from "../../types";
+import type { ExportFilter, ModuleLocator } from "../moduleTypes";
 
 export function getSyncModules(locators: ModuleLocator<true>[]) {
     let returned: Record<string, any> = {};
