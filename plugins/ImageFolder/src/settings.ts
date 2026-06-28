@@ -4,6 +4,7 @@ interface ImageFolderSettings {
     maxPreviewSize: number;
     showButton: boolean;
     autoSend: boolean;
+    imageFolderPath: string;
 }
 
 export const settings = createSettings<ImageFolderSettings>([
@@ -25,9 +26,16 @@ export const settings = createSettings<ImageFolderSettings>([
         name: "Immediately send files",
         note: "Files will only be attached and can be sent manually later if disabled",
         id: "autoSend"
+    },
+    {
+        type: "text",
+        name: "Image folder path",
+        note: `Resolves relative to ${BdApi.Plugins.folder}`,
+        id: "imageFolderPath"
     }
 ], {
     maxPreviewSize: 12,
     showButton: true,
-    autoSend: true
+    autoSend: true,
+    imageFolderPath: "imageFolder"
 });

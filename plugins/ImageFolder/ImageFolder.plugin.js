@@ -1,7 +1,7 @@
 /**
  * @name ImageFolder
  * @description A BetterDiscord plugin that allows you to save and send images from a folder for easy access
- * @version 1.6.3
+ * @version 1.7.0
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -37,7 +37,7 @@ var __toBinary = /* @__PURE__ */ (() => {
 var pluginName = "ImageFolder";
 
 // shared/bd.ts
-var Api = new BdApi(pluginName);
+var Api = /* @__PURE__ */ new BdApi(pluginName);
 var createCallbackHandler = (callbackName) => {
   let callbacks = [];
   plugin[callbackName] = () => {
@@ -79,7 +79,7 @@ function after(module, key, callback) {
 function tempAfter(module, key, callback) {
   if (!check(module, key)) return;
   let unpatch = Api.Patcher.after(module, key, (thisVal, args, returnVal) => {
-    unpatch();
+    unpatch?.();
     return callback({ thisVal, args, returnVal });
   });
 }
@@ -102,18 +102,49 @@ onStop(() => {
 });
 
 // shared/util/modules.ts
-function demangle(module, demangler) {
+function getSyncModules(locators) {
   let returned = {};
-  let values = Object.values(module);
-  for (let id in demangler) {
-    for (let i = 0; i < values.length; i++) {
-      if (demangler[id](values[i])) {
-        returned[id] = values[i];
-        break;
-      }
+  const queries = locators.map(createQuery);
+  const modules = BdApi.Webpack.getBulk(...queries);
+  for (let i = 0; i < locators.length; i++) {
+    const locator = locators[i];
+    const module = modules[i];
+    if (!module) {
+      Api.Logger.warn(`Could not find module for ${locator.name}`);
+      continue;
     }
+    returned[locator.name] = finalizeModule(locator, module);
   }
   return returned;
+}
+function createQuery(locator) {
+  return {
+    filter: locator.filter,
+    firstId: locator.id,
+    defaultExport: locator.defaultExport,
+    cacheId: locator.name
+  };
+}
+function finalizeModule(locator, module) {
+  if (locator.demangler) {
+    return BdApi.Utils.mapObject(module, locator.demangler);
+  }
+  if (locator.getExport) {
+    if (locator.getWithKey) {
+      return findExportWithKey(module, locator.getExport);
+    } else {
+      return findExport(module, locator.getExport);
+    }
+  }
+  if (locator.key) {
+    return module[locator.key];
+  }
+  return module;
+}
+function findExport(module, filter) {
+  for (let value of Object.values(module)) {
+    if (filter === true || filter(value)) return value;
+  }
 }
 function findExportWithKey(module, filter) {
   for (let key in module) {
@@ -124,58 +155,61 @@ function findExportWithKey(module, filter) {
 
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var [editorEventsModule, attachFilesModule, scrollerModule, buttonsModule, expressionModule, expressionPickerMangled, uploadAreaClassModule, chatbarInnerClassModule] = BdApi.Webpack.getBulk(
+var { editorEvents, attachFiles, scroller, buttonsModule, expressionModule, expressionPicker, uploadAreaClass, chatbarInnerClass } = getSyncModules([
   {
+    name: "editorEvents",
+    id: 112541,
+    getExport: true,
+    getWithKey: true,
     filter: Filters.bySource(",submit:", "selectPreviousCommandOption"),
-    defaultExport: false,
-    firstId: 919499,
-    cacheId: "editorEvents"
+    defaultExport: false
   },
   {
-    filter: (m) => Object.values(m).some(Filters.byStrings("filesMetadata:", "requireConfirm:")),
-    firstId: 518960,
-    cacheId: "attachFiles"
+    name: "attachFiles",
+    id: 518960,
+    getExport: (e) => e.toString().includes("filesMetadata"),
+    getWithKey: true,
+    filter: (m) => Object.values(m).some(Filters.byStrings("filesMetadata:", "requireConfirm:"))
   },
   {
+    name: "scroller",
+    id: 584648,
+    getExport: true,
+    getWithKey: true,
     filter: Filters.bySource("isScrolledToBottom()", "shouldScrollToStart:"),
-    defaultExport: false,
-    firstId: 584648,
-    cacheId: "scroller"
+    defaultExport: false
   },
   {
-    filter: (m) => m.type?.toString?.().includes(".isSubmitButtonEnabled"),
-    firstId: 147025,
-    cacheId: "buttonsModule"
+    name: "buttonsModule",
+    id: 729666,
+    filter: (m) => m.type?.toString?.().includes(".isSubmitButtonEnabled")
   },
   {
-    filter: (m) => m.type?.toString?.().includes("onSelectGIF"),
-    firstId: 834755,
-    cacheId: "expressionModule"
+    name: "expressionModule",
+    id: 731231,
+    filter: (m) => m.type?.toString?.().includes("onSelectGIF")
   },
   {
-    filter: Filters.bySource("lastActiveView", "isSearchSuggestion"),
-    firstId: 151271,
-    cacheId: "expressionPicker"
+    name: "expressionPicker",
+    id: 151271,
+    demangler: {
+      toggle: (f) => f.toString().includes("activeView==="),
+      close: (f) => f.toString().includes("activeView:null"),
+      store: (f) => f.getState
+    },
+    filter: Filters.bySource("lastActiveView", "isSearchSuggestion")
   },
   {
-    filter: Filters.byKeys("uploadArea", "chat"),
-    cacheId: "uploadAreaClass"
+    name: "uploadAreaClass",
+    key: "uploadArea",
+    filter: Filters.byKeys("uploadArea", "chat")
   },
   {
-    filter: Filters.byKeys("buttons", "textAreaSlate"),
-    cacheId: "chatbarInnerClass"
+    name: "chatbarInnerClass",
+    key: "inner",
+    filter: Filters.byKeys("buttons", "textAreaSlate")
   }
-);
-var editorEvents = findExportWithKey(editorEventsModule, true);
-var attachFiles = findExportWithKey(attachFilesModule, (e) => e.toString().includes("filesMetadata"));
-var scroller = findExportWithKey(scrollerModule, true);
-var expressionPicker = demangle(expressionPickerMangled, {
-  toggle: (f) => f.toString().includes("activeView==="),
-  close: (f) => f.toString().includes("activeView:null"),
-  store: (f) => f.getState
-});
-var uploadAreaClass = uploadAreaClassModule.uploadArea;
-var chatbarInnerClass = chatbarInnerClassModule.inner;
+]);
 
 // shared/api/toast.ts
 function success(message) {
@@ -188,8 +222,9 @@ function error(message) {
 // shared/api/styles.ts
 var count = 0;
 function addStyle(css) {
+  let styleId = count++;
   onStart(() => {
-    Api.DOM.addStyle(`${pluginName}-${count++}`, css);
+    Api.DOM.addStyle(`${pluginName}-${styleId}`, css);
   });
 }
 onStop(() => {
@@ -243,18 +278,23 @@ function getInput(title, callback) {
 var selectedChannelStore = /* @__PURE__ */ BdApi.Webpack.getStore("SelectedChannelStore");
 var channelStore = /* @__PURE__ */ BdApi.Webpack.getStore("ChannelStore");
 
-// shared/util/upload.ts
+// shared/util/submitMessage.ts
 var submit = null;
 afterClass(...editorEvents, (instance) => {
   submit = instance.submit.bind(instance);
 });
+function submitMessage() {
+  if (!submit) {
+    error("Could not send message, try switching channels");
+    return;
+  }
+  submit();
+}
+
+// shared/util/upload.ts
 var scrollerInstance = null;
 after(...scroller, ({ returnVal }) => scrollerInstance = returnVal);
 async function uploadFile(file, autoSend) {
-  if (!submit) {
-    error("Failed to send file, try switching channels");
-    return;
-  }
   const channelId = selectedChannelStore.getCurrentlySelectedChannelId();
   if (!channelId) return;
   const channel = channelStore.getChannel(channelId);
@@ -262,7 +302,7 @@ async function uploadFile(file, autoSend) {
   const attach = attachFiles[0][attachFiles[1]];
   await attach([file], channel, 0, { requireConfirm: true, origin: "file_picker" });
   if (!autoSend) return;
-  submit();
+  submitMessage();
   setTimeout(() => scrollerInstance?.scrollToBottom?.(), 0);
 }
 
@@ -273,6 +313,7 @@ function createSettings(panelSettings, defaults) {
     if (!setting.id) continue;
     settings2[setting.id] = Api.Data.load(setting.id) ?? defaults[setting.id];
   }
+  const onChangeCallbacks = {};
   setSettingsPanel(() => {
     for (let setting of panelSettings) {
       setting.value = settings2[setting.id];
@@ -282,9 +323,14 @@ function createSettings(panelSettings, defaults) {
       onChange: (_, id, value) => {
         settings2[id] = value;
         Api.Data.save(id, value);
+        onChangeCallbacks[id]?.forEach((cb) => cb(value));
       }
     });
   });
+  settings2.onChange = (id, callback) => {
+    onChangeCallbacks[id] ??= [];
+    onChangeCallbacks[id].push(callback);
+  };
   return settings2;
 }
 
@@ -310,11 +356,18 @@ var settings = createSettings([
     name: "Immediately send files",
     note: "Files will only be attached and can be sent manually later if disabled",
     id: "autoSend"
+  },
+  {
+    type: "text",
+    name: "Image folder path",
+    note: `Resolves relative to ${BdApi.Plugins.folder}`,
+    id: "imageFolderPath"
   }
 ], {
   maxPreviewSize: 12,
   showButton: true,
-  autoSend: true
+  autoSend: true,
+  imageFolderPath: "imageFolder"
 });
 
 // plugins/ImageFolder/src/manager.ts
@@ -338,11 +391,22 @@ var types = {
   "mov": ["video", "video/quicktime"]
 };
 var Manager = class {
-  static base = path.join(__dirname, "imageFolder");
+  static base = path.resolve(BdApi.Plugins.folder, "imageFolder");
   static dir = Api.Data.load("dir") ?? "";
   static saveDir = Api.Data.load("saveDir") ?? this.base;
   static contents;
   static update;
+  static {
+    settings.onChange("imageFolderPath", (newPath) => {
+      this.base = path.resolve(BdApi.Plugins.folder, newPath);
+      Api.Logger.log(`Changing image folder path to ${this.base}`);
+      this.saveDir = this.base;
+      this.dir = "";
+      this.contents = void 0;
+      Api.Data.save("dir", "");
+      Api.Data.save("saveDir", this.base);
+    });
+  }
   static showFolder() {
     shell.openPath(path.join(this.base, this.dir));
   }
@@ -776,25 +840,28 @@ function MediaDisplay({ media }) {
   const openContextMenu = (e) => {
     const setup = [
       {
-        type: "text",
+        id: "rename",
+        type: "item",
         label: "Rename",
         onClick: () => Manager.renameMedia(media)
       },
       {
-        type: "text",
+        id: "delete",
+        type: "item",
         label: "Delete",
         onClick: deleteMedia
       }
     ];
     if (media.type === "image") {
       setup.push({
-        type: "text",
+        id: "caption",
+        type: "item",
         label: "Send with Caption",
         onClick: showCaptioner
       });
     }
     const menu = BdApi.ContextMenu.buildMenu(setup);
-    BdApi.ContextMenu.open(e, menu);
+    BdApi.ContextMenu.open(e.nativeEvent, menu);
   };
   return /* @__PURE__ */ BdApi.React.createElement("button", { ref: wrap, onClick: send, onContextMenu: openContextMenu }, media.size > settings.maxPreviewSize * 1e6 ? /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-no-preview" }, media.name, " is too large to be previewed") : url ? media.type === "image" ? /* @__PURE__ */ BdApi.React.createElement("img", { src: url }) : media.type === "audio" ? /* @__PURE__ */ BdApi.React.createElement("div", null, /* @__PURE__ */ BdApi.React.createElement("div", { className: "if-audio-label" }, media.name), /* @__PURE__ */ BdApi.React.createElement("audio", { src: url, controls: true })) : /* @__PURE__ */ BdApi.React.createElement("video", { src: url, loop: true, autoPlay: true, muted: true }) : "loading...");
 }
@@ -889,14 +956,16 @@ var Search = [
 function FolderDisplay({ folder, onClick }) {
   const React = BdApi.React;
   const onContextMenu = (e) => {
-    BdApi.ContextMenu.open(e, BdApi.ContextMenu.buildMenu([
+    BdApi.ContextMenu.open(e.nativeEvent, BdApi.ContextMenu.buildMenu([
       {
-        type: "text",
+        id: "rename",
+        type: "item",
         label: "Rename",
         onClick: () => Manager.renameFolder(folder)
       },
       {
-        type: "text",
+        id: "delete",
+        type: "item",
         label: "Delete",
         onClick: () => {
           BdApi.UI.showConfirmationModal("Deletion confirmation", `Are you sure you want to delete ${folder.name}?`, {
@@ -1307,7 +1376,7 @@ function forceUpdate(selector) {
   if (!target) return;
   const instance = BdApi.ReactUtils.getOwnerInstance(target);
   if (!instance) return;
-  const unpatch = Api.Patcher.instead(instance, "render", () => unpatch());
+  const unpatch = Api.Patcher.instead(instance, "render", () => unpatch?.());
   instance.forceUpdate(() => instance.forceUpdate());
 }
 
@@ -1375,7 +1444,8 @@ patchContextMenu("message", (element, props) => {
   element.props.children.props.children.push(
     BdApi.ContextMenu.buildItem({ type: "separator" }),
     BdApi.ContextMenu.buildItem({
-      type: "text",
+      id: "addToImageFolder",
+      type: "item",
       label: "Add to ImageFolder",
       onClick: () => Manager.saveImage(props.mediaItem.url)
     })

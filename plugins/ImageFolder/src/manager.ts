@@ -28,11 +28,25 @@ export const types: Record<string, [Media["type"], string]> = {
 }
 
 export default class Manager {
-    static base = path.join(__dirname, "imageFolder");
+    static base = path.resolve(BdApi.Plugins.folder, "imageFolder");
     static dir = Api.Data.load<string>("dir") ?? "";
     static saveDir = Api.Data.load<string>("saveDir") ?? this.base;
     static contents?: DirContents;
     static update?: (contents: DirContents) => void;
+
+    // Just looking for an excuse to use this syntax lol
+    static {
+        settings.onChange("imageFolderPath", (newPath) => {
+            this.base = path.resolve(BdApi.Plugins.folder, newPath);
+            Api.Logger.log(`Changing image folder path to ${this.base}`);
+
+            this.saveDir = this.base;
+            this.dir = "";
+            this.contents = undefined;
+            Api.Data.save("dir", "");
+            Api.Data.save("saveDir", this.base);
+        });
+    }
 
     static showFolder() {
         shell.openPath(path.join(this.base, this.dir));
