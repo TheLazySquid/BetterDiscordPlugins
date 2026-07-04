@@ -1,4 +1,4 @@
-import type { LazyModule } from "$shared/util/modules";
+import type * as ModuleLocators from "$shared/modules";
 
 export type ExportFilter = ((value: any) => boolean) | true;
 
@@ -11,7 +11,7 @@ interface LazyImporter<Runtime extends boolean> {
 }
 
 export interface ModuleLocator<Runtime extends boolean = false> {
-    name: keyof Modules;
+    name: keyof typeof ModuleLocators;
 
     id?: number;
     demangler?: Record<string, Runtime extends true ? BetterDiscord.ExportedOnlyFilter : string>;
@@ -29,13 +29,13 @@ export interface ModuleLocator<Runtime extends boolean = false> {
     defaultExport?: boolean;
 }
 
-type WithKey<T> = [T, string];
+export type WithKey<T> = [T, string];
 
-interface ReactElementModule {
+export interface ReactElementModule {
     type: (...args: any[]) => any;
 }
 
-interface ExpressionPicker {
+export interface ExpressionPicker {
     toggle: (id: string, type: any, channel: string) => void;
     close: () => void;
     store: {
@@ -44,17 +44,17 @@ interface ExpressionPicker {
     }
 }
 
-interface ModalOptions {
+export interface ModalOptions {
     onCloseCallback?: () => void;
     onCloseRequest?: () => boolean;
 }
 
-interface ModalMethods {
+export interface ModalMethods {
     openModal: (render: (props: any) => React.ReactNode, options?: ModalOptions) => string;
     closeModal: (id: string) => void;
 }
 
-interface AttachmentSystem {
+export interface AttachmentSystemType {
     popFirstFile: (channelId: string) => void;
     addFile: (props: any) => void;
     addFiles: (props: any) => void;
@@ -66,32 +66,8 @@ interface AttachmentSystem {
     setFile: (props: any) => void;
 }
 
-export interface Modules {
-    fileModule: any;
-    expressionModule: ReactElementModule;
-    buttonsModule: ReactElementModule;
-    uploadAreaClass: string;
-    chatbarInnerClass: string;
-    modalContainerClass: string;
-    gifDisplay: any;
-    highlightModule: LazyModule<any>;
-    createSlate: WithKey<any>;
-    attachFiles: WithKey<any>;
-    expressionPicker: ExpressionPicker;
-    AttachmentSystem: AttachmentSystem;
-    frequentlyUsedEmojis: WithKey<any>;
-    Modal: any;
-    modalMethods: ModalMethods;
-    editorEvents: WithKey<any>;
-    scroller: WithKey<any>;
-    toolbar: WithKey<any>;
-    toolbarClass: string;
-    maxUploadSize: (guildId: string | null) => number;
-    paste: () => void;
-}
-
 export interface PluginConfig {
     description: string;
     version: string;
-    modules: (keyof Modules)[];
+    modules: (keyof typeof ModuleLocators)[];
 }
