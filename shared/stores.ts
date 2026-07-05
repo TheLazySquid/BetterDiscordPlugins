@@ -3,3 +3,4 @@ import type { ChannelStore, SelectedChannelStore, SelectedGuildStore } from "@ve
 export const selectedChannelStore = /** @__PURE__ */ BdApi.Webpack.getStore("SelectedChannelStore") as unknown as SelectedChannelStore;
 export const selectedGuildStore = /** @__PURE__ */ BdApi.Webpack.getStore("SelectedGuildStore") as unknown as SelectedGuildStore;
 export const channelStore = /** @__PURE__ */ BdApi.Webpack.getStore("ChannelStore") as unknown as ChannelStore;
+export const rawGuildEmojiStore = /** @__PURE__ */ BdApi.Webpack.getStore("RawGuildEmojiStore") as any;

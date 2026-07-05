@@ -147,6 +147,26 @@ export const toolbarClass = defineModule<string>({
     filter: `Filters.byKeys("trailing", "winButton")`
 });
 
+export const emojiModule = defineModule<any>({
+    name: "emojiModule",
+    id: 7584,
+    filter: `Filters.byKeys("EMOJI_NAME_RE")`
+});
+
+export const EmojiPicker = defineModule<any>({
+    name: "EmojiPicker",
+    id: 334295,
+    filter: `Filters.bySource(".EMOJI_PICKER_POPOUT", "expandedSectionsByGuildIds")`,
+    getExport: true
+});
+
+export const EmojiDisplay = defineModule<any>({
+    name: "EmojiDisplay",
+    id: 565645,
+    filter: `Filters.bySource("useThoughtfullyAnimated", "untriggerAnimation")`,
+    getExport: true
+});
+
 export const maxUploadSize = defineModule<(guildId: string | null) => number>({
     name: "maxUploadSize",
     id: 453771,

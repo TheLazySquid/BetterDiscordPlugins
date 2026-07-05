@@ -51,7 +51,7 @@ export interface ModalOptions {
 
 export interface ModalMethods {
     openModal: (render: (props: any) => React.ReactNode, options?: ModalOptions) => string;
-    closeModal: (id: string) => void;
+    closeModal: (id: string | number) => void;
 }
 
 export interface AttachmentSystemType {

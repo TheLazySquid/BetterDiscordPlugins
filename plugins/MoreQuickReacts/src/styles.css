@@ -1,0 +1,37 @@
+.mqr-pins {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-top: 10px;
+    margin-bottom: 20px;
+}
+
+.mqr-pins button {
+    background-color: transparent;
+    color: white;
+    padding: 0;
+}
+
+.mqr-pinned {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 10px;
+    background-color: var(--background-base-lower);
+    border-radius: 4px;
+}
+
+.mqr-pinned > .preview {
+    flex-grow: 1;
+}
+
+.mqr-pins .mqr-addPin {
+    background-color: var(--background-base-lower);
+    border-radius: 4px;
+    padding: 4px 10px;
+}
+
+.mqr-settingSection {
+    font-weight: 500;
+    font-size: 16px;
+}
