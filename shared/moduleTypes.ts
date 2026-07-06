@@ -4,6 +4,7 @@ export type ExportFilter = ((value: any) => boolean) | true;
 
 type ModuleFilterInfo<Runtime extends boolean> = Runtime extends true ? BetterDiscord.ModuleFilter : string;
 type ExportFilterInfo<Runtime extends boolean> = Runtime extends true ? ExportFilter : string;
+type DeclarationFilterInfo<Runtime extends boolean> = Runtime extends true ? (value: any) => boolean : string;
 
 interface LazyImporter<Runtime extends boolean> {
     id?: number;
@@ -16,6 +17,7 @@ export interface ModuleLocator<Runtime extends boolean = false> {
     id?: number;
     demangler?: Record<string, Runtime extends true ? BetterDiscord.ExportedOnlyFilter : string>;
     lazyImporter?: LazyImporter<Runtime>;
+    declarationFilter?: DeclarationFilterInfo<Runtime>;
 
     // getExport overrides key
     getExport?: ExportFilterInfo<Runtime> | boolean;

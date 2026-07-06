@@ -76,7 +76,8 @@ function createQuery(locator: ModuleLocator<true>) {
         filter: locator.filter,
         firstId: locator.id,
         defaultExport: locator.defaultExport,
-        cacheId: locator.name
+        cacheId: locator.name,
+        declarationFilter: locator.declarationFilter
     };
 }
 

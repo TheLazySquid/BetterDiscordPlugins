@@ -13,5 +13,6 @@ export type Emoji = ServerEmoji | BuiltinEmoji;
 
 export interface MoreQuickReactsSettings {
     amount: number;
+    rows: number;
     pinnedEmojis: Emoji[];
 }

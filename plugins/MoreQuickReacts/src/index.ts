@@ -1,8 +1,17 @@
 import "./styles.css";
 import { after } from "$shared/api/patching";
-import { emojiModule, frequentlyUsedEmojis } from "$shared/modules";
+import { emojiModule, frequentlyUsedEmojis, ReactionsWrapper } from "$shared/modules";
 import { settings } from "./settings";
 import { rawGuildEmojiStore } from "$shared/stores";
+import { updateRows } from "./rows";
+
+after(ReactionsWrapper, "type", ({ returnVal }) => {
+    returnVal.props.children = BdApi.React.createElement("div", {
+        className: "mqr-reacts-grid"
+    }, returnVal.props.children);
+});
+
+updateRows();
 
 after(...frequentlyUsedEmojis, ({ returnVal }) => {
     returnVal.filter = function() {

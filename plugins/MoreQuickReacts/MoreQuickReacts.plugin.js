@@ -1,7 +1,7 @@
 /**
  * @name MoreQuickReacts
  * @description Increases the number of quick reactions available when hovering over a message, and pin ones of your choosing
- * @version 1.1.0
+ * @version 1.2.0
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -90,6 +90,11 @@ addStyle(`.mqr-pins {
 .mqr-settingSection {
   font-weight: 500;
   font-size: 16px;
+}
+
+.mqr-reacts-grid {
+  display: grid;
+  grid-auto-flow: column;
 }`);
 
 // shared/api/patching.ts
@@ -133,7 +138,8 @@ function createQuery(locator) {
     filter: locator.filter,
     firstId: locator.id,
     defaultExport: locator.defaultExport,
-    cacheId: locator.name
+    cacheId: locator.name,
+    declarationFilter: locator.declarationFilter
   };
 }
 function finalizeModule(locator, module) {
@@ -166,7 +172,7 @@ function findExportWithKey(module, filter) {
 
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var { frequentlyUsedEmojis, modalMethods, emojiModule, EmojiDisplay, EmojiPicker } = getSyncModules([
+var { frequentlyUsedEmojis, modalMethods, emojiModule, EmojiDisplay, EmojiPicker, ReactionsWrapper } = getSyncModules([
   {
     name: "frequentlyUsedEmojis",
     id: 822123,
@@ -195,6 +201,12 @@ var { frequentlyUsedEmojis, modalMethods, emojiModule, EmojiDisplay, EmojiPicker
     id: 334295,
     filter: Filters.bySource(".EMOJI_PICKER_POPOUT", "expandedSectionsByGuildIds"),
     getExport: true
+  },
+  {
+    name: "ReactionsWrapper",
+    id: 981714,
+    filter: Filters.bySource(".EmojiIntention.REACTION", ".reactions.filter("),
+    declarationFilter: (d) => d?.type?.toString().includes("isEmojiFilteredOrLocked")
   }
 ]);
 
@@ -222,6 +234,13 @@ var Trash = [
   ["path", { d: "M3 6h18" }],
   ["path", { d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" }]
 ];
+
+// plugins/MoreQuickReacts/src/rows.ts
+function updateRows() {
+  const css = `.mqr-reacts-grid { grid-template-rows: repeat(${settings.rows}, 1fr) }`;
+  Api.DOM.addStyle("mqr-rows", css);
+}
+onStop(() => Api.DOM.removeStyle("mqr-rows"));
 
 // plugins/MoreQuickReacts/src/settings.tsx
 function pickEmoji(onSelect) {
@@ -269,6 +288,7 @@ function pickEmoji(onSelect) {
 }
 var settings = {
   amount: 10,
+  rows: 1,
   pinnedEmojis: []
 };
 for (const key in settings) {
@@ -332,6 +352,22 @@ setSettingsPanel(() => {
     step: 1,
     markers: [0, 5, 10, 15, 20, 25, 30],
     inline: false
+  }), BdApi.UI.buildSettingItem({
+    value: settings.rows,
+    onChange: (rows) => {
+      settings.rows = rows;
+      onUpdate("rows");
+      updateRows();
+    },
+    type: "slider",
+    min: 1,
+    max: 10,
+    id: "rows",
+    name: "Rows of Quick Reacts",
+    note: "Has no effect on total reacts shown.",
+    step: 1,
+    markers: [0, 2, 4, 6, 8, 10],
+    inline: false
   }), /* @__PURE__ */ BdApi.React.createElement("div", { className: "mqr-settingSection" }, "Pinned Emojis"), /* @__PURE__ */ BdApi.React.createElement(PinnedEmojis, null));
 });
 
@@ -339,6 +375,12 @@ setSettingsPanel(() => {
 var rawGuildEmojiStore = /* @__PURE__ */ BdApi.Webpack.getStore("RawGuildEmojiStore");
 
 // plugins/MoreQuickReacts/src/index.ts
+after(ReactionsWrapper, "type", ({ returnVal }) => {
+  returnVal.props.children = BdApi.React.createElement("div", {
+    className: "mqr-reacts-grid"
+  }, returnVal.props.children);
+});
+updateRows();
 after(...frequentlyUsedEmojis, ({ returnVal }) => {
   returnVal.filter = function() {
     const alreadySeen = new Set(settings.pinnedEmojis.map((e) => e.id));

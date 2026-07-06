@@ -167,6 +167,13 @@ export const EmojiDisplay = defineModule<any>({
     getExport: true
 });
 
+export const ReactionsWrapper = defineModule<ReactElementModule>({
+    name: "ReactionsWrapper",
+    id: 981714,
+    filter: `Filters.bySource(".EmojiIntention.REACTION", ".reactions.filter(")`,
+    declarationFilter: `(d) => d?.type?.toString().includes("isEmojiFilteredOrLocked")`
+});
+
 export const maxUploadSize = defineModule<(guildId: string | null) => number>({
     name: "maxUploadSize",
     id: 453771,

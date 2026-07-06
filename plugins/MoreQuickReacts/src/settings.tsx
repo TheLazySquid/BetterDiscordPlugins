@@ -3,6 +3,7 @@ import { Api, setSettingsPanel } from "$shared/bd"
 import { emojiModule, modalMethods, EmojiDisplay, EmojiPicker } from "$shared/modules";
 import { LucideIcon } from "$shared/ui/icons";
 import { ArrowUp, ArrowDown, Trash } from "lucide";
+import { updateRows } from "./rows";
 
 function pickEmoji(onSelect: (emoji: Emoji) => void) {
     let modalId = BdApi.UI.showConfirmationModal(
@@ -46,6 +47,7 @@ function pickEmoji(onSelect: (emoji: Emoji) => void) {
 
 export const settings: MoreQuickReactsSettings = {
     amount: 10,
+    rows: 1,
     pinnedEmojis: []
 };
 
@@ -135,8 +137,8 @@ setSettingsPanel(() => {
             {BdApi.UI.buildSettingItem({
                 value: settings.amount,
                 onChange: (amount: number) => {
-                    settings.amount = amount
-                    onUpdate("amount")
+                    settings.amount = amount;
+                    onUpdate("amount");
                 },
                 type: "slider",
                 min: 0,
@@ -146,6 +148,23 @@ setSettingsPanel(() => {
                 note: "Switching channels may be required to see changes.",
                 step: 1,
                 markers: [0, 5, 10, 15, 20, 25, 30],
+                inline: false
+            })}
+            {BdApi.UI.buildSettingItem({
+                value: settings.rows,
+                onChange: (rows: number) => {
+                    settings.rows = rows;
+                    onUpdate("rows");
+                    updateRows();
+                },
+                type: "slider",
+                min: 1,
+                max: 10,
+                id: "rows",
+                name: "Rows of Quick Reacts",
+                note: "Has no effect on total reacts shown.",
+                step: 1,
+                markers: [0, 2, 4, 6, 8, 10],
                 inline: false
             })}
             <div className="mqr-settingSection">Pinned Emojis</div>
