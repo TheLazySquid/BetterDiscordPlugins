@@ -22,7 +22,7 @@ after(gifDisplay.prototype, "render", ({ thisVal, returnVal }) => {
             const url = formatUrl(thisVal.props.src);
             const urlString = url.toString();
             const isWebp = url.pathname.endsWith(".webp");
-            Api.Logger.info("URL formatted to", urlString);
+            Api.Logger.log("URL formatted to", urlString);
 
             if(isImage) {
                 let image = document.createElement("img");

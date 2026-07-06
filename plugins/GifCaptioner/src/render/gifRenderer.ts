@@ -45,7 +45,7 @@ export default class GifRenderer {
 		this.height = height;
 		this.transform = transform;
 
-		Api.Logger.info(`Creating ${width}x${height} gif renderer with ${frames} frames`);
+		Api.Logger.log(`Creating ${width}x${height} gif renderer with ${frames} frames`);
 		if(!worker.url) {
 			progress.close();
 			error("Attempted to encode gif while GifCaptioner is disabled");
