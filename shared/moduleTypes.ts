@@ -16,6 +16,7 @@ export interface ModuleLocator<Runtime extends boolean = false> {
 
     id?: number;
     demangler?: Record<string, Runtime extends true ? BetterDiscord.ExportedOnlyFilter : string>;
+    lazy?: boolean;
     lazyImporter?: LazyImporter<Runtime>;
     declarationFilter?: DeclarationFilterInfo<Runtime>;
 

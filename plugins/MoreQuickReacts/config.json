@@ -1,7 +1,7 @@
 {
     "$schema": "../schema.json",
     "description": "Increases the number of quick reactions available when hovering over a message, and pin ones of your choosing",
-    "version": "1.2.1",
+    "version": "1.2.2",
     "modules": [
         "frequentlyUsedEmojis",
         "modalMethods",

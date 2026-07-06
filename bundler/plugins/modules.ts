@@ -20,8 +20,8 @@ export function modulesPlugin(ids: (keyof typeof ModuleLocators)[]): Plugin {
 }
 
 function createModulesFile(ids: (keyof typeof ModuleLocators)[]): string {
-    const syncIds = ids.filter(id => !ModuleLocators[id].lazyImporter);
-    const lazyIds = ids.filter(id => ModuleLocators[id].lazyImporter);
+    const syncIds = ids.filter(id => !ModuleLocators[id].lazy);
+    const lazyIds = ids.filter(id => ModuleLocators[id].lazy);
 
     let content = `import { getSyncModules, getLazyModules } from "$shared/util/modules";\n\n` +
         `const Filters = BdApi.Webpack.Filters;\n`;

@@ -44,7 +44,8 @@ export class LazyModule<T> {
         BdApi.Webpack.waitForModule(locator.filter, {
             firstId: locator.id,
             cacheId: locator.name,
-            defaultExport: locator.defaultExport ?? true
+            defaultExport: locator.defaultExport ?? true,
+            declarationFilter: locator.declarationFilter
         })?.then((module) => {
             this.value = module as T;
             resolve(finalizeModule(locator, module));
@@ -55,10 +56,12 @@ export class LazyModule<T> {
 
     loading = false;
     load() {
+        if(!this.locator.lazyImporter) throw new Error("Attempted to load a lazy module with no importer");
+
         if(this.loading) return this.loaded;
         this.loading = true;
 
-        const importer = this.locator.lazyImporter!;
+        const importer = this.locator.lazyImporter;
         const importerModule = BdApi.Webpack.getModule(importer.filter, {
             firstId: importer.id,
             cacheId: `${this.locator.name}-importer`,

@@ -1,18 +1,22 @@
-declare let plugin: any;
 import type { ReactElement } from "react";
 import { pluginName } from "meta";
 
+declare let plugin: any;
+
 export const Api = /* @__PURE__ */ new BdApi(pluginName);
+let started = false;
 
 interface Callback {
     callback: () => void;
     once?: boolean;
 }
 
-const createCallbackHandler = (callbackName: string) => {
+const createCallbackHandler = (callbackName: string, changeStarted?: boolean) => {
     let callbacks: Callback[] = [];
 
     plugin[callbackName] = () => {
+        if(typeof changeStarted === "boolean") started = changeStarted;
+
         for (let i = 0; i < callbacks.length; i++) {
             callbacks[i].callback();
             if(callbacks[i].once) {
@@ -21,8 +25,13 @@ const createCallbackHandler = (callbackName: string) => {
             }
         }
     }
-
+    
     return (callback: () => void, once?: boolean) => {
+        if(changeStarted && started) {
+            callback();
+            if(once) return;
+        }
+
         callbacks.push({ callback, once });
     }
 }
@@ -32,13 +41,13 @@ const createCallbackHandler = (callbackName: string) => {
  * @param callback - The callback to be fired
  * @param once - If true, the callback will be deleted after use
  */
-export const onStart = createCallbackHandler("start");
+export const onStart = createCallbackHandler("start", true);
 /**
  * Takes a callback and fires it when the plugin is stopped
  * @param callback - The callback to be fired
  * @param once - If true, the callback will be deleted after use
  */
-export const onStop = createCallbackHandler("stop");
+export const onStop = createCallbackHandler("stop", false);
 /**
  * Takes a callback and fires it when the user navigates
  * @param callback - The callback to be fired

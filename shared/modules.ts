@@ -52,6 +52,7 @@ export const highlightModule = defineModule<LazyModule<any>>({
     name: "highlightModule",
     id: 981776,
     filter: `Filters.byKeys("highlight", "hasLanguage")`,
+    lazy: true,
     lazyImporter: {
         id: 981776,
         filter: `Filters.bySource("location:\\"PlaintextFilePreview\\"")`
@@ -167,11 +168,12 @@ export const EmojiDisplay = defineModule<any>({
     getExport: true
 });
 
-export const ReactionsWrapper = defineModule<ReactElementModule>({
+export const ReactionsWrapper = defineModule<LazyModule<ReactElementModule>>({
     name: "ReactionsWrapper",
     id: 981714,
     filter: `Filters.bySource(".EmojiIntention.REACTION", ".reactions.filter(")`,
-    declarationFilter: `(d) => d?.type?.toString().includes("isEmojiFilteredOrLocked")`
+    declarationFilter: `(d) => d?.type?.toString().includes("isEmojiFilteredOrLocked")`,
+    lazy: true
 });
 
 export const maxUploadSize = defineModule<(guildId: string | null) => number>({

@@ -6,10 +6,12 @@ import { rawGuildEmojiStore } from "$shared/stores";
 import { updateRows } from "./rows";
 import { onStart } from "$shared/bd";
 
-after(ReactionsWrapper, "type", ({ returnVal }) => {
-    returnVal.props.children = BdApi.React.createElement("div", {
-        className: "mqr-reacts-grid"
-    }, returnVal.props.children);
+ReactionsWrapper.loaded.then((Wrapper) => {
+    after(Wrapper, "type", ({ returnVal }) => {
+        returnVal.props.children = BdApi.React.createElement("div", {
+            className: "mqr-reacts-grid"
+        }, returnVal.props.children);
+    });
 });
 
 onStart(() => updateRows());

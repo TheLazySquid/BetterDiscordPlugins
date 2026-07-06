@@ -1,7 +1,7 @@
 /**
  * @name MoreQuickReacts
  * @description Increases the number of quick reactions available when hovering over a message, and pin ones of your choosing
- * @version 1.2.1
+ * @version 1.2.2
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -17,9 +17,11 @@ var pluginName = "MoreQuickReacts";
 
 // shared/bd.ts
 var Api = /* @__PURE__ */ new BdApi(pluginName);
-var createCallbackHandler = (callbackName) => {
+var started = false;
+var createCallbackHandler = (callbackName, changeStarted) => {
   let callbacks = [];
   plugin[callbackName] = () => {
+    if (typeof changeStarted === "boolean") started = changeStarted;
     for (let i = 0; i < callbacks.length; i++) {
       callbacks[i].callback();
       if (callbacks[i].once) {
@@ -29,11 +31,15 @@ var createCallbackHandler = (callbackName) => {
     }
   };
   return (callback, once) => {
+    if (changeStarted && started) {
+      callback();
+      if (once) return;
+    }
     callbacks.push({ callback, once });
   };
 };
-var onStart = createCallbackHandler("start");
-var onStop = createCallbackHandler("stop");
+var onStart = createCallbackHandler("start", true);
+var onStop = createCallbackHandler("stop", false);
 function setSettingsPanel(el) {
   if (typeof el === "function") plugin.getSettingsPanel = el;
   plugin.getSettingsPanel = () => el;
@@ -133,6 +139,45 @@ function getSyncModules(locators) {
   }
   return returned;
 }
+function getLazyModules(locators) {
+  let returned = {};
+  for (let locator of locators) {
+    returned[locator.name] = new LazyModule(locator);
+  }
+  return returned;
+}
+var LazyModule = class {
+  constructor(locator) {
+    this.locator = locator;
+    const { promise, resolve } = Promise.withResolvers();
+    BdApi.Webpack.waitForModule(locator.filter, {
+      firstId: locator.id,
+      cacheId: locator.name,
+      defaultExport: locator.defaultExport ?? true,
+      declarationFilter: locator.declarationFilter
+    })?.then((module) => {
+      this.value = module;
+      resolve(finalizeModule(locator, module));
+    });
+    this.loaded = promise;
+  }
+  value = null;
+  loaded;
+  loading = false;
+  load() {
+    if (!this.locator.lazyImporter) throw new Error("Attempted to load a lazy module with no importer");
+    if (this.loading) return this.loaded;
+    this.loading = true;
+    const importer = this.locator.lazyImporter;
+    const importerModule = BdApi.Webpack.getModule(importer.filter, {
+      firstId: importer.id,
+      cacheId: `${this.locator.name}-importer`,
+      raw: true
+    });
+    BdApi.Utils.forceLoad(importerModule.id);
+    return this.loaded;
+  }
+};
 function createQuery(locator) {
   return {
     filter: locator.filter,
@@ -172,7 +217,7 @@ function findExportWithKey(module, filter) {
 
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var { frequentlyUsedEmojis, modalMethods, emojiModule, EmojiDisplay, EmojiPicker, ReactionsWrapper } = getSyncModules([
+var { frequentlyUsedEmojis, modalMethods, emojiModule, EmojiDisplay, EmojiPicker } = getSyncModules([
   {
     name: "frequentlyUsedEmojis",
     id: 822123,
@@ -201,12 +246,15 @@ var { frequentlyUsedEmojis, modalMethods, emojiModule, EmojiDisplay, EmojiPicker
     id: 334295,
     filter: Filters.bySource(".EMOJI_PICKER_POPOUT", "expandedSectionsByGuildIds"),
     getExport: true
-  },
+  }
+]);
+var { ReactionsWrapper } = getLazyModules([
   {
     name: "ReactionsWrapper",
     id: 981714,
     filter: Filters.bySource(".EmojiIntention.REACTION", ".reactions.filter("),
-    declarationFilter: (d) => d?.type?.toString().includes("isEmojiFilteredOrLocked")
+    declarationFilter: (d) => d?.type?.toString().includes("isEmojiFilteredOrLocked"),
+    lazy: true
   }
 ]);
 
@@ -375,10 +423,12 @@ setSettingsPanel(() => {
 var rawGuildEmojiStore = /* @__PURE__ */ BdApi.Webpack.getStore("RawGuildEmojiStore");
 
 // plugins/MoreQuickReacts/src/index.ts
-after(ReactionsWrapper, "type", ({ returnVal }) => {
-  returnVal.props.children = BdApi.React.createElement("div", {
-    className: "mqr-reacts-grid"
-  }, returnVal.props.children);
+ReactionsWrapper.loaded.then((Wrapper) => {
+  after(Wrapper, "type", ({ returnVal }) => {
+    returnVal.props.children = BdApi.React.createElement("div", {
+      className: "mqr-reacts-grid"
+    }, returnVal.props.children);
+  });
 });
 onStart(() => updateRows());
 after(...frequentlyUsedEmojis, ({ returnVal }) => {
