@@ -4,6 +4,7 @@ import { emojiModule, frequentlyUsedEmojis, ReactionsWrapper } from "$shared/mod
 import { settings } from "./settings";
 import { rawGuildEmojiStore } from "$shared/stores";
 import { updateRows } from "./rows";
+import { onStart } from "$shared/bd";
 
 after(ReactionsWrapper, "type", ({ returnVal }) => {
     returnVal.props.children = BdApi.React.createElement("div", {
@@ -11,7 +12,7 @@ after(ReactionsWrapper, "type", ({ returnVal }) => {
     }, returnVal.props.children);
 });
 
-updateRows();
+onStart(() => updateRows());
 
 after(...frequentlyUsedEmojis, ({ returnVal }) => {
     returnVal.filter = function() {

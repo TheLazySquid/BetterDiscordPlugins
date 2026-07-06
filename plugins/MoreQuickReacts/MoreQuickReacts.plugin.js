@@ -1,7 +1,7 @@
 /**
  * @name MoreQuickReacts
  * @description Increases the number of quick reactions available when hovering over a message, and pin ones of your choosing
- * @version 1.2.0
+ * @version 1.2.1
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -380,7 +380,7 @@ after(ReactionsWrapper, "type", ({ returnVal }) => {
     className: "mqr-reacts-grid"
   }, returnVal.props.children);
 });
-updateRows();
+onStart(() => updateRows());
 after(...frequentlyUsedEmojis, ({ returnVal }) => {
   returnVal.filter = function() {
     const alreadySeen = new Set(settings.pinnedEmojis.map((e) => e.id));
