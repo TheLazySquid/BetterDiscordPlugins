@@ -9,55 +9,71 @@ import captionMp4 from "./render/video";
 import captionImage from "./render/image";
 import Modal from "./ui/modal";
 import { CCIcon } from "$shared/ui/icons";
-import { Api } from "$shared/bd";
+import { Api, expose } from "$shared/bd";
 
 addFont(futura, "futuraBoldCondensed");
+expose("CaptionButton", CaptionButton);
+expose("captionGif", captionGif);
 
 after(gifDisplay.prototype, "render", ({ thisVal, returnVal }) => {
-    const button = BdApi.React.createElement("button", {
-        className: "gc-trigger",
+    const button = BdApi.React.createElement(CaptionButton, {
         onClick: (e) => {
             e.stopPropagation();
+            const src = thisVal.props.src;
             const isImage = thisVal.props.format === 1;
-            const url = formatUrl(thisVal.props.src);
-            const urlString = url.toString();
-            const isWebp = url.pathname.endsWith(".webp");
-            Api.Logger.log("URL formatted to", urlString);
 
-            if(isImage) {
-                let image = document.createElement("img");
-                image.src = urlString;
-                
-                image.addEventListener("load", () => {
-                    // For some reason the height and width change once added to the dom
-                    let { width, height } = image;
-                    showCaptioner(width, height, image, (transform) => {
-                        const mime = isWebp ? "image/webp" : "image/gif";
-                        captionImage(urlString, width, height, transform, mime);
-                    });
-                });
-                image.addEventListener("error", () => error("Failed to load gif"));
-            } else {
-                let video = document.createElement("video");
-                video.src = urlString;
-                video.autoplay = true;
-                video.loop = true;
-                video.muted = true;
-                video.load();
-
-                video.addEventListener("canplaythrough", () => {
-                    let { videoWidth, videoHeight } = video;
-                    showCaptioner(videoWidth, videoHeight, video, (transform) => {
-                        captionMp4(urlString, videoWidth, videoHeight, transform);
-                    });
-                }, { once: true });
-                video.addEventListener("error", () => error("Failed to load gif"));
-            }
+            captionGif(src, isImage);
         }
-    }, BdApi.React.createElement(CCIcon));
+    });
 
     returnVal.props.children.unshift(button);
 });
+
+function CaptionButton(options: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+    const button = BdApi.React.createElement("button", {
+        className: "gc-trigger",
+        ...options
+    }, BdApi.React.createElement(CCIcon));
+
+    return button;
+}
+
+function captionGif(src: string, isImage: boolean) {
+    const url = formatUrl(src);
+    const urlString = url.toString();
+    const isWebp = url.pathname.endsWith(".webp");
+    Api.Logger.info("URL formatted to", urlString);
+
+    if(isImage) {
+        let image = document.createElement("img");
+        image.src = urlString;
+        
+        image.addEventListener("load", () => {
+            // For some reason the height and width change once added to the dom
+            let { width, height } = image;
+            showCaptioner(width, height, image, (transform) => {
+                const mime = isWebp ? "image/webp" : "image/gif";
+                captionImage(urlString, width, height, transform, mime);
+            });
+        });
+        image.addEventListener("error", () => error("Failed to load gif"));
+    } else {
+        let video = document.createElement("video");
+        video.src = urlString;
+        video.autoplay = true;
+        video.loop = true;
+        video.muted = true;
+        video.load();
+
+        video.addEventListener("canplaythrough", () => {
+            let { videoWidth, videoHeight } = video;
+            showCaptioner(videoWidth, videoHeight, video, (transform) => {
+                captionMp4(urlString, videoWidth, videoHeight, transform);
+            });
+        }, { once: true });
+        video.addEventListener("error", () => error("Failed to load gif"));
+    }
+}
 
 function showCaptioner(width: number, height: number, element: HTMLElement, onConfirm: (transform: GifTransform) => void) {
     let submitCallback: () => GifTransform;

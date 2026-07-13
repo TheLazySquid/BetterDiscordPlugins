@@ -1,7 +1,7 @@
 /**
  * @name GifCaptioner
  * @description A BetterDiscord plugin that allows you to add a caption to discord gifs
- * @version 2.3.0
+ * @version 2.4.0
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -566,9 +566,11 @@ var pluginName = "GifCaptioner";
 
 // shared/bd.ts
 var Api = /* @__PURE__ */ new BdApi(pluginName);
-var createCallbackHandler = (callbackName) => {
+var started = false;
+var createCallbackHandler = (callbackName, changeStarted) => {
   let callbacks = [];
   plugin[callbackName] = () => {
+    if (typeof changeStarted === "boolean") started = changeStarted;
     for (let i = 0; i < callbacks.length; i++) {
       callbacks[i].callback();
       if (callbacks[i].once) {
@@ -578,14 +580,21 @@ var createCallbackHandler = (callbackName) => {
     }
   };
   return (callback, once) => {
+    if (changeStarted && started) {
+      callback();
+      if (once) return;
+    }
     callbacks.push({ callback, once });
   };
 };
-var onStart = createCallbackHandler("start");
-var onStop = createCallbackHandler("stop");
+var onStart = createCallbackHandler("start", true);
+var onStop = createCallbackHandler("stop", false);
 function setSettingsPanel(el) {
   if (typeof el === "function") plugin.getSettingsPanel = el;
   plugin.getSettingsPanel = () => el;
+}
+function expose(key, value) {
+  plugin[key] = value;
 }
 
 // shared/api/styles.ts
@@ -754,7 +763,8 @@ function createQuery(locator) {
     filter: locator.filter,
     firstId: locator.id,
     defaultExport: locator.defaultExport,
-    cacheId: locator.name
+    cacheId: locator.name,
+    declarationFilter: locator.declarationFilter
   };
 }
 function finalizeModule(locator, module) {
@@ -992,6 +1002,7 @@ function createSettings(panelSettings, defaults) {
     if (!setting.id) continue;
     settings2[setting.id] = Api.Data.load(setting.id) ?? defaults[setting.id];
   }
+  const onChangeCallbacks = {};
   setSettingsPanel(() => {
     for (let setting of panelSettings) {
       setting.value = settings2[setting.id];
@@ -1001,9 +1012,14 @@ function createSettings(panelSettings, defaults) {
       onChange: (_, id, value) => {
         settings2[id] = value;
         Api.Data.save(id, value);
+        onChangeCallbacks[id]?.forEach((cb) => cb(value));
       }
     });
   });
+  settings2.onChange = (id, callback) => {
+    onChangeCallbacks[id] ??= [];
+    onChangeCallbacks[id].push(callback);
+  };
   return settings2;
 }
 
@@ -1036,7 +1052,7 @@ var GifRenderer = class {
     this.width = width;
     this.height = height;
     this.transform = transform;
-    Api.Logger.info(`Creating ${width}x${height} gif renderer with ${frames} frames`);
+    Api.Logger.log(`Creating ${width}x${height} gif renderer with ${frames} frames`);
     if (!worker.url) {
       progress.close();
       error("Attempted to encode gif while GifCaptioner is disabled");
@@ -11545,46 +11561,58 @@ function CCIcon() {
 
 // plugins/GifCaptioner/src/index.ts
 addFont(Futura_Condensed_Extra_Bold_default, "futuraBoldCondensed");
+expose("CaptionButton", CaptionButton);
+expose("captionGif", captionGif);
 after(gifDisplay.prototype, "render", ({ thisVal, returnVal }) => {
-  const button = BdApi.React.createElement("button", {
-    className: "gc-trigger",
+  const button = BdApi.React.createElement(CaptionButton, {
     onClick: (e) => {
       e.stopPropagation();
+      const src = thisVal.props.src;
       const isImage = thisVal.props.format === 1;
-      const url = formatUrl(thisVal.props.src);
-      const urlString = url.toString();
-      const isWebp = url.pathname.endsWith(".webp");
-      Api.Logger.info("URL formatted to", urlString);
-      if (isImage) {
-        let image = document.createElement("img");
-        image.src = urlString;
-        image.addEventListener("load", () => {
-          let { width, height } = image;
-          showCaptioner(width, height, image, (transform) => {
-            const mime = isWebp ? "image/webp" : "image/gif";
-            captionImage(urlString, width, height, transform, mime);
-          });
-        });
-        image.addEventListener("error", () => error("Failed to load gif"));
-      } else {
-        let video = document.createElement("video");
-        video.src = urlString;
-        video.autoplay = true;
-        video.loop = true;
-        video.muted = true;
-        video.load();
-        video.addEventListener("canplaythrough", () => {
-          let { videoWidth, videoHeight } = video;
-          showCaptioner(videoWidth, videoHeight, video, (transform) => {
-            captionMp4(urlString, videoWidth, videoHeight, transform);
-          });
-        }, { once: true });
-        video.addEventListener("error", () => error("Failed to load gif"));
-      }
+      captionGif(src, isImage);
     }
-  }, BdApi.React.createElement(CCIcon));
+  });
   returnVal.props.children.unshift(button);
 });
+function CaptionButton(options) {
+  const button = BdApi.React.createElement("button", {
+    className: "gc-trigger",
+    ...options
+  }, BdApi.React.createElement(CCIcon));
+  return button;
+}
+function captionGif(src, isImage) {
+  const url = formatUrl(src);
+  const urlString = url.toString();
+  const isWebp = url.pathname.endsWith(".webp");
+  Api.Logger.info("URL formatted to", urlString);
+  if (isImage) {
+    let image = document.createElement("img");
+    image.src = urlString;
+    image.addEventListener("load", () => {
+      let { width, height } = image;
+      showCaptioner(width, height, image, (transform) => {
+        const mime = isWebp ? "image/webp" : "image/gif";
+        captionImage(urlString, width, height, transform, mime);
+      });
+    });
+    image.addEventListener("error", () => error("Failed to load gif"));
+  } else {
+    let video = document.createElement("video");
+    video.src = urlString;
+    video.autoplay = true;
+    video.loop = true;
+    video.muted = true;
+    video.load();
+    video.addEventListener("canplaythrough", () => {
+      let { videoWidth, videoHeight } = video;
+      showCaptioner(videoWidth, videoHeight, video, (transform) => {
+        captionMp4(urlString, videoWidth, videoHeight, transform);
+      });
+    }, { once: true });
+    video.addEventListener("error", () => error("Failed to load gif"));
+  }
+}
 function showCaptioner(width, height, element, onConfirm) {
   let submitCallback;
   const modal = BdApi.React.createElement(Modal2, {
