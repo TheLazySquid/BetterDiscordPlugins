@@ -19,7 +19,7 @@ export const expressionModule = defineModule<ReactElementModule>({
 
 export const buttonsModule = defineModule<ReactElementModule>({
     name: "buttonsModule",
-    id: 729666,
+    id: 123583,
     filter: `(m) => m.type?.toString?.().includes(".isSubmitButtonEnabled")`
 });
 
@@ -61,7 +61,7 @@ export const highlightModule = defineModule<LazyModule<any>>({
 
 export const createSlate = defineModule<WithKey<any>>({
     name: "createSlate",
-    id: 154283,
+    id: 719442,
     filter: `Filters.bySource("iterations!", "insertFragment")`,
     getExport: `Filters.byStrings("iterations!", "insertFragment")`,
     getWithKey: true
@@ -116,7 +116,7 @@ export const modalMethods = defineModule<ModalMethods>({
 
 export const editorEvents = defineModule<WithKey<any>>({
     name: "editorEvents",
-    id: 112541,
+    id: 392553,
     getExport: true,
     getWithKey: true,
     filter: `Filters.bySource(",submit:","selectPreviousCommandOption")`,
@@ -170,7 +170,7 @@ export const EmojiDisplay = defineModule<any>({
 
 export const ReactionsWrapper = defineModule<LazyModule<ReactElementModule>>({
     name: "ReactionsWrapper",
-    id: 981714,
+    id: 243783,
     filter: `Filters.bySource(".EmojiIntention.REACTION", ".reactions.filter(")`,
     declarationFilter: `(d) => d?.type?.toString().includes("isEmojiFilteredOrLocked")`,
     lazy: true
