@@ -100,7 +100,6 @@ addStyle(`.mqr-pins {
 
 .mqr-reacts-grid {
   display: grid;
-  grid-auto-flow: column;
 }`);
 
 // shared/api/patching.ts
@@ -251,7 +250,7 @@ var { frequentlyUsedEmojis, modalMethods, emojiModule, EmojiDisplay, EmojiPicker
 var { ReactionsWrapper } = getLazyModules([
   {
     name: "ReactionsWrapper",
-    id: 981714,
+    id: 243783,
     filter: Filters.bySource(".EmojiIntention.REACTION", ".reactions.filter("),
     declarationFilter: (d) => d?.type?.toString().includes("isEmojiFilteredOrLocked"),
     lazy: true
@@ -285,7 +284,8 @@ var Trash = [
 
 // plugins/MoreQuickReacts/src/rows.ts
 function updateRows() {
-  const css = `.mqr-reacts-grid { grid-template-rows: repeat(${settings.rows}, 1fr) }`;
+  const columns = Math.ceil(settings.amount / settings.rows);
+  const css = `.mqr-reacts-grid { grid-template-columns: repeat(${columns}, 1fr) }`;
   Api.DOM.addStyle("mqr-rows", css);
 }
 onStop(() => Api.DOM.removeStyle("mqr-rows"));
@@ -390,6 +390,7 @@ setSettingsPanel(() => {
     onChange: (amount) => {
       settings.amount = amount;
       onUpdate("amount");
+      updateRows();
     },
     type: "slider",
     min: 0,

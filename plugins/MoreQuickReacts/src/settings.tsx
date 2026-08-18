@@ -139,6 +139,7 @@ setSettingsPanel(() => {
                 onChange: (amount: number) => {
                     settings.amount = amount;
                     onUpdate("amount");
+                    updateRows();
                 },
                 type: "slider",
                 min: 0,
