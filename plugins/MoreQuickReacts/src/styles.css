@@ -39,3 +39,7 @@
 .mqr-reacts-grid {
     display: grid;
 }
+
+.mqr-reacts-grid + div {
+    height: calc(100% - 8px);
+}

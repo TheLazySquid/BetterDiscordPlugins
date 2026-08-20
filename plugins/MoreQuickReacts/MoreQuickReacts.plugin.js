@@ -1,7 +1,7 @@
 /**
  * @name MoreQuickReacts
  * @description Increases the number of quick reactions available when hovering over a message, and pin ones of your choosing
- * @version 1.2.3
+ * @version 1.2.4
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -100,6 +100,10 @@ addStyle(`.mqr-pins {
 
 .mqr-reacts-grid {
   display: grid;
+}
+
+.mqr-reacts-grid + div {
+  height: calc(100% - 8px);
 }`);
 
 // shared/api/patching.ts
