@@ -24,7 +24,7 @@
         "noUnusedLocals": false,
         "noUnusedParameters": false,
         "noPropertyAccessFromIndexSignature": false,
-        "types": ["bun"],
+        "types": ["bun", "@betterdiscord/types"],
         "paths": {
             "$assets/*": ["./assets/*"],
             "$shared/*": ["./shared/*"],
