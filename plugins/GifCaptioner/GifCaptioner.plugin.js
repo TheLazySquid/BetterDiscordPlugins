@@ -1,16 +1,39 @@
 /**
  * @name GifCaptioner
  * @description A BetterDiscord plugin that allows you to add a caption to discord gifs
- * @version 2.4.0
+ * @version 2.4.1
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
  * @source https://github.com/TheLazySquid/BetterDiscordPlugins/tree/main/plugins/GifCaptioner/GifCaptioner.plugin.js
  * @invite fKdAaFYbD5
  */
+/*@cc_on
+@if (@_jscript)
+
+	// Offer to self-install for clueless users that try to run this directly.
+	var shell = WScript.CreateObject("WScript.Shell");
+	var fs = new ActiveXObject("Scripting.FileSystemObject");
+	var pathPlugins = shell.ExpandEnvironmentStrings("%APPDATA%\\BetterDiscord\\plugins");
+	var pathSelf = WScript.ScriptFullName;
+	// Put the user at ease by addressing them in the first person
+	shell.Popup("It looks like you've mistakenly tried to run me directly. \n(Don't do that!)", 0, "I'm a plugin for BetterDiscord", 0x30);
+	if (fs.GetParentFolderName(pathSelf) === fs.GetAbsolutePathName(pathPlugins)) {
+		shell.Popup("I'm in the correct folder already.", 0, "I'm already installed", 0x40);
+	} else if (!fs.FolderExists(pathPlugins)) {
+		shell.Popup("I can't find the BetterDiscord plugins folder.\nAre you sure it's even installed?", 0, "Can't install myself", 0x10);
+	} else if (shell.Popup("Should I copy myself to BetterDiscord's plugins folder for you?", 0, "Do you need some help?", 0x34) === 6) {
+		fs.CopyFile(pathSelf, fs.BuildPath(pathPlugins, fs.GetFileName(pathSelf)), true);
+		// Show the user where to put plugins in the future
+		shell.Exec("explorer " + pathPlugins);
+		shell.Popup("I'm installed!", 0, "Successfully installed", 0x40);
+	}
+	WScript.Quit();
+
+@else@*/
 module.exports = class {
   constructor() {
-    let plugin = this;
+let plugin = this;
 var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -797,10 +820,10 @@ function findExportWithKey(module, filter) {
 
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var { editorEvents, attachFiles, scroller, expressionPicker, gifDisplay, modalMethods, Modal, maxUploadSize, modalContainerClass } = getSyncModules([
+var { editorEvents, attachFiles, scroller, expressionPicker, gifDisplay, modalMethods, Modal, maxUploadSize, adjustUploadSize, modalContainerClass } = getSyncModules([
   {
     name: "editorEvents",
-    id: 112541,
+    id: 392553,
     getExport: true,
     getWithKey: true,
     filter: Filters.bySource(",submit:", "selectPreviousCommandOption"),
@@ -853,6 +876,15 @@ var { editorEvents, attachFiles, scroller, expressionPicker, gifDisplay, modalMe
     id: 453771,
     getExport: Filters.byStrings("getUserMaxFileSize"),
     filter: Filters.bySource("getUserMaxFileSize", "reType")
+  },
+  {
+    name: "adjustUploadSize",
+    id: 550642,
+    filter: Filters.bySource('isGA?"kestrel_ga"'),
+    demangler: {
+      getOptions: (f) => f.toString().includes("isGA:!1"),
+      getRealSize: (f) => f.toString().includes("1048576")
+    }
   },
   {
     name: "modalContainerClass",
@@ -991,8 +1023,10 @@ function renderSpeechbubble(ctx, width, height, tipX, tipY, tipBase) {
 
 // shared/util/permissions.ts
 function getMaxFileSize() {
-  const id = selectedGuildStore.getGuildId();
-  return maxUploadSize(id);
+  const options = adjustUploadSize.getOptions({ location: "web.showUploadFileSizeExceededError" });
+  const guildId = selectedGuildStore.getGuildId();
+  const baseSize = maxUploadSize(guildId);
+  return adjustUploadSize.getRealSize(options, baseSize);
 }
 
 // shared/util/settings.ts
@@ -11649,3 +11683,5 @@ function formatUrl(rawUrl) {
 }
   }
 }
+
+/*@end@*/
