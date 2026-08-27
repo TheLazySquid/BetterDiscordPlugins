@@ -1,10 +1,11 @@
 {
     "$schema": "../schema.json",
     "description": "Compress videos that are too large to upload normally. Supports images as well.",
-    "version": "0.5.0",
+    "version": "0.5.1",
     "modules": [
         "attachFiles",
         "maxUploadSize",
+        "adjustUploadSize",
         "modalMethods",
         "Modal"
     ]

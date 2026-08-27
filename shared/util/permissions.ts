@@ -1,7 +1,10 @@
-import { maxUploadSize } from "$shared/modules";
+import { adjustUploadSize, maxUploadSize } from "$shared/modules";
 import { selectedGuildStore } from "$shared/stores";
 
 export function getMaxFileSize() {
-	const id = selectedGuildStore.getGuildId();
-	return maxUploadSize(id);
+	const options = adjustUploadSize.getOptions({ location: "web.showUploadFileSizeExceededError" });
+	const guildId = selectedGuildStore.getGuildId();
+	const baseSize = maxUploadSize(guildId);
+
+	return adjustUploadSize.getRealSize(options, baseSize);
 }

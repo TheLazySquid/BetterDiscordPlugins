@@ -1,7 +1,7 @@
 {
     "$schema": "../schema.json",
     "description": "A BetterDiscord plugin that allows you to add a caption to discord gifs",
-    "version": "2.4.0",
+    "version": "2.4.1",
     "modules": [
         "editorEvents",
         "attachFiles",
@@ -11,6 +11,7 @@
         "modalMethods",
         "Modal",
         "maxUploadSize",
+        "adjustUploadSize",
         "modalContainerClass"
     ]
 }

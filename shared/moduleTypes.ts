@@ -47,6 +47,11 @@ export interface ExpressionPicker {
     }
 }
 
+export interface AdjustUploadSize {
+    getOptions: (params: { location: string }) => any;
+    getRealSize: (params: any, size: number) => number;
+}
+
 export interface ModalOptions {
     onCloseCallback?: () => void;
     onCloseRequest?: () => boolean;

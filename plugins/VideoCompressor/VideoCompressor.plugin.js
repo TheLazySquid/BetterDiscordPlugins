@@ -8,18 +8,43 @@
  * @source https://github.com/TheLazySquid/BetterDiscordPlugins/tree/main/plugins/VideoCompressor/VideoCompressor.plugin.js
  * @invite fKdAaFYbD5
  */
+/*@cc_on
+@if (@_jscript)
+
+	// Offer to self-install for clueless users that try to run this directly.
+	var shell = WScript.CreateObject("WScript.Shell");
+	var fs = new ActiveXObject("Scripting.FileSystemObject");
+	var pathPlugins = shell.ExpandEnvironmentStrings("%APPDATA%\\BetterDiscord\\plugins");
+	var pathSelf = WScript.ScriptFullName;
+	// Put the user at ease by addressing them in the first person
+	shell.Popup("It looks like you've mistakenly tried to run me directly. \n(Don't do that!)", 0, "I'm a plugin for BetterDiscord", 0x30);
+	if (fs.GetParentFolderName(pathSelf) === fs.GetAbsolutePathName(pathPlugins)) {
+		shell.Popup("I'm in the correct folder already.", 0, "I'm already installed", 0x40);
+	} else if (!fs.FolderExists(pathPlugins)) {
+		shell.Popup("I can't find the BetterDiscord plugins folder.\nAre you sure it's even installed?", 0, "Can't install myself", 0x10);
+	} else if (shell.Popup("Should I copy myself to BetterDiscord's plugins folder for you?", 0, "Do you need some help?", 0x34) === 6) {
+		fs.CopyFile(pathSelf, fs.BuildPath(pathPlugins, fs.GetFileName(pathSelf)), true);
+		// Show the user where to put plugins in the future
+		shell.Exec("explorer " + pathPlugins);
+		shell.Popup("I'm installed!", 0, "Successfully installed", 0x40);
+	}
+	WScript.Quit();
+
+@else@*/
 module.exports = class {
   constructor() {
-    let plugin = this;
+let plugin = this;
 
 // meta-ns:meta
 var pluginName = "VideoCompressor";
 
 // shared/bd.ts
 var Api = /* @__PURE__ */ new BdApi(pluginName);
-var createCallbackHandler = (callbackName) => {
+var started = false;
+var createCallbackHandler = (callbackName, changeStarted) => {
   let callbacks = [];
   plugin[callbackName] = () => {
+    if (typeof changeStarted === "boolean") started = changeStarted;
     for (let i = 0; i < callbacks.length; i++) {
       callbacks[i].callback();
       if (callbacks[i].once) {
@@ -29,11 +54,15 @@ var createCallbackHandler = (callbackName) => {
     }
   };
   return (callback, once) => {
+    if (changeStarted && started) {
+      callback();
+      if (once) return;
+    }
     callbacks.push({ callback, once });
   };
 };
-var onStart = createCallbackHandler("start");
-var onStop = createCallbackHandler("stop");
+var onStart = createCallbackHandler("start", true);
+var onStop = createCallbackHandler("stop", false);
 function setSettingsPanel(el) {
   if (typeof el === "function") plugin.getSettingsPanel = el;
   plugin.getSettingsPanel = () => el;
@@ -60,7 +89,8 @@ function createQuery(locator) {
     filter: locator.filter,
     firstId: locator.id,
     defaultExport: locator.defaultExport,
-    cacheId: locator.name
+    cacheId: locator.name,
+    declarationFilter: locator.declarationFilter
   };
 }
 function finalizeModule(locator, module) {
@@ -93,7 +123,7 @@ function findExportWithKey(module, filter) {
 
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var { attachFiles, maxUploadSize, modalMethods, Modal } = getSyncModules([
+var { attachFiles, maxUploadSize, adjustUploadSize, modalMethods, Modal } = getSyncModules([
   {
     name: "attachFiles",
     id: 518960,
@@ -106,6 +136,15 @@ var { attachFiles, maxUploadSize, modalMethods, Modal } = getSyncModules([
     id: 453771,
     getExport: Filters.byStrings("getUserMaxFileSize"),
     filter: Filters.bySource("getUserMaxFileSize", "reType")
+  },
+  {
+    name: "adjustUploadSize",
+    id: 550642,
+    filter: Filters.bySource('isGA?"kestrel_ga"'),
+    demangler: {
+      getOptions: (f) => f.toString().includes("isGA:!1"),
+      getRealSize: (f) => f.toString().includes("1048576")
+    }
   },
   {
     name: "modalMethods",
@@ -17151,8 +17190,8 @@ var Conversion = class _Conversion {
     this._options = options;
     this.input = options.input;
     this.output = options.output;
-    const { promise: started, resolve: start } = promiseWithResolvers();
-    this._started = started;
+    const { promise: started2, resolve: start } = promiseWithResolvers();
+    this._started = started2;
     this._start = start;
   }
   /** @internal */
@@ -18311,6 +18350,7 @@ function createSettings(panelSettings, defaults) {
     if (!setting.id) continue;
     settings2[setting.id] = Api.Data.load(setting.id) ?? defaults[setting.id];
   }
+  const onChangeCallbacks = {};
   setSettingsPanel(() => {
     for (let setting of panelSettings) {
       setting.value = settings2[setting.id];
@@ -18320,9 +18360,14 @@ function createSettings(panelSettings, defaults) {
       onChange: (_, id, value) => {
         settings2[id] = value;
         Api.Data.save(id, value);
+        onChangeCallbacks[id]?.forEach((cb) => cb(value));
       }
     });
   });
+  settings2.onChange = (id, callback) => {
+    onChangeCallbacks[id] ??= [];
+    onChangeCallbacks[id].push(callback);
+  };
   return settings2;
 }
 
@@ -18522,8 +18567,10 @@ var selectedGuildStore = /* @__PURE__ */ BdApi.Webpack.getStore("SelectedGuildSt
 
 // shared/util/permissions.ts
 function getMaxFileSize() {
-  const id = selectedGuildStore.getGuildId();
-  return maxUploadSize(id);
+  const options = adjustUploadSize.getOptions({ location: "web.showUploadFileSizeExceededError" });
+  const guildId = selectedGuildStore.getGuildId();
+  const baseSize = maxUploadSize(guildId);
+  return adjustUploadSize.getRealSize(options, baseSize);
 }
 
 // plugins/VideoCompressor/src/index.ts
@@ -18567,3 +18614,5 @@ before(...attachFiles, ({ args }) => {
 });
   }
 }
+
+/*@end@*/
