@@ -11,12 +11,16 @@ export function setRemaps(newRemaps: string[][]) {
 
 const loaded = new Set<string>();
 
+function escapeName(name: string) {
+    return name.replaceAll("+", "__");
+}
+
 function loadSnippet(name: string) {
     if(loaded.has(name)) return;
     loaded.add(name);
 
     const css = `@import url(${baseUrl}css/${name}.css);`;
-    Api.DOM.addStyle(`sr-${name}`, css);
+    Api.DOM.addStyle(escapeName(`sr-${name}`), css);
     Api.Logger.info(`Loading snippet ${name}`);
 }
 
@@ -42,7 +46,7 @@ export function loadSnippets() {
 }
 
 function unloadSnippet(name: string) {
-    Api.DOM.removeStyle(`sr-${name}`);
+    Api.DOM.removeStyle(escapeName(`sr-${name}`));
     loaded.delete(name);
     Api.Logger.info(`Unloading snippet ${name}`);
 }

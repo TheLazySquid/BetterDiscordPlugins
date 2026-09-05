@@ -1,25 +1,50 @@
 /**
  * @name CssSnippetRepo
  * @description Easily manage CSS snippets that tweak how Discord looks
- * @version 1.0.3
+ * @version 1.0.4
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
  * @source https://github.com/TheLazySquid/BetterDiscordPlugins/tree/main/plugins/CssSnippetRepo/CssSnippetRepo.plugin.js
  * @invite fKdAaFYbD5
  */
+/*@cc_on
+@if (@_jscript)
+
+	// Offer to self-install for clueless users that try to run this directly.
+	var shell = WScript.CreateObject("WScript.Shell");
+	var fs = new ActiveXObject("Scripting.FileSystemObject");
+	var pathPlugins = shell.ExpandEnvironmentStrings("%APPDATA%\\BetterDiscord\\plugins");
+	var pathSelf = WScript.ScriptFullName;
+	// Put the user at ease by addressing them in the first person
+	shell.Popup("It looks like you've mistakenly tried to run me directly. \n(Don't do that!)", 0, "I'm a plugin for BetterDiscord", 0x30);
+	if (fs.GetParentFolderName(pathSelf) === fs.GetAbsolutePathName(pathPlugins)) {
+		shell.Popup("I'm in the correct folder already.", 0, "I'm already installed", 0x40);
+	} else if (!fs.FolderExists(pathPlugins)) {
+		shell.Popup("I can't find the BetterDiscord plugins folder.\nAre you sure it's even installed?", 0, "Can't install myself", 0x10);
+	} else if (shell.Popup("Should I copy myself to BetterDiscord's plugins folder for you?", 0, "Do you need some help?", 0x34) === 6) {
+		fs.CopyFile(pathSelf, fs.BuildPath(pathPlugins, fs.GetFileName(pathSelf)), true);
+		// Show the user where to put plugins in the future
+		shell.Exec("explorer " + pathPlugins);
+		shell.Popup("I'm installed!", 0, "Successfully installed", 0x40);
+	}
+	WScript.Quit();
+
+@else@*/
 module.exports = class {
   constructor() {
-    let plugin = this;
+let plugin = this;
 
 // meta-ns:meta
 var pluginName = "CssSnippetRepo";
 
 // shared/bd.ts
-var Api = new BdApi(pluginName);
-var createCallbackHandler = (callbackName) => {
+var Api = /* @__PURE__ */ new BdApi(pluginName);
+var started = false;
+var createCallbackHandler = (callbackName, changeStarted) => {
   let callbacks = [];
   plugin[callbackName] = () => {
+    if (typeof changeStarted === "boolean") started = changeStarted;
     for (let i = 0; i < callbacks.length; i++) {
       callbacks[i].callback();
       if (callbacks[i].once) {
@@ -29,11 +54,15 @@ var createCallbackHandler = (callbackName) => {
     }
   };
   return (callback, once) => {
+    if (changeStarted && started) {
+      callback();
+      if (once) return;
+    }
     callbacks.push({ callback, once });
   };
 };
-var onStart = createCallbackHandler("start");
-var onStop = createCallbackHandler("stop");
+var onStart = createCallbackHandler("start", true);
+var onStop = createCallbackHandler("stop", false);
 function setSettingsPanel(el) {
   if (typeof el === "function") plugin.getSettingsPanel = el;
   plugin.getSettingsPanel = () => el;
@@ -42,8 +71,9 @@ function setSettingsPanel(el) {
 // shared/api/styles.ts
 var count = 0;
 function addStyle(css) {
+  let styleId = count++;
   onStart(() => {
-    Api.DOM.addStyle(`${pluginName}-${count++}`, css);
+    Api.DOM.addStyle(`${pluginName}-${styleId}`, css);
   });
 }
 onStop(() => {
@@ -170,11 +200,14 @@ function setRemaps(newRemaps) {
   Api.Data.save("remaps", remaps);
 }
 var loaded = /* @__PURE__ */ new Set();
+function escapeName(name) {
+  return name.replaceAll("+", "__");
+}
 function loadSnippet(name) {
   if (loaded.has(name)) return;
   loaded.add(name);
   const css = `@import url(${baseUrl}css/${name}.css);`;
-  Api.DOM.addStyle(`sr-${name}`, css);
+  Api.DOM.addStyle(escapeName(`sr-${name}`), css);
   Api.Logger.info(`Loading snippet ${name}`);
 }
 function loadSnippets() {
@@ -192,7 +225,7 @@ function loadSnippets() {
   }
 }
 function unloadSnippet(name) {
-  Api.DOM.removeStyle(`sr-${name}`);
+  Api.DOM.removeStyle(escapeName(`sr-${name}`));
   loaded.delete(name);
   Api.Logger.info(`Unloading snippet ${name}`);
 }
@@ -415,6 +448,46 @@ onStop(() => {
 });
 
 // shared/util/modules.ts
+function getSyncModules(locators) {
+  let returned = {};
+  const queries = locators.map(createQuery);
+  const modules = BdApi.Webpack.getBulk(...queries);
+  for (let i = 0; i < locators.length; i++) {
+    const locator = locators[i];
+    const module = modules[i];
+    if (!module) {
+      Api.Logger.warn(`Could not find module for ${locator.name}`);
+      continue;
+    }
+    returned[locator.name] = finalizeModule(locator, module);
+  }
+  return returned;
+}
+function createQuery(locator) {
+  return {
+    filter: locator.filter,
+    firstId: locator.id,
+    defaultExport: locator.defaultExport,
+    cacheId: locator.name,
+    declarationFilter: locator.declarationFilter
+  };
+}
+function finalizeModule(locator, module) {
+  if (locator.demangler) {
+    return BdApi.Utils.mapObject(module, locator.demangler);
+  }
+  if (locator.getExport) {
+    if (locator.getWithKey) {
+      return findExportWithKey(module, locator.getExport);
+    } else {
+      return findExport(module, locator.getExport);
+    }
+  }
+  if (locator.key) {
+    return module[locator.key];
+  }
+  return module;
+}
 function findExport(module, filter) {
   for (let value of Object.values(module)) {
     if (filter === true || filter(value)) return value;
@@ -429,32 +502,33 @@ function findExportWithKey(module, filter) {
 
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var [toolbarModule, toolbarClassModule, modalMethods, ModalModule] = BdApi.Webpack.getBulk(
+var { toolbar, toolbarClass, modalMethods, Modal } = getSyncModules([
   {
+    name: "toolbar",
+    id: 71855,
+    getExport: Filters.byStrings("PlatformTypes.WINDOWS"),
+    getWithKey: true,
     filter: Filters.bySource("showDivider", "WINDOWS"),
-    defaultExport: false,
-    firstId: 71855,
-    cacheId: "toolbar"
+    defaultExport: false
   },
   {
-    filter: Filters.byKeys("trailing", "winButton"),
-    firstId: 450295,
-    cacheId: "toolbarClass"
+    name: "toolbarClass",
+    id: 666044,
+    getExport: (c) => c.startsWith("trailing_"),
+    filter: Filters.byKeys("trailing", "winButton")
   },
   {
-    filter: Filters.byKeys("openModal"),
-    firstId: 192308,
-    cacheId: "modalMethods"
+    name: "modalMethods",
+    id: 192308,
+    filter: Filters.byKeys("openModal")
   },
   {
-    filter: Filters.byKeys("Modal"),
-    firstId: 158954,
-    cacheId: "Modal"
+    name: "Modal",
+    id: 189213,
+    key: "Modal",
+    filter: Filters.byKeys("Modal")
   }
-);
-var toolbar = findExportWithKey(toolbarModule, Filters.byStrings("PlatformTypes.WINDOWS"));
-var toolbarClass = findExport(toolbarClassModule, (c) => c.startsWith("trailing_"));
-var Modal = ModalModule.Modal;
+]);
 
 // shared/util/react.ts
 function forceUpdate(selector) {
@@ -462,7 +536,7 @@ function forceUpdate(selector) {
   if (!target) return;
   const instance = BdApi.ReactUtils.getOwnerInstance(target);
   if (!instance) return;
-  const unpatch = Api.Patcher.instead(instance, "render", () => unpatch());
+  const unpatch = Api.Patcher.instead(instance, "render", () => unpatch?.());
   instance.forceUpdate(() => instance.forceUpdate());
 }
 
@@ -493,3 +567,5 @@ function openSettings() {
 }
   }
 }
+
+/*@end@*/
