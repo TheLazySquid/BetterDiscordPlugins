@@ -4,6 +4,7 @@ import { addFile } from "./showPopup";
 import './styles.css';
 import { getMaxFileSize } from "$shared/util/permissions";
 import { defaultImageValues, defaultVideoValues } from "./consts";
+import { settings } from "./settings";
 
 const attach = attachFiles[0][attachFiles[1]];
 before(...attachFiles, ({ args }) => {
@@ -16,12 +17,14 @@ before(...attachFiles, ({ args }) => {
     const imageFormats = ["png", "jpg", "jpeg", "webp", "avif"];
 
     for(let i = 0; i < files.length; i++) {
-        if(files[i].size < maxSize) continue;
-
         const parts = files[i].name.split('.');
         if(parts.length === 1) continue;
 
         const ext = parts[parts.length - 1];
+        const forceConvert = settings.convertUnembeddable && ext === "mkv";
+
+        if(!forceConvert && files[i].size < maxSize) continue;
+
         const attachFile = (file: File) => attach([ file ], args[1], args[2], args[3]);
 
         if(videoFormats.includes(ext)) {
@@ -31,7 +34,8 @@ before(...attachFiles, ({ args }) => {
                 attach: attachFile,
                 fullSize: files[i].size,
                 maxSize,
-                values: defaultVideoValues
+                values: defaultVideoValues,
+                becauseMkv: forceConvert
             });
     
             files.splice(i, 1);

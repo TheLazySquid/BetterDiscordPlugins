@@ -1,7 +1,7 @@
 /**
  * @name VideoCompressor
  * @description Compress videos that are too large to upload normally. Supports images as well.
- * @version 0.5.0
+ * @version 0.6.0
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -18389,9 +18389,16 @@ var settings = createSettings([
         value: "hevc"
       }
     ]
+  },
+  {
+    type: "switch",
+    id: "convertUnembeddable",
+    name: "Convert mkv to mp4",
+    note: "Discord cannot embed mkv videos by default. Enabling this will open a popup allowing you to convert them to mp4."
   }
 ], {
-  codec: "av1"
+  codec: "av1",
+  convertUnembeddable: false
 });
 
 // plugins/VideoCompressor/src/compress/video.ts
@@ -18513,7 +18520,8 @@ function addFile(item) {
 function showPopup(item) {
   if (item.type === "video") {
     const Options = BdApi.React.createElement(VideoOptions, { item });
-    BdApi.UI.showConfirmationModal(`Video ${item.file.name} is too large`, Options, {
+    const title = item.becauseMkv ? `Converting ${item.file.name} to MP4` : `Video ${item.file.name} is too large`;
+    BdApi.UI.showConfirmationModal(title, Options, {
       onConfirm: () => renderVideo(item),
       onClose: () => advanceQueue(),
       onCancel: () => advanceQueue()
@@ -18581,10 +18589,11 @@ before(...attachFiles, ({ args }) => {
   const videoFormats = ["mp4", "mov", "mkv", "webm"];
   const imageFormats = ["png", "jpg", "jpeg", "webp", "avif"];
   for (let i = 0; i < files.length; i++) {
-    if (files[i].size < maxSize) continue;
     const parts = files[i].name.split(".");
     if (parts.length === 1) continue;
     const ext = parts[parts.length - 1];
+    const forceConvert = settings.convertUnembeddable && ext === "mkv";
+    if (!forceConvert && files[i].size < maxSize) continue;
     const attachFile = (file) => attach([file], args[1], args[2], args[3]);
     if (videoFormats.includes(ext)) {
       addFile({
@@ -18593,7 +18602,8 @@ before(...attachFiles, ({ args }) => {
         attach: attachFile,
         fullSize: files[i].size,
         maxSize,
-        values: defaultVideoValues
+        values: defaultVideoValues,
+        becauseMkv: forceConvert
       });
       files.splice(i, 1);
       i--;

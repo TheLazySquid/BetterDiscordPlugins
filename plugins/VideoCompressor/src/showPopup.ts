@@ -1,5 +1,5 @@
-import VideoOptions from "./ui/videoOptions";
 import type { MediaItem } from "./types";
+import VideoOptions from "./ui/videoOptions";
 import ImageOptions from "./ui/imageOptions";
 import { renderVideo } from "./compress/video";
 import { renderImage } from "./compress/image";
@@ -20,8 +20,9 @@ export function addFile(item: MediaItem) {
 export function showPopup(item: MediaItem) {
     if(item.type === "video") {
         const Options = BdApi.React.createElement(VideoOptions, { item });
-    
-        BdApi.UI.showConfirmationModal(`Video ${item.file.name} is too large`, Options, {
+        const title = item.becauseMkv ? `Converting ${item.file.name} to MP4` : `Video ${item.file.name} is too large`;
+
+        BdApi.UI.showConfirmationModal(title, Options, {
             onConfirm: () => renderVideo(item),
             onClose: () => advanceQueue(),
             onCancel: () => advanceQueue()

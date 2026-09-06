@@ -3,6 +3,7 @@ import { createSettings } from "$shared/util/settings";
 
 interface VideoCompressorSettings {
     codec: VideoCodec;
+    convertUnembeddable: boolean
 }
 
 export const settings = createSettings<VideoCompressorSettings>([
@@ -22,7 +23,14 @@ export const settings = createSettings<VideoCompressorSettings>([
                 value: "hevc"
             }
         ]
+    },
+    {
+        type: "switch",
+        id: "convertUnembeddable",
+        name: "Convert mkv to mp4",
+        note: "Discord cannot embed mkv videos by default. Enabling this will open a popup allowing you to convert them to mp4."
     }
 ], {
-    codec: "av1"
+    codec: "av1",
+    convertUnembeddable: false
 });

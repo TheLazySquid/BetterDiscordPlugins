@@ -23,6 +23,7 @@ export interface BaseItem {
 export interface VideoItem extends BaseItem {
     type: "video";
     values: VideoCompressValues;
+    becauseMkv?: boolean;
 }
 
 export interface ImageItem extends BaseItem {
