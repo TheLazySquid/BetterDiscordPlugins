@@ -544,7 +544,8 @@ function forceUpdate(selector) {
 setSettingsPanel(() => /* @__PURE__ */ BdApi.React.createElement(Snippets, null));
 onStop(() => {
   unloadSnippets();
-  forceUpdate("." + toolbarClass);
+  document.querySelector(".sr-toolbar-button")?.remove();
+  console.log("Uh");
 });
 onStart(() => {
   loadSnippets();

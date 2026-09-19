@@ -12,7 +12,7 @@ setSettingsPanel(() => <Snippets />);
 
 onStop(() => {
     unloadSnippets();
-    forceUpdate("." + toolbarClass);
+    document.querySelector(".sr-toolbar-button")?.remove();
 });
 
 onStart(() => {
