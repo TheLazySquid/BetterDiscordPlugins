@@ -1,7 +1,7 @@
 /**
  * @name VideoCompressor
  * @description Compress videos that are too large to upload normally. Supports images as well.
- * @version 0.6.0
+ * @version 0.6.1
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -123,7 +123,7 @@ function findExportWithKey(module, filter) {
 
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var { attachFiles, maxUploadSize, adjustUploadSize, modalMethods, Modal } = getSyncModules([
+var { attachFiles, maxUploadSize, modalMethods, Modal } = getSyncModules([
   {
     name: "attachFiles",
     id: 518960,
@@ -136,15 +136,6 @@ var { attachFiles, maxUploadSize, adjustUploadSize, modalMethods, Modal } = getS
     id: 453771,
     getExport: Filters.byStrings("getUserMaxFileSize"),
     filter: Filters.bySource("getUserMaxFileSize", "reType")
-  },
-  {
-    name: "adjustUploadSize",
-    id: 550642,
-    filter: Filters.bySource('isGA?"kestrel_ga"'),
-    demangler: {
-      getOptions: (f) => f.toString().includes("isGA:!1"),
-      getRealSize: (f) => f.toString().includes("1048576")
-    }
   },
   {
     name: "modalMethods",
@@ -18575,10 +18566,9 @@ var selectedGuildStore = /* @__PURE__ */ BdApi.Webpack.getStore("SelectedGuildSt
 
 // shared/util/permissions.ts
 function getMaxFileSize() {
-  const options = adjustUploadSize.getOptions({ location: "web.showUploadFileSizeExceededError" });
   const guildId = selectedGuildStore.getGuildId();
   const baseSize = maxUploadSize(guildId);
-  return adjustUploadSize.getRealSize(options, baseSize);
+  return Math.max(20971520, baseSize);
 }
 
 // plugins/VideoCompressor/src/index.ts

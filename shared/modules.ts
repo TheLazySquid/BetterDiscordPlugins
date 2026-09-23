@@ -3,7 +3,6 @@ import type {
     ModuleLocator,
     WithKey,
     ExpressionPicker,
-    AdjustUploadSize,
     AttachmentSystemType,
     ModalMethods
 } from "./moduleTypes";
@@ -189,16 +188,6 @@ export const maxUploadSize = defineModule<(guildId: string | null) => number>({
     id: 453771,
     getExport: `Filters.byStrings("getUserMaxFileSize")`,
     filter: `Filters.bySource("getUserMaxFileSize", "reType")`
-});
-
-export const adjustUploadSize = defineModule<AdjustUploadSize>({
-    name: "adjustUploadSize",
-    id: 550642,
-    filter: `Filters.bySource("isGA?\\"kestrel_ga\\"")`,
-    demangler: {
-        getOptions: `(f) => f.toString().includes("isGA:!1")`,
-        getRealSize: `(f) => f.toString().includes("1048576")`
-    }
 });
 
 export const paste = defineModule<() => void>({
