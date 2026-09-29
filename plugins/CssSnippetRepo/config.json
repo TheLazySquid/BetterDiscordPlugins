@@ -1,7 +1,7 @@
 {
     "$schema": "../schema.json",
     "description": "Easily manage CSS snippets that tweak how Discord looks",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "modules": [
         "toolbar",
         "toolbarClass",

@@ -1,7 +1,7 @@
 /**
  * @name VideoCompressor
  * @description Compress videos that are too large to upload normally. Supports images as well.
- * @version 0.6.1
+ * @version 0.6.2
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -145,8 +145,8 @@ var { attachFiles, maxUploadSize, modalMethods, Modal } = getSyncModules([
   {
     name: "Modal",
     id: 189213,
-    key: "Modal",
-    filter: Filters.byKeys("Modal")
+    filter: Filters.bySource("actionsFullWidth", '"md":"sm"'),
+    getExport: true
   }
 ]);
 

@@ -1,7 +1,7 @@
 /**
  * @name GifCaptioner
  * @description A BetterDiscord plugin that allows you to add a caption to discord gifs
- * @version 2.4.2
+ * @version 2.4.3
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -868,8 +868,8 @@ var { editorEvents, attachFiles, scroller, expressionPicker, gifDisplay, modalMe
   {
     name: "Modal",
     id: 189213,
-    key: "Modal",
-    filter: Filters.byKeys("Modal")
+    filter: Filters.bySource("actionsFullWidth", '"md":"sm"'),
+    getExport: true
   },
   {
     name: "maxUploadSize",

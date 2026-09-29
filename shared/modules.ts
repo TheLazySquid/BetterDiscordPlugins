@@ -111,8 +111,8 @@ export const frequentlyUsedEmojis = defineModule<WithKey<any>>({
 export const Modal = defineModule<any>({
     name: "Modal",
     id: 189213,
-    key: "Modal",
-    filter: `Filters.byKeys("Modal")`
+    filter: `Filters.bySource("actionsFullWidth", '"md":"sm"')`,
+    getExport: true
 });
 
 export const modalMethods = defineModule<ModalMethods>({

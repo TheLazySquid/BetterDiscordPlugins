@@ -1,25 +1,50 @@
 /**
  * @name ZipPreview
  * @description Lets you see inside zips and preview/download files without ever downloading/extracting the zip
- * @version 0.7.0
+ * @version 0.7.1
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
  * @source https://github.com/TheLazySquid/BetterDiscordPlugins/tree/main/plugins/ZipPreview/ZipPreview.plugin.js
  * @invite fKdAaFYbD5
  */
+/*@cc_on
+@if (@_jscript)
+
+	// Offer to self-install for clueless users that try to run this directly.
+	var shell = WScript.CreateObject("WScript.Shell");
+	var fs = new ActiveXObject("Scripting.FileSystemObject");
+	var pathPlugins = shell.ExpandEnvironmentStrings("%APPDATA%\\BetterDiscord\\plugins");
+	var pathSelf = WScript.ScriptFullName;
+	// Put the user at ease by addressing them in the first person
+	shell.Popup("It looks like you've mistakenly tried to run me directly. \n(Don't do that!)", 0, "I'm a plugin for BetterDiscord", 0x30);
+	if (fs.GetParentFolderName(pathSelf) === fs.GetAbsolutePathName(pathPlugins)) {
+		shell.Popup("I'm in the correct folder already.", 0, "I'm already installed", 0x40);
+	} else if (!fs.FolderExists(pathPlugins)) {
+		shell.Popup("I can't find the BetterDiscord plugins folder.\nAre you sure it's even installed?", 0, "Can't install myself", 0x10);
+	} else if (shell.Popup("Should I copy myself to BetterDiscord's plugins folder for you?", 0, "Do you need some help?", 0x34) === 6) {
+		fs.CopyFile(pathSelf, fs.BuildPath(pathPlugins, fs.GetFileName(pathSelf)), true);
+		// Show the user where to put plugins in the future
+		shell.Exec("explorer " + pathPlugins);
+		shell.Popup("I'm installed!", 0, "Successfully installed", 0x40);
+	}
+	WScript.Quit();
+
+@else@*/
 module.exports = class {
   constructor() {
-    let plugin = this;
+let plugin = this;
 
 // meta-ns:meta
 var pluginName = "ZipPreview";
 
 // shared/bd.ts
 var Api = /* @__PURE__ */ new BdApi(pluginName);
-var createCallbackHandler = (callbackName) => {
+var started = false;
+var createCallbackHandler = (callbackName, changeStarted) => {
   let callbacks = [];
   plugin[callbackName] = () => {
+    if (typeof changeStarted === "boolean") started = changeStarted;
     for (let i = 0; i < callbacks.length; i++) {
       callbacks[i].callback();
       if (callbacks[i].once) {
@@ -29,11 +54,15 @@ var createCallbackHandler = (callbackName) => {
     }
   };
   return (callback, once) => {
+    if (changeStarted && started) {
+      callback();
+      if (once) return;
+    }
     callbacks.push({ callback, once });
   };
 };
-var onStart = createCallbackHandler("start");
-var onStop = createCallbackHandler("stop");
+var onStart = createCallbackHandler("start", true);
+var onStop = createCallbackHandler("stop", false);
 var onSwitch = /* @__PURE__ */ createCallbackHandler("onSwitch");
 
 // shared/api/patching.ts
@@ -86,7 +115,8 @@ var LazyModule = class {
     BdApi.Webpack.waitForModule(locator.filter, {
       firstId: locator.id,
       cacheId: locator.name,
-      defaultExport: locator.defaultExport ?? true
+      defaultExport: locator.defaultExport ?? true,
+      declarationFilter: locator.declarationFilter
     })?.then((module2) => {
       this.value = module2;
       resolve(finalizeModule(locator, module2));
@@ -97,6 +127,7 @@ var LazyModule = class {
   loaded;
   loading = false;
   load() {
+    if (!this.locator.lazyImporter) throw new Error("Attempted to load a lazy module with no importer");
     if (this.loading) return this.loaded;
     this.loading = true;
     const importer = this.locator.lazyImporter;
@@ -114,7 +145,8 @@ function createQuery(locator) {
     filter: locator.filter,
     firstId: locator.id,
     defaultExport: locator.defaultExport,
-    cacheId: locator.name
+    cacheId: locator.name,
+    declarationFilter: locator.declarationFilter
   };
 }
 function finalizeModule(locator, module2) {
@@ -150,14 +182,14 @@ var Filters = BdApi.Webpack.Filters;
 var { fileModule, Modal, modalMethods, modalContainerClass } = getSyncModules([
   {
     name: "fileModule",
-    id: 718468,
+    id: 564771,
     filter: (m) => m.A?.toString().includes("().filesize(")
   },
   {
     name: "Modal",
-    id: 158954,
-    key: "Modal",
-    filter: Filters.byKeys("Modal")
+    id: 189213,
+    filter: Filters.bySource("actionsFullWidth", '"md":"sm"'),
+    getExport: true
   },
   {
     name: "modalMethods",
@@ -173,10 +205,11 @@ var { fileModule, Modal, modalMethods, modalContainerClass } = getSyncModules([
 var { highlightModule } = getLazyModules([
   {
     name: "highlightModule",
-    id: 752238,
+    id: 981776,
     filter: Filters.byKeys("highlight", "hasLanguage"),
+    lazy: true,
     lazyImporter: {
-      id: 34337,
+      id: 981776,
       filter: Filters.bySource('location:"PlaintextFilePreview"')
     }
   }
@@ -1532,3 +1565,5 @@ after(fileModule, "A", ({ args, returnVal }) => {
 });
   }
 }
+
+/*@end@*/

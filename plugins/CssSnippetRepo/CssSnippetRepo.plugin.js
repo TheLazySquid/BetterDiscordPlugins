@@ -1,7 +1,7 @@
 /**
  * @name CssSnippetRepo
  * @description Easily manage CSS snippets that tweak how Discord looks
- * @version 1.0.4
+ * @version 1.0.6
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -525,8 +525,8 @@ var { toolbar, toolbarClass, modalMethods, Modal } = getSyncModules([
   {
     name: "Modal",
     id: 189213,
-    key: "Modal",
-    filter: Filters.byKeys("Modal")
+    filter: Filters.bySource("actionsFullWidth", '"md":"sm"'),
+    getExport: true
   }
 ]);
 
@@ -545,7 +545,6 @@ setSettingsPanel(() => /* @__PURE__ */ BdApi.React.createElement(Snippets, null)
 onStop(() => {
   unloadSnippets();
   document.querySelector(".sr-toolbar-button")?.remove();
-  console.log("Uh");
 });
 onStart(() => {
   loadSnippets();
