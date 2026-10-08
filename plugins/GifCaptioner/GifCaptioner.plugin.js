@@ -1,7 +1,7 @@
 /**
  * @name GifCaptioner
  * @description A BetterDiscord plugin that allows you to add a caption to discord gifs
- * @version 2.4.3
+ * @version 2.4.4
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -11484,6 +11484,9 @@ function Captioner({ width, element, onSubmit }) {
       ctx.current.fillText(lines[i], width / 2, size * i + 5);
     }
   };
+  const onInputClick = (e) => {
+    e.stopPropagation();
+  };
   React.useEffect(render, [text, size]);
   React.useEffect(() => {
     setTimeout(() => input.current?.focus(), 100);
@@ -11498,7 +11501,8 @@ function Captioner({ width, element, onSubmit }) {
       onChange: (e) => setText(e.target.value),
       ref: input,
       className: "gc-caption",
-      placeholder: "Enter caption..."
+      placeholder: "Enter caption...",
+      onFocus: onInputClick
     }
   ), /* @__PURE__ */ BdApi.React.createElement("div", { className: "gc-range" }, /* @__PURE__ */ BdApi.React.createElement("div", null, "Font size"), /* @__PURE__ */ BdApi.React.createElement(
     "input",
@@ -11567,6 +11571,18 @@ var tabs = [
 function Modal2({ width, height, element, onSubmit }) {
   const React = BdApi.React;
   const [activeTab, setTab] = React.useState(Api.Data.load("tab") || "caption");
+  React.useEffect(() => {
+    const ignore = (e) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    };
+    window.addEventListener("focusin", ignore, { capture: true });
+    window.addEventListener("focusout", ignore, { capture: true });
+    return () => {
+      window.removeEventListener("focusin", ignore, { capture: true });
+      window.removeEventListener("focusout", ignore, { capture: true });
+    };
+  }, []);
   return /* @__PURE__ */ BdApi.React.createElement("div", { className: "gc-modal" }, /* @__PURE__ */ BdApi.React.createElement("div", { className: "gc-tabs" }, tabs.map((tab) => /* @__PURE__ */ BdApi.React.createElement(
     "button",
     {

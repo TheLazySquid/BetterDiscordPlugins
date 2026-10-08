@@ -37,6 +37,10 @@ export default function Captioner({ width, element, onSubmit }:
         }
     }
 
+    const onInputClick = (e: React.FocusEvent) => {
+        e.stopPropagation();
+    }
+
     React.useEffect(render, [text, size]);
 
     React.useEffect(() => {
@@ -51,7 +55,7 @@ export default function Captioner({ width, element, onSubmit }:
     return (
         <div className="gc-editor" ref={wrapper}>
             <input onChange={(e) => setText(e.target.value)} ref={input}
-            className="gc-caption" placeholder="Enter caption..." />
+                className="gc-caption" placeholder="Enter caption..." onFocus={onInputClick} />
             <div className="gc-range">
                 <div>Font size</div>
                 <input type="range" min={5} max={200} value={size}
