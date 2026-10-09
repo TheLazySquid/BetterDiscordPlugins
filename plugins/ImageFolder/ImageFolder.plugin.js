@@ -1,16 +1,39 @@
 /**
  * @name ImageFolder
  * @description A BetterDiscord plugin that allows you to save and send images from a folder for easy access
- * @version 1.7.0
+ * @version 1.7.1
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
  * @source https://github.com/TheLazySquid/BetterDiscordPlugins/tree/main/plugins/ImageFolder/ImageFolder.plugin.js
  * @invite fKdAaFYbD5
  */
+/*@cc_on
+@if (@_jscript)
+
+	// Offer to self-install for clueless users that try to run this directly.
+	var shell = WScript.CreateObject("WScript.Shell");
+	var fs = new ActiveXObject("Scripting.FileSystemObject");
+	var pathPlugins = shell.ExpandEnvironmentStrings("%APPDATA%\\BetterDiscord\\plugins");
+	var pathSelf = WScript.ScriptFullName;
+	// Put the user at ease by addressing them in the first person
+	shell.Popup("It looks like you've mistakenly tried to run me directly. \n(Don't do that!)", 0, "I'm a plugin for BetterDiscord", 0x30);
+	if (fs.GetParentFolderName(pathSelf) === fs.GetAbsolutePathName(pathPlugins)) {
+		shell.Popup("I'm in the correct folder already.", 0, "I'm already installed", 0x40);
+	} else if (!fs.FolderExists(pathPlugins)) {
+		shell.Popup("I can't find the BetterDiscord plugins folder.\nAre you sure it's even installed?", 0, "Can't install myself", 0x10);
+	} else if (shell.Popup("Should I copy myself to BetterDiscord's plugins folder for you?", 0, "Do you need some help?", 0x34) === 6) {
+		fs.CopyFile(pathSelf, fs.BuildPath(pathPlugins, fs.GetFileName(pathSelf)), true);
+		// Show the user where to put plugins in the future
+		shell.Exec("explorer " + pathPlugins);
+		shell.Popup("I'm installed!", 0, "Successfully installed", 0x40);
+	}
+	WScript.Quit();
+
+@else@*/
 module.exports = class {
   constructor() {
-    let plugin = this;
+let plugin = this;
 var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, {
   get: (a, b) => (typeof require !== "undefined" ? require : a)[b]
 }) : x)(function(x) {
@@ -38,9 +61,11 @@ var pluginName = "ImageFolder";
 
 // shared/bd.ts
 var Api = /* @__PURE__ */ new BdApi(pluginName);
-var createCallbackHandler = (callbackName) => {
+var started = false;
+var createCallbackHandler = (callbackName, changeStarted) => {
   let callbacks = [];
   plugin[callbackName] = () => {
+    if (typeof changeStarted === "boolean") started = changeStarted;
     for (let i = 0; i < callbacks.length; i++) {
       callbacks[i].callback();
       if (callbacks[i].once) {
@@ -50,11 +75,15 @@ var createCallbackHandler = (callbackName) => {
     }
   };
   return (callback, once) => {
+    if (changeStarted && started) {
+      callback();
+      if (once) return;
+    }
     callbacks.push({ callback, once });
   };
 };
-var onStart = createCallbackHandler("start");
-var onStop = createCallbackHandler("stop");
+var onStart = createCallbackHandler("start", true);
+var onStop = createCallbackHandler("stop", false);
 function setSettingsPanel(el) {
   if (typeof el === "function") plugin.getSettingsPanel = el;
   plugin.getSettingsPanel = () => el;
@@ -122,7 +151,8 @@ function createQuery(locator) {
     filter: locator.filter,
     firstId: locator.id,
     defaultExport: locator.defaultExport,
-    cacheId: locator.name
+    cacheId: locator.name,
+    declarationFilter: locator.declarationFilter
   };
 }
 function finalizeModule(locator, module) {
@@ -158,7 +188,7 @@ var Filters = BdApi.Webpack.Filters;
 var { editorEvents, attachFiles, scroller, buttonsModule, expressionModule, expressionPicker, uploadAreaClass, chatbarInnerClass } = getSyncModules([
   {
     name: "editorEvents",
-    id: 112541,
+    id: 392553,
     getExport: true,
     getWithKey: true,
     filter: Filters.bySource(",submit:", "selectPreviousCommandOption"),
@@ -181,13 +211,13 @@ var { editorEvents, attachFiles, scroller, buttonsModule, expressionModule, expr
   },
   {
     name: "buttonsModule",
-    id: 729666,
+    id: 123583,
     filter: (m) => m.type?.toString?.().includes(".isSubmitButtonEnabled")
   },
   {
     name: "expressionModule",
-    id: 731231,
-    filter: (m) => m.type?.toString?.().includes("onSelectGIF")
+    id: 573853,
+    filter: (m) => m.type?.toString?.().includes("onSelectGIF") && m.type?.toString?.().includes("hideGifFavorites")
   },
   {
     name: "expressionPicker",
@@ -1461,3 +1491,5 @@ onStart(() => window.addEventListener("paste", onPaste, true));
 onStop(() => window.removeEventListener("paste", onPaste, true));
   }
 }
+
+/*@end@*/

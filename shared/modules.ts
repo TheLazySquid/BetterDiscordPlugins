@@ -20,8 +20,8 @@ export const fileModule = defineModule<any>({
 
 export const expressionModule = defineModule<ReactElementModule>({
     name: "expressionModule",
-    id: 731231,
-    filter: `(m) => m.type?.toString?.().includes("onSelectGIF")`
+    id: 573853,
+    filter: `(m) => m.type?.toString?.().includes("onSelectGIF") && m.type?.toString?.().includes("hideGifFavorites")`
 });
 
 export const buttonsModule = defineModule<ReactElementModule>({
