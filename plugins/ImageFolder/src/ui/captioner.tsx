@@ -1,3 +1,4 @@
+import { useUnlockFocus } from "$shared/ui/focus";
 import { getLines } from "$shared/util/canvas";
 import Manager from "../manager";
 import type { Media } from "../types";
@@ -11,6 +12,8 @@ export default function Captioner({ media, onCanvas }:
     const input = React.useRef<HTMLInputElement | null>(null);
     const canvas = React.useRef<HTMLCanvasElement | null>(null);
     const ctx = React.useRef<CanvasRenderingContext2D | null>(null);
+
+    useUnlockFocus();
 
     const render = () => {
         if(!canvas.current || !ctx.current || !img.current) return;

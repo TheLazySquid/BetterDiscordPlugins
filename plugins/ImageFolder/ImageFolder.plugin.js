@@ -1,7 +1,7 @@
 /**
  * @name ImageFolder
  * @description A BetterDiscord plugin that allows you to save and send images from a folder for easy access
- * @version 1.7.1
+ * @version 1.7.2
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -709,6 +709,22 @@ var Manager = class {
   }
 };
 
+// shared/ui/focus.ts
+function useUnlockFocus() {
+  BdApi.React.useEffect(() => {
+    const ignore = (e) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    };
+    window.addEventListener("focusin", ignore, { capture: true });
+    window.addEventListener("focusout", ignore, { capture: true });
+    return () => {
+      window.removeEventListener("focusin", ignore, { capture: true });
+      window.removeEventListener("focusout", ignore, { capture: true });
+    };
+  }, []);
+}
+
 // shared/util/canvas.ts
 function getLines(ctx, text, maxWidth) {
   var words = text.split(" ");
@@ -737,6 +753,7 @@ function Captioner({ media, onCanvas }) {
   const input = React.useRef(null);
   const canvas = React.useRef(null);
   const ctx = React.useRef(null);
+  useUnlockFocus();
   const render = () => {
     if (!canvas.current || !ctx.current || !img.current) return;
     let lines = getLines(ctx.current, text || "Enter caption...", img.current.width);

@@ -1,4 +1,5 @@
 import { Api } from "$shared/bd";
+import { useUnlockFocus } from "$shared/ui/focus";
 import type { OnSubmit } from "../render/gifRenderer";
 import Captioner from "./captioner";
 import SpeechBubbler from "./speechBubbler";
@@ -14,20 +15,7 @@ export default function Modal({ width, height, element, onSubmit }:
 	const React = BdApi.React;
 	const [activeTab, setTab] = React.useState<Tab>(Api.Data.load("tab") || "caption");
 
-	React.useEffect(() => {
-		const ignore = (e: FocusEvent) => {
-			e.stopPropagation();
-			e.stopImmediatePropagation();
-		}
-
-		window.addEventListener("focusin", ignore, { capture: true });
-		window.addEventListener("focusout", ignore, { capture: true });
-
-		return () => {
-			window.removeEventListener("focusin", ignore, { capture: true });
-			window.removeEventListener("focusout", ignore, { capture: true });
-		}
-	}, []);
+	useUnlockFocus();
 
 	return (
 		<div className="gc-modal">
