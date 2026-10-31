@@ -1,10 +1,10 @@
 import { error } from "$shared/api/toast";
 import GifRenderer, { type GifTransform } from "./gifRenderer";
 import ProgressDisplay from "$shared/util/progress";
-import { BufferSource, CanvasSink, Input, MP4, VideoSampleSink, WEBM } from "mediabunny";
+import { BufferSource, CanvasSink, Input, MP4, VideoSampleSink, WEBM, MATROSKA, QTFF } from "mediabunny";
 import { Api } from "$shared/bd";
 
-export default async function captionMp4(url: string, width: number, height: number, transform: GifTransform) {
+export default async function captionVideo(url: string, width: number, height: number, transform: GifTransform) {
 	const progress = new ProgressDisplay("Rendering GIF", "Fetching");
 
 	try {
@@ -17,7 +17,7 @@ export default async function captionMp4(url: string, width: number, height: num
 		// Get the video data
 		const arrayBuffer = await res.arrayBuffer();
 		const input = new Input({
-			formats: [WEBM, MP4],
+			formats: [WEBM, MP4, MATROSKA, QTFF],
 			source: new BufferSource(arrayBuffer)
 		});
 	
@@ -44,6 +44,7 @@ export default async function captionMp4(url: string, width: number, height: num
 		// Encode it
 		renderer.render();
 	} catch(e) {
+		progress.close();
 		Api.Logger.error("Failed to caption video", e);
 		error("Failed to caption video");
 	}

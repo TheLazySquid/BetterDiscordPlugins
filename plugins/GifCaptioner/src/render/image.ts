@@ -34,6 +34,7 @@ export default async function captionImage(url: string, width: number, height: n
 
         renderer.render();
     } catch(e) {
+        progress.close();
         Api.Logger.error("Failed to caption image", e);
         error("Failed to caption image");
     }

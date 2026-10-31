@@ -1,5 +1,5 @@
-import { getLines } from "$shared/util/canvas";
 import type { OnSubmit } from "../render/gifRenderer";
+import { getLines } from "$shared/util/canvas";
 
 export default function Captioner({ width, element, onSubmit }:
     { width: number, element: HTMLElement, onSubmit: OnSubmit }) {

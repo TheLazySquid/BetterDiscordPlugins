@@ -1,5 +1,7 @@
+export type Context = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
+
 // https://stackoverflow.com/questions/2936112/text-wrap-in-a-canvas-element
-export function getLines(ctx: CanvasRenderingContext2D, text: string, maxWidth: number) {
+export function getLines(ctx: Context, text: string, maxWidth: number) {
     var words = text.split(" ");
     var lines: string[] = [];
     var currentLine = words[0];

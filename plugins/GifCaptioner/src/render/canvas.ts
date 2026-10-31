@@ -1,14 +1,33 @@
+import { getLines, type Context } from "$shared/util/canvas";
+
+export function drawCaption(ctx: Context, text: string, width: number, size: number) {
+    ctx.font = `${size}px futuraBoldCondensed`;
+    let lines = getLines(ctx, text, width);
+
+    // add background
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, width, lines.length * size + 10);
+
+    // draw text
+    ctx.fillStyle = "black";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    for(let i = 0; i < lines.length; i++) {
+        ctx.fillText(lines[i], width / 2, size * i + 5);
+    }
+}
+
 type Point = [number, number];
 
 // https://stackoverflow.com/a/5634528
-function bezierPoint(t: number, start: Point, control: Point, end: Point): Point {
+export function bezierPoint(t: number, start: Point, control: Point, end: Point): Point {
 	let x = (1 - t) * (1 - t) * start[0] + 2 * (1 - t) * t * control[0] + t * t * end[0];
 	let y = (1 - t) * (1 - t) * start[1] + 2 * (1 - t) * t * control[1] + t * t * end[1];
 
 	return [x, y];
 }
 
-function moveAway(point: Point, from: Point, distance: number): Point {
+export function moveAway(point: Point, from: Point, distance: number): Point {
 	const dx = point[0] - from[0];
 	const dy = point[1] - from[1];
 	const length = Math.sqrt(dx ** 2 + dy ** 2);
@@ -17,7 +36,7 @@ function moveAway(point: Point, from: Point, distance: number): Point {
 	return [point[0] + dx * scale, point[1] + dy * scale];
 }
 
-export function renderSpeechbubble(ctx: CanvasRenderingContext2D, width: number, height: number,
+export function drawSpeechBubble(ctx: Context, width: number, height: number,
 	tipX: number, tipY: number, tipBase: number) {
 	const start: Point = [0, height * 0.1];
 	const control: Point = [width * 0.5, height * 0.2];

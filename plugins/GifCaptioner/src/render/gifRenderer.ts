@@ -1,14 +1,14 @@
 import type ProgressDisplay from "$shared/util/progress";
 import GifWorker from "../gif.worker.txt";
 import { getUrl } from "$shared/util/blob";
-import { getLines } from "$shared/util/canvas";
 import GIF from "gif.js";
 import { error } from "$shared/api/toast";
 import { uploadFile } from "$shared/util/upload";
 import { Api } from "$shared/bd";
-import { renderSpeechbubble } from "./speechbubble";
 import { getMaxFileSize } from "$shared/util/permissions";
 import { settings } from "../settings";
+import { drawCaption, drawSpeechBubble } from "./canvas";
+import { getLines } from "$shared/util/canvas";
 
 export interface CaptionTransform {
 	text: string;
@@ -83,7 +83,7 @@ export default class GifRenderer {
 		
 		if(transform.type === "caption") {
 			const newSize = Math.floor(transform.size / scaleFactor);
-			this.drawCaption(transform.text, newWidth, newSize);
+			drawCaption(this.ctx, transform.text, newWidth, newSize);
 		} else if(transform.type === "speechbubble") {
 			const newTipX = transform.tipX / scaleFactor;
 			const newTipY = transform.tipY / scaleFactor;
@@ -126,24 +126,6 @@ export default class GifRenderer {
 		this.gif.render();
 	}
 
-	drawCaption(text: string, width: number, size: number) {
-		this.ctx.font = `${size}px futuraBoldCondensed`;
-		let lines = getLines(this.ctx, text, width);
-		this.topOffset = lines.length * size + 10;
-
-		// add background
-		this.ctx.fillStyle = "white";
-		this.ctx.fillRect(0, 0, width, lines.length * size + 10);
-
-		// draw text
-		this.ctx.fillStyle = "black";
-		this.ctx.textAlign = "center";
-        this.ctx.textBaseline = "top";
-		for(let i = 0; i < lines.length; i++) {
-			this.ctx.fillText(lines[i], width / 2, size * i + 5);
-		}
-	}
-
 	speechBubbleCanvas?: HTMLCanvasElement;
 	speechBubbleCtx?: CanvasRenderingContext2D;
 	drawSpeechBubble(tipX: number, tipY: number, tipBase: number) {
@@ -154,6 +136,6 @@ export default class GifRenderer {
 		}
 		if(!this.speechBubbleCtx) this.speechBubbleCtx = this.speechBubbleCanvas.getContext("2d")!;
 
-		renderSpeechbubble(this.speechBubbleCtx, this.width, this.height, tipX, tipY, tipBase);
+		drawSpeechBubble(this.speechBubbleCtx, this.width, this.height, tipX, tipY, tipBase);
 	}
 }

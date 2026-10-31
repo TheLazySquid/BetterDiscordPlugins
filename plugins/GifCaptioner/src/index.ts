@@ -4,12 +4,15 @@ import futura from "$assets/Futura Condensed Extra Bold.otf";
 import { addFont } from "$shared/api/fonts";
 import { after } from "$shared/api/patching";
 import { error } from "$shared/api/toast";
-import { expressionPicker, gifDisplay } from "$shared/modules";
-import captionMp4 from "./render/video";
+import { AttachmentSystem, expressionPicker, gifDisplay } from "$shared/modules";
+import captionVideo from "./render/video";
 import captionImage from "./render/image";
 import Modal from "./ui/modal";
-import { CCIcon } from "$shared/ui/icons";
+import { CCIcon, LucideIcon } from "$shared/ui/icons";
 import { Api, expose } from "$shared/bd";
+import { captionVideoAsVideo } from "./render/videoConvert";
+import { uploadFile } from "$shared/util/upload";
+import { ClosedCaption } from "lucide";
 
 addFont(futura, "futuraBoldCondensed");
 expose("CaptionButton", CaptionButton);
@@ -27,6 +30,46 @@ after(gifDisplay.prototype, "render", ({ thisVal, returnVal }) => {
     });
 
     returnVal.props.children.unshift(button);
+});
+
+var Toolbar = BdApi.Webpack.getBySource(/spoiler:!.{1,3}.spoiler/) as any;
+var ToolbarButton = BdApi.Webpack.getByStrings("stopPropagation(),", "onClick:", "dangerous") as any;
+
+const videos = ["video/mp4", "video/mov", "video/mkv", "video/webm"];
+
+after(Toolbar, "A", ({ args, returnVal }) => {
+    const type = args[0].upload.mimeType;
+    if(!videos.includes(type)) return;
+
+    const button = BdApi.React.createElement(ToolbarButton, {
+        tooltip: "Add Caption",
+        onClick: () => {
+            const file = args[0].upload.item.file;
+            const props = returnVal.props;
+
+            const url = URL.createObjectURL(file);
+            const video = document.createElement("video");
+            video.src = url;
+            video.autoplay = true;
+            video.loop = true;
+            video.muted = true;
+            video.load();
+
+            video.addEventListener("canplaythrough", () => {
+                const { videoWidth, videoHeight } = video;
+                showCaptioner(videoWidth, videoHeight, video, (transform) => {
+                    captionVideoAsVideo(file, videoWidth, videoHeight, transform).then((file) => {
+                        console.log(file);
+                        if(!file) return;
+
+                        AttachmentSystem.remove(props.channelId, props.id, props.draftType);
+                        uploadFile(file, false);
+                    });
+                });
+            }, { once: true });
+        }
+    }, BdApi.React.createElement(LucideIcon, { icon: ClosedCaption }));
+    returnVal.props.actions.props.children.unshift(button);
 });
 
 function CaptionButton(options: React.ButtonHTMLAttributes<HTMLButtonElement>) {
@@ -68,7 +111,7 @@ function captionGif(src: string, isImage: boolean) {
         video.addEventListener("canplaythrough", () => {
             let { videoWidth, videoHeight } = video;
             showCaptioner(videoWidth, videoHeight, video, (transform) => {
-                captionMp4(urlString, videoWidth, videoHeight, transform);
+                captionVideo(urlString, videoWidth, videoHeight, transform);
             });
         }, { once: true });
         video.addEventListener("error", () => error("Failed to load gif"));

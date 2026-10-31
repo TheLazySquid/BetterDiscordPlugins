@@ -96,7 +96,6 @@ export const expressionPicker = defineModule<ExpressionPicker>({
 export const AttachmentSystem = defineModule<AttachmentSystemType>({
     name: "AttachmentSystem",
     id: 608299,
-    getExport: true,
     filter: `(m) => m?.setUploads?.name === "setUploads"`
 });
 

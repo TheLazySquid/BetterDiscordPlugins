@@ -1,5 +1,5 @@
 import type { OnSubmit } from "../render/gifRenderer";
-import { renderSpeechbubble } from "../render/speechbubble";
+import { drawSpeechBubble } from "../render/canvas";
 
 export default function SpeechBubbler({ width, height, element, onSubmit }:
 	{ width: number, height: number, element: HTMLElement, onSubmit: OnSubmit }) {
@@ -20,7 +20,7 @@ export default function SpeechBubbler({ width, height, element, onSubmit }:
 	const render = () => {
 		if(!ctx.current) return;
 		ctx.current.clearRect(0, 0, width, height);
-		renderSpeechbubble(ctx.current, width, height, tipX, tipY, tipBase / 100);
+		drawSpeechBubble(ctx.current, width, height, tipX, tipY, tipBase / 100);
 	}
 
 	const moveTip = (e: React.MouseEvent<HTMLCanvasElement>) => {
