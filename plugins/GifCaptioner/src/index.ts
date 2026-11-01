@@ -13,6 +13,7 @@ import { Api, expose } from "$shared/bd";
 import { captionVideoAsVideo } from "./render/videoConvert";
 import { uploadFile } from "$shared/util/upload";
 import { ClosedCaption } from "lucide";
+import { settings } from "./settings";
 
 addFont(futura, "futuraBoldCondensed");
 expose("CaptionButton", CaptionButton);
@@ -35,38 +36,38 @@ after(gifDisplay.prototype, "render", ({ thisVal, returnVal }) => {
 var Toolbar = BdApi.Webpack.getBySource(/spoiler:!.{1,3}.spoiler/) as any;
 var ToolbarButton = BdApi.Webpack.getByStrings("stopPropagation(),", "onClick:", "dangerous") as any;
 
+const images = ["image/jpeg", "image/png", "image/gif", "image/webp", "image/avif", "image/bmp"];
 const videos = ["video/mp4", "video/mov", "video/mkv", "video/webm"];
 
 after(Toolbar, "A", ({ args, returnVal }) => {
     const type = args[0].upload.mimeType;
-    if(!videos.includes(type)) return;
+    const isImage = images.includes(type);
+    if(!isImage && !videos.includes(type)) return;
 
     const button = BdApi.React.createElement(ToolbarButton, {
         tooltip: "Add Caption",
         onClick: () => {
             const file = args[0].upload.item.file;
             const props = returnVal.props;
-
             const url = URL.createObjectURL(file);
-            const video = document.createElement("video");
-            video.src = url;
-            video.autoplay = true;
-            video.loop = true;
-            video.muted = true;
-            video.load();
 
-            video.addEventListener("canplaythrough", () => {
-                const { videoWidth, videoHeight } = video;
-                showCaptioner(videoWidth, videoHeight, video, (transform) => {
-                    captionVideoAsVideo(file, videoWidth, videoHeight, transform).then((file) => {
-                        console.log(file);
-                        if(!file) return;
+            const upload = (file: File | undefined) => {
+                URL.revokeObjectURL(url);
+                if(!file) return;
 
-                        AttachmentSystem.remove(props.channelId, props.id, props.draftType);
-                        uploadFile(file, false);
-                    });
-                });
-            }, { once: true });
+                AttachmentSystem.remove(props.channelId, props.id, props.draftType);
+                uploadFile(file, false);
+            }
+
+            if(isImage) {
+                showImageCaptioner(url, (width, height, transform) => {
+                    captionImage(url, width, height, transform, type, file).then(upload);
+                }, true);
+            } else {
+                showVideoCaptioner(url, (width, height, transform) => {
+                    captionVideoAsVideo(file, width, height, transform).then(upload);
+                }, true);
+            }
         }
     }, BdApi.React.createElement(LucideIcon, { icon: ClosedCaption }));
     returnVal.props.actions.props.children.unshift(button);
@@ -87,39 +88,70 @@ function captionGif(src: string, isImage: boolean) {
     const isWebp = url.pathname.endsWith(".webp");
     Api.Logger.info("URL formatted to", urlString);
 
-    if(isImage) {
-        let image = document.createElement("img");
-        image.src = urlString;
-        
-        image.addEventListener("load", () => {
-            // For some reason the height and width change once added to the dom
-            let { width, height } = image;
-            showCaptioner(width, height, image, (transform) => {
-                const mime = isWebp ? "image/webp" : "image/gif";
-                captionImage(urlString, width, height, transform, mime);
-            });
-        });
-        image.addEventListener("error", () => error("Failed to load gif"));
-    } else {
-        let video = document.createElement("video");
-        video.src = urlString;
-        video.autoplay = true;
-        video.loop = true;
-        video.muted = true;
-        video.load();
+    const upload = (file: File | undefined) => {
+        if(!file) return;
+        uploadFile(file, settings.autoSend);
+    }
 
-        video.addEventListener("canplaythrough", () => {
-            let { videoWidth, videoHeight } = video;
-            showCaptioner(videoWidth, videoHeight, video, (transform) => {
-                captionVideo(urlString, videoWidth, videoHeight, transform);
-            });
-        }, { once: true });
-        video.addEventListener("error", () => error("Failed to load gif"));
+    if(isImage) {
+        showImageCaptioner(urlString, (width, height, transform) => {
+            const mime = isWebp ? "image/webp" : "image/gif";
+            captionImage(urlString, width, height, transform, mime).then(upload);
+        });
+    } else {
+        showVideoCaptioner(urlString, (width, height, transform) => {
+            captionVideo(urlString, width, height, transform).then(upload);
+        });
     }
 }
 
-function showCaptioner(width: number, height: number, element: HTMLElement, onConfirm: (transform: GifTransform) => void) {
+type CaptionerCallback = (width: number, height: number, transform: GifTransform) => void;
+function showImageCaptioner(url: string, onConfirm: CaptionerCallback, revokeUrl?: boolean) {
+    const image = document.createElement("img");
+    image.src = url;
+    
+    image.addEventListener("load", () => {
+        // For some reason the height and width change once added to the dom
+        const { width, height } = image;
+        showCaptioner(width, height, image, (transform) => {
+            onConfirm(width, height, transform);
+        }, () => {
+            if(revokeUrl) URL.revokeObjectURL(url);
+        });
+    });
+
+    image.addEventListener("error", () => {
+        if(revokeUrl) URL.revokeObjectURL(url);
+        error("Failed to load gif");
+    });
+}
+
+function showVideoCaptioner(url: string, onConfirm: CaptionerCallback, revokeUrl?: boolean) {
+    const video = document.createElement("video");
+    video.src = url;
+    video.autoplay = true;
+    video.loop = true;
+    video.muted = true;
+    video.load();
+
+    video.addEventListener("canplaythrough", () => {
+        const { videoWidth, videoHeight } = video;
+        showCaptioner(videoWidth, videoHeight, video, (transform) => {
+            onConfirm(videoWidth, videoHeight, transform);
+        }, () => {
+            if(revokeUrl) URL.revokeObjectURL(url);
+        });
+    }, { once: true });
+
+    video.addEventListener("error", () => {
+        if(revokeUrl) URL.revokeObjectURL(url);
+        error("Failed to load gif");
+    });
+}
+
+function showCaptioner(width: number, height: number, element: HTMLElement, onConfirm: (transform: GifTransform) => void, onCancel?: () => void) {
     let submitCallback: () => GifTransform;
+    let confirmed = false;
 
     const modal = BdApi.React.createElement(Modal, {
         width,
@@ -131,9 +163,13 @@ function showCaptioner(width: number, height: number, element: HTMLElement, onCo
     BdApi.UI.showConfirmationModal("Edit GIF", modal, {
         onConfirm: () => {
             expressionPicker.close();
-            let res = submitCallback?.();
+            confirmed = true;
+
+            const res = submitCallback?.();
             if(res) onConfirm(res);
-        }
+        },
+        onClose: () => !confirmed && onCancel?.(),
+        onCancel: () => !confirmed && onCancel?.()
     });
 }
 

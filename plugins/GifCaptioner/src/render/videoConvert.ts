@@ -4,7 +4,6 @@ import { Input, Output, BufferSource, Conversion, WEBM, MP4, MATROSKA, QTFF, Mp4
 import { Api } from "$shared/bd";
 import { error } from "$shared/api/toast";
 import ProgressDisplay from "$shared/util/progress";
-import { uploadFile } from "$shared/util/upload";
 import { getLines } from "$shared/util/canvas";
 
 export async function captionVideoAsVideo(file: File, width: number, height: number, transform: GifTransform) {

@@ -1,7 +1,7 @@
 /**
  * @name GifCaptioner
  * @description A BetterDiscord plugin that allows you to add a caption to discord gifs
- * @version 2.5.0
+ * @version 2.6.0
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -919,80 +919,12 @@ var selectedChannelStore = /* @__PURE__ */ BdApi.Webpack.getStore("SelectedChann
 var selectedGuildStore = /* @__PURE__ */ BdApi.Webpack.getStore("SelectedGuildStore");
 var channelStore = /* @__PURE__ */ BdApi.Webpack.getStore("ChannelStore");
 
-// shared/util/submitMessage.ts
-var submit = null;
-afterClass(...editorEvents, (instance) => {
-  submit = instance.submit.bind(instance);
-});
-function submitMessage() {
-  if (!submit) {
-    error("Could not send message, try switching channels");
-    return;
-  }
-  submit();
-}
-
-// shared/util/upload.ts
-var scrollerInstance = null;
-after(...scroller, ({ returnVal }) => scrollerInstance = returnVal);
-async function uploadFile(file, autoSend) {
-  const channelId = selectedChannelStore.getCurrentlySelectedChannelId();
-  if (!channelId) return;
-  const channel = channelStore.getChannel(channelId);
-  if (!channel) return;
-  const attach = attachFiles[0][attachFiles[1]];
-  await attach([file], channel, 0, { requireConfirm: true, origin: "file_picker" });
-  if (!autoSend) return;
-  submitMessage();
-  setTimeout(() => scrollerInstance?.scrollToBottom?.(), 0);
-}
-
 // shared/util/permissions.ts
 function getMaxFileSize() {
   const guildId = selectedGuildStore.getGuildId();
   const baseSize = maxUploadSize(guildId);
   return Math.max(20971520, baseSize);
 }
-
-// shared/util/settings.ts
-function createSettings(panelSettings, defaults) {
-  const settings2 = {};
-  for (let setting of panelSettings) {
-    if (!setting.id) continue;
-    settings2[setting.id] = Api.Data.load(setting.id) ?? defaults[setting.id];
-  }
-  const onChangeCallbacks = {};
-  setSettingsPanel(() => {
-    for (let setting of panelSettings) {
-      setting.value = settings2[setting.id];
-    }
-    return BdApi.UI.buildSettingsPanel({
-      settings: panelSettings,
-      onChange: (_, id, value) => {
-        settings2[id] = value;
-        Api.Data.save(id, value);
-        onChangeCallbacks[id]?.forEach((cb) => cb(value));
-      }
-    });
-  });
-  settings2.onChange = (id, callback) => {
-    onChangeCallbacks[id] ??= [];
-    onChangeCallbacks[id].push(callback);
-  };
-  return settings2;
-}
-
-// plugins/GifCaptioner/src/settings.ts
-var settings = createSettings([
-  {
-    type: "switch",
-    name: "Immediately send files",
-    note: "Files will only be attached and can be sent manually later if disabled",
-    id: "autoSend"
-  }
-], {
-  autoSend: true
-});
 
 // shared/util/canvas.ts
 function getLines(ctx, text, maxWidth) {
@@ -1102,8 +1034,9 @@ var GifRenderer = class {
     let fullHeight = height;
     if (transform.type === "caption") {
       this.ctx.font = `${transform.size}px futuraBoldCondensed`;
-      let lines = getLines(this.ctx, transform.text, this.width);
-      fullHeight = lines.length * transform.size + 10 + this.height;
+      const lines = getLines(this.ctx, transform.text, this.width);
+      this.topOffset = lines.length * transform.size + 10;
+      fullHeight = height + this.topOffset;
     }
     const fullSize = fullHeight * this.width;
     const sizeEstimate = fullSize * frames;
@@ -1146,16 +1079,17 @@ var GifRenderer = class {
     this.gif.addFrame(this.ctx, { delay, copy: true });
   }
   render() {
-    this.gif.once("finished", (blob) => {
-      const file = new File([blob], "rendered.gif", { type: "image/gif" });
-      uploadFile(file, settings.autoSend);
-      this.progress.close();
-    });
     this.gif.on("progress", (amount) => {
       this.progress.update("Encoding", amount);
     });
     this.progress.update("Encoding", 0);
-    this.gif.render();
+    return new Promise((res) => {
+      this.gif.once("finished", (blob) => {
+        const file = new File([blob], "rendered.gif", { type: "image/gif" });
+        res(file);
+      });
+      this.gif.render();
+    });
   }
   speechBubbleCanvas;
   speechBubbleCtx;
@@ -18827,7 +18761,7 @@ async function captionVideo(url2, width, height, transform) {
     const sampleSink = new VideoSampleSink(track);
     const canvasSink = new CanvasSink(track);
     progress.update("Preparing");
-    let frames = await countFrames(sampleSink);
+    const frames = await countFrames(sampleSink);
     progress.update("Rendering", 0);
     const renderer = new GifRenderer({ progress, frames, width, height, transform });
     let i = 0;
@@ -18836,7 +18770,9 @@ async function captionVideo(url2, width, height, transform) {
       renderer.addCanvasFrame(frame.canvas, frame.delay);
       i++;
     }
-    renderer.render();
+    const finalFile = await renderer.render();
+    progress.close();
+    return finalFile;
   } catch (e) {
     progress.close();
     Api.Logger.error("Failed to caption video", e);
@@ -18873,19 +18809,29 @@ async function* getCanvases(sink) {
 }
 
 // plugins/GifCaptioner/src/render/image.ts
-async function captionImage(url2, width, height, transform, mime) {
+async function captionImage(url2, width, height, transform, mime, file) {
   const progress = new ProgressDisplay("Rendering GIF", "Fetching");
   try {
-    const res = await BdApi.Net.fetch(url2);
-    const arrayBuffer = await res.arrayBuffer();
+    const arrayBuffer = await (file ?? await BdApi.Net.fetch(url2)).arrayBuffer();
     const decoder = new ImageDecoder({
       data: arrayBuffer,
       type: mime
     });
-    await decoder.tracks.ready;
+    try {
+      await decoder.tracks.ready;
+    } catch {
+      const finalFile2 = await captionStaticImage(url2, transform);
+      progress.close();
+      return finalFile2;
+    }
     const track = decoder.tracks.selectedTrack;
     if (!track) throw new Error("No track found for image");
     const frames = track.frameCount;
+    if (frames === 1) {
+      const finalFile2 = await captionStaticImage(url2, transform);
+      progress.close();
+      return finalFile2;
+    }
     progress.update("Rendering", 0);
     const renderer = new GifRenderer({ progress, frames, width, height, transform });
     for (let i = 0; i < frames; i++) {
@@ -18894,12 +18840,36 @@ async function captionImage(url2, width, height, transform, mime) {
       renderer.addVideoFrame(result.image);
       result.image.close();
     }
-    renderer.render();
+    const finalFile = await renderer.render();
+    progress.close();
+    return finalFile;
   } catch (e) {
     progress.close();
     Api.Logger.error("Failed to caption image", e);
     error("Failed to caption image");
   }
+}
+async function captionStaticImage(url2, transform) {
+  const image = new Image();
+  image.src = url2;
+  await new Promise((resolve, reject) => {
+    image.onload = resolve;
+    image.onerror = reject;
+  });
+  const canvas = new OffscreenCanvas(image.width, image.height);
+  const ctx = canvas.getContext("2d");
+  if (transform.type === "caption") {
+    const lines = getLines(ctx, transform.text, image.width);
+    const captionHeight = lines.length * transform.size + 10;
+    canvas.height = image.height + captionHeight;
+    drawCaption(ctx, transform.text, image.width, transform.size);
+    ctx.drawImage(image, 0, captionHeight);
+  } else {
+    ctx.drawImage(image, 0, 0);
+    drawSpeechBubble(ctx, image.width, image.height, transform.tipX, transform.tipY, transform.tipBase);
+  }
+  const blob = await canvas.convertToBlob({ type: "image/png" });
+  return new File([blob], "captioned.png", { type: "image/png" });
 }
 
 // shared/ui/focus.ts
@@ -19118,12 +19088,80 @@ async function captionVideoAsVideo(file, width, height, transform) {
   }
 }
 
+// shared/util/submitMessage.ts
+var submit = null;
+afterClass(...editorEvents, (instance) => {
+  submit = instance.submit.bind(instance);
+});
+function submitMessage() {
+  if (!submit) {
+    error("Could not send message, try switching channels");
+    return;
+  }
+  submit();
+}
+
+// shared/util/upload.ts
+var scrollerInstance = null;
+after(...scroller, ({ returnVal }) => scrollerInstance = returnVal);
+async function uploadFile(file, autoSend) {
+  const channelId = selectedChannelStore.getCurrentlySelectedChannelId();
+  if (!channelId) return;
+  const channel = channelStore.getChannel(channelId);
+  if (!channel) return;
+  const attach = attachFiles[0][attachFiles[1]];
+  await attach([file], channel, 0, { requireConfirm: true, origin: "file_picker" });
+  if (!autoSend) return;
+  submitMessage();
+  setTimeout(() => scrollerInstance?.scrollToBottom?.(), 0);
+}
+
 // node_modules/lucide/dist/esm/icons/closed-caption.js
 var ClosedCaption = [
   ["path", { d: "M10 9.17a3 3 0 1 0 0 5.66" }],
   ["path", { d: "M17 9.17a3 3 0 1 0 0 5.66" }],
   ["rect", { x: "2", y: "5", width: "20", height: "14", rx: "2" }]
 ];
+
+// shared/util/settings.ts
+function createSettings(panelSettings, defaults) {
+  const settings2 = {};
+  for (let setting of panelSettings) {
+    if (!setting.id) continue;
+    settings2[setting.id] = Api.Data.load(setting.id) ?? defaults[setting.id];
+  }
+  const onChangeCallbacks = {};
+  setSettingsPanel(() => {
+    for (let setting of panelSettings) {
+      setting.value = settings2[setting.id];
+    }
+    return BdApi.UI.buildSettingsPanel({
+      settings: panelSettings,
+      onChange: (_, id, value) => {
+        settings2[id] = value;
+        Api.Data.save(id, value);
+        onChangeCallbacks[id]?.forEach((cb) => cb(value));
+      }
+    });
+  });
+  settings2.onChange = (id, callback) => {
+    onChangeCallbacks[id] ??= [];
+    onChangeCallbacks[id].push(callback);
+  };
+  return settings2;
+}
+
+// plugins/GifCaptioner/src/settings.ts
+var settings = createSettings([
+  {
+    type: "switch",
+    name: "Immediately send files",
+    note: "Files will only be attached and can be sent manually later if disabled",
+    id: "autoSend"
+  }
+], {
+  autoSend: true
+});
 
 // plugins/GifCaptioner/src/index.ts
 addFont(Futura_Condensed_Extra_Bold_default, "futuraBoldCondensed");
@@ -19142,33 +19180,33 @@ after(gifDisplay.prototype, "render", ({ thisVal, returnVal }) => {
 });
 var Toolbar = BdApi.Webpack.getBySource(/spoiler:!.{1,3}.spoiler/);
 var ToolbarButton = BdApi.Webpack.getByStrings("stopPropagation(),", "onClick:", "dangerous");
+var images = ["image/jpeg", "image/png", "image/gif", "image/webp", "image/avif", "image/bmp"];
 var videos = ["video/mp4", "video/mov", "video/mkv", "video/webm"];
 after(Toolbar, "A", ({ args, returnVal }) => {
   const type = args[0].upload.mimeType;
-  if (!videos.includes(type)) return;
+  const isImage = images.includes(type);
+  if (!isImage && !videos.includes(type)) return;
   const button = BdApi.React.createElement(ToolbarButton, {
     tooltip: "Add Caption",
     onClick: () => {
       const file = args[0].upload.item.file;
       const props = returnVal.props;
       const url2 = URL.createObjectURL(file);
-      const video = document.createElement("video");
-      video.src = url2;
-      video.autoplay = true;
-      video.loop = true;
-      video.muted = true;
-      video.load();
-      video.addEventListener("canplaythrough", () => {
-        const { videoWidth, videoHeight } = video;
-        showCaptioner(videoWidth, videoHeight, video, (transform) => {
-          captionVideoAsVideo(file, videoWidth, videoHeight, transform).then((file2) => {
-            console.log(file2);
-            if (!file2) return;
-            AttachmentSystem.remove(props.channelId, props.id, props.draftType);
-            uploadFile(file2, false);
-          });
-        });
-      }, { once: true });
+      const upload = (file2) => {
+        URL.revokeObjectURL(url2);
+        if (!file2) return;
+        AttachmentSystem.remove(props.channelId, props.id, props.draftType);
+        uploadFile(file2, false);
+      };
+      if (isImage) {
+        showImageCaptioner(url2, (width, height, transform) => {
+          captionImage(url2, width, height, transform, type, file).then(upload);
+        }, true);
+      } else {
+        showVideoCaptioner(url2, (width, height, transform) => {
+          captionVideoAsVideo(file, width, height, transform).then(upload);
+        }, true);
+      }
     }
   }, BdApi.React.createElement(LucideIcon, { icon: ClosedCaption }));
   returnVal.props.actions.props.children.unshift(button);
@@ -19185,35 +19223,60 @@ function captionGif(src, isImage) {
   const urlString = url2.toString();
   const isWebp = url2.pathname.endsWith(".webp");
   Api.Logger.info("URL formatted to", urlString);
+  const upload = (file) => {
+    if (!file) return;
+    uploadFile(file, settings.autoSend);
+  };
   if (isImage) {
-    let image = document.createElement("img");
-    image.src = urlString;
-    image.addEventListener("load", () => {
-      let { width, height } = image;
-      showCaptioner(width, height, image, (transform) => {
-        const mime = isWebp ? "image/webp" : "image/gif";
-        captionImage(urlString, width, height, transform, mime);
-      });
+    showImageCaptioner(urlString, (width, height, transform) => {
+      const mime = isWebp ? "image/webp" : "image/gif";
+      captionImage(urlString, width, height, transform, mime).then(upload);
     });
-    image.addEventListener("error", () => error("Failed to load gif"));
   } else {
-    let video = document.createElement("video");
-    video.src = urlString;
-    video.autoplay = true;
-    video.loop = true;
-    video.muted = true;
-    video.load();
-    video.addEventListener("canplaythrough", () => {
-      let { videoWidth, videoHeight } = video;
-      showCaptioner(videoWidth, videoHeight, video, (transform) => {
-        captionVideo(urlString, videoWidth, videoHeight, transform);
-      });
-    }, { once: true });
-    video.addEventListener("error", () => error("Failed to load gif"));
+    showVideoCaptioner(urlString, (width, height, transform) => {
+      captionVideo(urlString, width, height, transform).then(upload);
+    });
   }
 }
-function showCaptioner(width, height, element, onConfirm) {
+function showImageCaptioner(url2, onConfirm, revokeUrl) {
+  const image = document.createElement("img");
+  image.src = url2;
+  image.addEventListener("load", () => {
+    const { width, height } = image;
+    showCaptioner(width, height, image, (transform) => {
+      onConfirm(width, height, transform);
+    }, () => {
+      if (revokeUrl) URL.revokeObjectURL(url2);
+    });
+  });
+  image.addEventListener("error", () => {
+    if (revokeUrl) URL.revokeObjectURL(url2);
+    error("Failed to load gif");
+  });
+}
+function showVideoCaptioner(url2, onConfirm, revokeUrl) {
+  const video = document.createElement("video");
+  video.src = url2;
+  video.autoplay = true;
+  video.loop = true;
+  video.muted = true;
+  video.load();
+  video.addEventListener("canplaythrough", () => {
+    const { videoWidth, videoHeight } = video;
+    showCaptioner(videoWidth, videoHeight, video, (transform) => {
+      onConfirm(videoWidth, videoHeight, transform);
+    }, () => {
+      if (revokeUrl) URL.revokeObjectURL(url2);
+    });
+  }, { once: true });
+  video.addEventListener("error", () => {
+    if (revokeUrl) URL.revokeObjectURL(url2);
+    error("Failed to load gif");
+  });
+}
+function showCaptioner(width, height, element, onConfirm, onCancel) {
   let submitCallback;
+  let confirmed = false;
   const modal = BdApi.React.createElement(Modal2, {
     width,
     height,
@@ -19223,9 +19286,12 @@ function showCaptioner(width, height, element, onConfirm) {
   BdApi.UI.showConfirmationModal("Edit GIF", modal, {
     onConfirm: () => {
       expressionPicker.close();
-      let res = submitCallback?.();
+      confirmed = true;
+      const res = submitCallback?.();
       if (res) onConfirm(res);
-    }
+    },
+    onClose: () => !confirmed && onCancel?.(),
+    onCancel: () => !confirmed && onCancel?.()
   });
 }
 function formatUrl(rawUrl) {

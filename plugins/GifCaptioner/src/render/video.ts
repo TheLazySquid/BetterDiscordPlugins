@@ -29,7 +29,7 @@ export default async function captionVideo(url: string, width: number, height: n
 	
 		// Count up the number of frames
 		progress.update("Preparing");
-		let frames = await countFrames(sampleSink);
+		const frames = await countFrames(sampleSink);
 	
 		// Actually render the gif
 		progress.update("Rendering", 0);
@@ -42,7 +42,9 @@ export default async function captionVideo(url: string, width: number, height: n
 		}
 	
 		// Encode it
-		renderer.render();
+		const finalFile = await renderer.render();
+		progress.close();
+		return finalFile;
 	} catch(e) {
 		progress.close();
 		Api.Logger.error("Failed to caption video", e);

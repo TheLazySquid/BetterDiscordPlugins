@@ -3,10 +3,8 @@ import GifWorker from "../gif.worker.txt";
 import { getUrl } from "$shared/util/blob";
 import GIF from "gif.js";
 import { error } from "$shared/api/toast";
-import { uploadFile } from "$shared/util/upload";
 import { Api } from "$shared/bd";
 import { getMaxFileSize } from "$shared/util/permissions";
-import { settings } from "../settings";
 import { drawCaption, drawSpeechBubble } from "./canvas";
 import { getLines } from "$shared/util/canvas";
 
@@ -36,7 +34,7 @@ export default class GifRenderer {
 	height: number; // Doesn't include caption height
 	transform: GifTransform;
 	gif: GIF;
-	progress: ProgressDisplay;
+	progress: ProgressDisplay
 
 	constructor({ progress, frames, width, height, transform }:
 		{ progress: ProgressDisplay, frames: number, width: number, height: number, transform: GifTransform }) {
@@ -56,12 +54,13 @@ export default class GifRenderer {
 
 		if(transform.type === "caption") {
 			this.ctx.font = `${transform.size}px futuraBoldCondensed`;
-			let lines = getLines(this.ctx, transform.text, this.width);
-			fullHeight = lines.length * transform.size + 10 + this.height;
+			const lines = getLines(this.ctx, transform.text, this.width);
+			this.topOffset = lines.length * transform.size + 10;
+			fullHeight = height + this.topOffset;
 		}
 
-		const fullSize = fullHeight * this.width;
 		// Gifs are compressed a bit so this is always going to overshoot
+		const fullSize = fullHeight * this.width;
 		const sizeEstimate = fullSize * frames;
 		const maxSize = getMaxFileSize(); // in bytes
 		let scaleFactor = Math.max(1, Math.sqrt(sizeEstimate / maxSize));
@@ -112,18 +111,19 @@ export default class GifRenderer {
 	}
 
 	render() {
-		this.gif.once("finished", (blob) => {
-			const file = new File([ blob ], "rendered.gif", { type: "image/gif" });
-			uploadFile(file, settings.autoSend);
-			this.progress.close();
-		});
-		
 		this.gif.on("progress", (amount) => {
 			this.progress.update("Encoding", amount);
 		});
 		this.progress.update("Encoding", 0);
 
-		this.gif.render();
+		return new Promise<File>((res) => {
+			this.gif.once("finished", (blob) => {
+				const file = new File([ blob ], "rendered.gif", { type: "image/gif" });
+				res(file);
+			});
+	
+			this.gif.render();
+		});
 	}
 
 	speechBubbleCanvas?: HTMLCanvasElement;
