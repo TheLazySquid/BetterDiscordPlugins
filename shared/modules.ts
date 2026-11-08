@@ -117,7 +117,11 @@ export const Modal = defineModule<any>({
 export const modalMethods = defineModule<ModalMethods>({
     name: "modalMethods",
     id: 192308,
-    filter: `Filters.byKeys("openModal")`
+    filter: `Filters.bySource("?.stackNextByDefault")`,
+    demangler: {
+        openModal: `Filters.byStrings("?.stackNextByDefault")`,
+        closeModal: `Filters.byStrings(".setState", ".getState()[")`
+    }
 });
 
 export const editorEvents = defineModule<WithKey<any>>({

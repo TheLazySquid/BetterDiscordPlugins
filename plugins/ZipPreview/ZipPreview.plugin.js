@@ -1,7 +1,7 @@
 /**
  * @name ZipPreview
  * @description Lets you see inside zips and preview/download files without ever downloading/extracting the zip
- * @version 0.7.1
+ * @version 0.7.2
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -194,7 +194,11 @@ var { fileModule, Modal, modalMethods, modalContainerClass } = getSyncModules([
   {
     name: "modalMethods",
     id: 192308,
-    filter: Filters.byKeys("openModal")
+    filter: Filters.bySource("?.stackNextByDefault"),
+    demangler: {
+      openModal: Filters.byStrings("?.stackNextByDefault"),
+      closeModal: Filters.byStrings(".setState", ".getState()[")
+    }
   },
   {
     name: "modalContainerClass",
