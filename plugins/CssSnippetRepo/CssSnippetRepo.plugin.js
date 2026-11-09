@@ -1,7 +1,7 @@
 /**
  * @name CssSnippetRepo
  * @description Easily manage CSS snippets that tweak how Discord looks
- * @version 1.0.6
+ * @version 1.0.8
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -506,9 +506,9 @@ var { toolbar, toolbarClass, modalMethods, Modal } = getSyncModules([
   {
     name: "toolbar",
     id: 71855,
-    getExport: Filters.byStrings("PlatformTypes.WINDOWS"),
+    getExport: Filters.byStrings(".WINDOWS||"),
     getWithKey: true,
-    filter: Filters.bySource("showDivider", "WINDOWS"),
+    filter: Filters.bySource(".WINDOWS||", "data-window-chrome"),
     defaultExport: false
   },
   {
@@ -520,7 +520,11 @@ var { toolbar, toolbarClass, modalMethods, Modal } = getSyncModules([
   {
     name: "modalMethods",
     id: 192308,
-    filter: Filters.byKeys("openModal")
+    filter: Filters.bySource("?.stackNextByDefault"),
+    demangler: {
+      openModal: Filters.byStrings("?.stackNextByDefault"),
+      closeModal: Filters.byStrings(".setState", ".getState()[")
+    }
   },
   {
     name: "Modal",

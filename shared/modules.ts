@@ -145,9 +145,9 @@ export const scroller = defineModule<WithKey<any>>({
 export const toolbar = defineModule<WithKey<any>>({
     name: "toolbar",
     id: 71855,
-    getExport: `Filters.byStrings("PlatformTypes.WINDOWS")`,
+    getExport: `Filters.byStrings(".WINDOWS||")`,
     getWithKey: true,
-    filter: `Filters.bySource("showDivider", "WINDOWS")`,
+    filter: `Filters.bySource(".WINDOWS||", "data-window-chrome")`,
     defaultExport: false
 });
 
