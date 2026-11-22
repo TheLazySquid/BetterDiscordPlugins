@@ -1,7 +1,7 @@
 /**
  * @name GifCaptioner
  * @description A BetterDiscord plugin that allows you to add a caption to discord gifs
- * @version 2.6.1
+ * @version 2.6.2
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -781,6 +781,45 @@ function getSyncModules(locators) {
   }
   return returned;
 }
+function getLazyModules(locators) {
+  let returned = {};
+  for (let locator of locators) {
+    returned[locator.name] = new LazyModule(locator);
+  }
+  return returned;
+}
+var LazyModule = class {
+  constructor(locator) {
+    this.locator = locator;
+    const { promise, resolve } = Promise.withResolvers();
+    BdApi.Webpack.waitForModule(locator.filter, {
+      firstId: locator.id,
+      cacheId: locator.name,
+      defaultExport: locator.defaultExport ?? true,
+      declarationFilter: locator.declarationFilter
+    })?.then((module) => {
+      this.value = module;
+      resolve(finalizeModule(locator, module));
+    });
+    this.loaded = promise;
+  }
+  value = null;
+  loaded;
+  loading = false;
+  load() {
+    if (!this.locator.lazyImporter) throw new Error("Attempted to load a lazy module with no importer");
+    if (this.loading) return this.loaded;
+    this.loading = true;
+    const importer = this.locator.lazyImporter;
+    const importerModule = BdApi.Webpack.getModule(importer.filter, {
+      firstId: importer.id,
+      cacheId: `${this.locator.name}-importer`,
+      raw: true
+    });
+    BdApi.Utils.forceLoad(importerModule.id);
+    return this.loaded;
+  }
+};
 function createQuery(locator) {
   return {
     filter: locator.filter,
@@ -820,7 +859,7 @@ function findExportWithKey(module, filter) {
 
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var { editorEvents, attachFiles, scroller, expressionPicker, gifDisplay, modalMethods, Modal, maxUploadSize, modalContainerClass, AttachmentSystem } = getSyncModules([
+var { editorEvents, scroller, expressionPicker, gifDisplay, modalMethods, Modal, maxUploadSize, modalContainerClass, AttachmentSystem } = getSyncModules([
   {
     name: "editorEvents",
     id: 392553,
@@ -828,13 +867,6 @@ var { editorEvents, attachFiles, scroller, expressionPicker, gifDisplay, modalMe
     getWithKey: true,
     filter: Filters.bySource(",submit:", "selectPreviousCommandOption"),
     defaultExport: false
-  },
-  {
-    name: "attachFiles",
-    id: 518960,
-    getExport: (e) => e.toString().includes("filesMetadata"),
-    getWithKey: true,
-    filter: (m) => Object.values(m).some(Filters.byStrings("filesMetadata:", "requireConfirm:"))
   },
   {
     name: "scroller",
@@ -890,6 +922,16 @@ var { editorEvents, attachFiles, scroller, expressionPicker, gifDisplay, modalMe
     name: "AttachmentSystem",
     id: 608299,
     filter: (m) => m?.setUploads?.name === "setUploads"
+  }
+]);
+var { attachFiles } = getLazyModules([
+  {
+    name: "attachFiles",
+    id: 518960,
+    getExport: (e) => e.toString().includes("filesMetadata"),
+    getWithKey: true,
+    filter: (m) => Object.values(m).some(Filters.byStrings("filesMetadata:", "requireConfirm:")),
+    lazy: true
   }
 ]);
 
@@ -19113,7 +19155,11 @@ async function uploadFile(file, autoSend) {
   if (!channelId) return;
   const channel = channelStore.getChannel(channelId);
   if (!channel) return;
-  const attach = attachFiles[0][attachFiles[1]];
+  if (!attachFiles.value) {
+    error("Failed to attach file");
+    return;
+  }
+  const attach = attachFiles.value[0][attachFiles.value[1]];
   await attach([file], channel, 0, { requireConfirm: true, origin: "file_picker" });
   if (!autoSend) return;
   submitMessage();
