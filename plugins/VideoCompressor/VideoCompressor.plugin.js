@@ -1,7 +1,7 @@
 /**
  * @name VideoCompressor
  * @description Compress videos that are too large to upload normally. Supports images as well.
- * @version 0.6.3
+ * @version 0.6.4
  * @author TheLazySquid
  * @authorId 619261917352951815
  * @website https://github.com/TheLazySquid/BetterDiscordPlugins
@@ -68,6 +68,46 @@ function setSettingsPanel(el) {
   plugin.getSettingsPanel = () => el;
 }
 
+// shared/api/styles.ts
+var count = 0;
+function addStyle(css) {
+  let styleId = count++;
+  onStart(() => {
+    Api.DOM.addStyle(`${pluginName}-${styleId}`, css);
+  });
+}
+onStop(() => {
+  for (let i = 0; i < count; i++) {
+    Api.DOM.removeStyle(`${pluginName}-${i}`);
+  }
+});
+
+// plugins/VideoCompressor/src/styles.css
+addStyle(`.vc-options {
+  color: white;
+}
+
+.vc-options .estimate {
+  border-bottom: 1px solid #ccc;
+  margin-bottom: 15px;
+}
+
+.vc-options span {
+  padding: 0 5px;
+}
+
+.vc-options .big {
+  color: red;
+}
+
+.vc-options .small {
+  color: green;
+}
+
+.vc-options input {
+  width: 100%;
+}`);
+
 // shared/util/modules.ts
 function getSyncModules(locators) {
   let returned = {};
@@ -84,6 +124,45 @@ function getSyncModules(locators) {
   }
   return returned;
 }
+function getLazyModules(locators) {
+  let returned = {};
+  for (let locator of locators) {
+    returned[locator.name] = new LazyModule(locator);
+  }
+  return returned;
+}
+var LazyModule = class {
+  constructor(locator) {
+    this.locator = locator;
+    const { promise, resolve } = Promise.withResolvers();
+    BdApi.Webpack.waitForModule(locator.filter, {
+      firstId: locator.id,
+      cacheId: locator.name,
+      defaultExport: locator.defaultExport ?? true,
+      declarationFilter: locator.declarationFilter
+    })?.then((module) => {
+      this.value = module;
+      resolve(finalizeModule(locator, module));
+    });
+    this.loaded = promise;
+  }
+  value = null;
+  loaded;
+  loading = false;
+  load() {
+    if (!this.locator.lazyImporter) throw new Error("Attempted to load a lazy module with no importer");
+    if (this.loading) return this.loaded;
+    this.loading = true;
+    const importer = this.locator.lazyImporter;
+    const importerModule = BdApi.Webpack.getModule(importer.filter, {
+      firstId: importer.id,
+      cacheId: `${this.locator.name}-importer`,
+      raw: true
+    });
+    BdApi.Utils.forceLoad(importerModule.id);
+    return this.loaded;
+  }
+};
 function createQuery(locator) {
   return {
     filter: locator.filter,
@@ -123,14 +202,7 @@ function findExportWithKey(module, filter) {
 
 // modules-ns:$shared/modules
 var Filters = BdApi.Webpack.Filters;
-var { attachFiles, maxUploadSize, modalMethods, Modal } = getSyncModules([
-  {
-    name: "attachFiles",
-    id: 518960,
-    getExport: (e) => e.toString().includes("filesMetadata"),
-    getWithKey: true,
-    filter: (m) => Object.values(m).some(Filters.byStrings("filesMetadata:", "requireConfirm:"))
-  },
+var { maxUploadSize, modalMethods, Modal } = getSyncModules([
   {
     name: "maxUploadSize",
     id: 453771,
@@ -151,6 +223,16 @@ var { attachFiles, maxUploadSize, modalMethods, Modal } = getSyncModules([
     id: 189213,
     filter: Filters.bySource("actionsFullWidth", '"md":"sm"'),
     getExport: true
+  }
+]);
+var { attachFiles } = getLazyModules([
+  {
+    name: "attachFiles",
+    id: 518960,
+    getExport: (e) => e.toString().includes("filesMetadata"),
+    getWithKey: true,
+    filter: (m) => Object.values(m).some(Filters.byStrings("filesMetadata:", "requireConfirm:")),
+    lazy: true
   }
 ]);
 
@@ -18241,20 +18323,6 @@ function ImageOptions({ item }) {
   ));
 }
 
-// shared/api/styles.ts
-var count = 0;
-function addStyle(css) {
-  let styleId = count++;
-  onStart(() => {
-    Api.DOM.addStyle(`${pluginName}-${styleId}`, css);
-  });
-}
-onStop(() => {
-  for (let i = 0; i < count; i++) {
-    Api.DOM.removeStyle(`${pluginName}-${i}`);
-  }
-});
-
 // shared/util/progress.css
 addStyle(`.lz-progress {
   color: white;
@@ -18539,32 +18607,6 @@ function advanceQueue() {
   showPopup(next);
 }
 
-// plugins/VideoCompressor/src/styles.css
-addStyle(`.vc-options {
-  color: white;
-}
-
-.vc-options .estimate {
-  border-bottom: 1px solid #ccc;
-  margin-bottom: 15px;
-}
-
-.vc-options span {
-  padding: 0 5px;
-}
-
-.vc-options .big {
-  color: red;
-}
-
-.vc-options .small {
-  color: green;
-}
-
-.vc-options input {
-  width: 100%;
-}`);
-
 // shared/stores.ts
 var selectedGuildStore = /* @__PURE__ */ BdApi.Webpack.getStore("SelectedGuildStore");
 
@@ -18576,45 +18618,47 @@ function getMaxFileSize() {
 }
 
 // plugins/VideoCompressor/src/index.ts
-var attach = attachFiles[0][attachFiles[1]];
-before(...attachFiles, ({ args }) => {
-  const maxSize = getMaxFileSize();
-  const files = [...args[0]];
-  const videoFormats = ["mp4", "mov", "mkv", "webm"];
-  const imageFormats = ["png", "jpg", "jpeg", "webp", "avif"];
-  for (let i = 0; i < files.length; i++) {
-    const parts = files[i].name.split(".");
-    if (parts.length === 1) continue;
-    const ext = parts[parts.length - 1];
-    const forceConvert = settings.convertUnembeddable && ext === "mkv";
-    if (!forceConvert && files[i].size < maxSize) continue;
-    const attachFile = (file) => attach([file], args[1], args[2], args[3]);
-    if (videoFormats.includes(ext)) {
-      addFile({
-        file: files[i],
-        type: "video",
-        attach: attachFile,
-        fullSize: files[i].size,
-        maxSize,
-        values: defaultVideoValues,
-        becauseMkv: forceConvert
-      });
-      files.splice(i, 1);
-      i--;
-    } else if (imageFormats.includes(ext)) {
-      addFile({
-        file: files[i],
-        type: "image",
-        attach: attachFile,
-        fullSize: files[i].size,
-        maxSize,
-        values: defaultImageValues
-      });
-      files.splice(i, 1);
-      i--;
+attachFiles.loaded.then((module) => {
+  const attach = module[0][module[1]];
+  before(...module, ({ args }) => {
+    const maxSize = getMaxFileSize();
+    const files = [...args[0]];
+    const videoFormats = ["mp4", "mov", "mkv", "webm"];
+    const imageFormats = ["png", "jpg", "jpeg", "webp", "avif"];
+    for (let i = 0; i < files.length; i++) {
+      const parts = files[i].name.split(".");
+      if (parts.length === 1) continue;
+      const ext = parts[parts.length - 1];
+      const forceConvert = settings.convertUnembeddable && ext === "mkv";
+      if (!forceConvert && files[i].size < maxSize) continue;
+      const attachFile = (file) => attach([file], args[1], args[2], args[3]);
+      if (videoFormats.includes(ext)) {
+        addFile({
+          file: files[i],
+          type: "video",
+          attach: attachFile,
+          fullSize: files[i].size,
+          maxSize,
+          values: defaultVideoValues,
+          becauseMkv: forceConvert
+        });
+        files.splice(i, 1);
+        i--;
+      } else if (imageFormats.includes(ext)) {
+        addFile({
+          file: files[i],
+          type: "image",
+          attach: attachFile,
+          fullSize: files[i].size,
+          maxSize,
+          values: defaultImageValues
+        });
+        files.splice(i, 1);
+        i--;
+      }
     }
-  }
-  args[0] = files;
+    args[0] = files;
+  });
 });
   }
 }

@@ -74,12 +74,13 @@ export const createSlate = defineModule<WithKey<any>>({
     getWithKey: true
 });
 
-export const attachFiles = defineModule<WithKey<any>>({
+export const attachFiles = defineModule<LazyModule<WithKey<any>>>({
     name: "attachFiles",
     id: 518960,
     getExport: `(e) => e.toString().includes("filesMetadata")`,
     getWithKey: true,
-    filter: `(m) => Object.values(m).some(Filters.byStrings("filesMetadata:", "requireConfirm:"))`
+    filter: `(m) => Object.values(m).some(Filters.byStrings("filesMetadata:", "requireConfirm:"))`,
+    lazy: true
 });
 
 export const expressionPicker = defineModule<ExpressionPicker>({

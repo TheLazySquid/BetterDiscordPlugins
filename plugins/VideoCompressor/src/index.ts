@@ -1,59 +1,61 @@
+import './styles.css';
 import { attachFiles } from "$shared/modules";
 import { before } from "$shared/api/patching";
 import { addFile } from "./showPopup";
-import './styles.css';
 import { getMaxFileSize } from "$shared/util/permissions";
 import { defaultImageValues, defaultVideoValues } from "./consts";
 import { settings } from "./settings";
 
-const attach = attachFiles[0][attachFiles[1]];
-before(...attachFiles, ({ args }) => {
-    const maxSize = getMaxFileSize();
-    const files: File[] = [...args[0]];
+attachFiles.loaded.then((module) => {
+    const attach = module[0][module[1]];
+    before(...module, ({ args }) => {
+        const maxSize = getMaxFileSize();
+        const files: File[] = [...args[0]];
+        
+        // Get any files that will not fit and that we can parse
+        // (https://mediabunny.dev/guide/input-formats)
+        const videoFormats = ["mp4", "mov", "mkv", "webm"];
+        const imageFormats = ["png", "jpg", "jpeg", "webp", "avif"];
     
-    // Get any files that will not fit and that we can parse
-    // (https://mediabunny.dev/guide/input-formats)
-    const videoFormats = ["mp4", "mov", "mkv", "webm"];
-    const imageFormats = ["png", "jpg", "jpeg", "webp", "avif"];
-
-    for(let i = 0; i < files.length; i++) {
-        const parts = files[i].name.split('.');
-        if(parts.length === 1) continue;
-
-        const ext = parts[parts.length - 1];
-        const forceConvert = settings.convertUnembeddable && ext === "mkv";
-
-        if(!forceConvert && files[i].size < maxSize) continue;
-
-        const attachFile = (file: File) => attach([ file ], args[1], args[2], args[3]);
-
-        if(videoFormats.includes(ext)) {
-            addFile({
-                file: files[i],
-                type: "video",
-                attach: attachFile,
-                fullSize: files[i].size,
-                maxSize,
-                values: defaultVideoValues,
-                becauseMkv: forceConvert
-            });
+        for(let i = 0; i < files.length; i++) {
+            const parts = files[i].name.split('.');
+            if(parts.length === 1) continue;
     
-            files.splice(i, 1);
-            i--;
-        } else if(imageFormats.includes(ext)) {
-            addFile({
-                file: files[i],
-                type: "image",
-                attach: attachFile,
-                fullSize: files[i].size,
-                maxSize,
-                values: defaultImageValues
-            });
-
-            files.splice(i, 1);
-            i--;
+            const ext = parts[parts.length - 1];
+            const forceConvert = settings.convertUnembeddable && ext === "mkv";
+    
+            if(!forceConvert && files[i].size < maxSize) continue;
+    
+            const attachFile = (file: File) => attach([ file ], args[1], args[2], args[3]);
+    
+            if(videoFormats.includes(ext)) {
+                addFile({
+                    file: files[i],
+                    type: "video",
+                    attach: attachFile,
+                    fullSize: files[i].size,
+                    maxSize,
+                    values: defaultVideoValues,
+                    becauseMkv: forceConvert
+                });
+        
+                files.splice(i, 1);
+                i--;
+            } else if(imageFormats.includes(ext)) {
+                addFile({
+                    file: files[i],
+                    type: "image",
+                    attach: attachFile,
+                    fullSize: files[i].size,
+                    maxSize,
+                    values: defaultImageValues
+                });
+    
+                files.splice(i, 1);
+                i--;
+            }
         }
-    }
-
-    args[0] = files;
+    
+        args[0] = files;
+    });
 });
