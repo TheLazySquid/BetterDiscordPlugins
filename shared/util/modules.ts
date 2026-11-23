@@ -47,8 +47,9 @@ export class LazyModule<T> {
             defaultExport: locator.defaultExport ?? true,
             declarationFilter: locator.declarationFilter
         })?.then((module) => {
-            this.value = module as T;
-            resolve(finalizeModule(locator, module));
+            const finalized = finalizeModule(locator, module);
+            this.value = finalized;
+            resolve(finalized);
         });
         
         this.loaded = promise;
