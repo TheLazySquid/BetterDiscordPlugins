@@ -18,10 +18,11 @@ export const fileModule = defineModule<any>({
     filter: `(m) => m.A?.toString().includes("().filesize(")`
 });
 
-export const expressionModule = defineModule<ReactElementModule>({
+export const expressionModule = defineModule<any>({
     name: "expressionModule",
-    id: 573853,
-    filter: `(m) => m.type?.toString?.().includes("onSelectGIF") && m.type?.toString?.().includes("hideGifFavorites")`
+    id: 657194,
+    filter: `Filters.bySource("onSelectGIF", "hideGifFavorites")`,
+    declarationFilter: `(d) => d?.type?.toString().includes("onSelectGIF")`
 });
 
 export const buttonsModule = defineModule<ReactElementModule>({
